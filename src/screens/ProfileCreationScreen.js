@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import ScreenContainer from "../components/ScreenContainer";
-import Header from "../components/Header";
-import Input from "../components/Input";
-import Button from "../components/Button";
+import ScreenContainer from "../components/common/ScreenContainer";
+import Header from "../components/common/Header";
+import Input from "../components/common/Input";
+import Button from "../components/common/Button";
 
 const ProfileCreationScreen = ({ navigation }) => {
   const [lastName, setLastName] = useState("");

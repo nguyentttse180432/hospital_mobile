@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, Text, StyleSheet, Alert } from "react-native";
-import ScreenContainer from "../../components/ScreenContainer";
-import Header from "../../components/Header";
-import Input from "../../components/Input";
-import Button from "../../components/Button";
+import ScreenContainer from "../../components/common/ScreenContainer";
+import Input from "../../components/common/Input";
+import Button from "../../components/common/Button";
 
 const RegisterScreen = ({ navigation }) => {
   const [phone, setPhone] = useState("");
@@ -66,7 +65,6 @@ const RegisterScreen = ({ navigation }) => {
 
   return (
     <ScreenContainer>
-
       <View style={styles.container}>
         <Text style={styles.title}>Đăng ký tài khoản</Text>
 
@@ -112,8 +110,8 @@ const RegisterScreen = ({ navigation }) => {
           />
 
           <Text style={styles.policyText}>
-            Bằng cách đăng ký, bạn đồng ý với các{" "}
-            <Text style={styles.policyLink}>Điều khoản dịch vụ</Text> và{" "}
+            Bằng cách đăng ký, bạn đồng ý với các
+            <Text style={styles.policyLink}>Điều khoản dịch vụ</Text> và
             <Text style={styles.policyLink}>Chính sách quyền riêng tư</Text> của
             chúng tôi.
           </Text>

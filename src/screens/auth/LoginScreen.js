@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import ScreenContainer from "../../components/ScreenContainer";
-import Input from "../../components/Input";
-import Button from "../../components/Button";
+import ScreenContainer from "../../components/common/ScreenContainer";
+import Input from "../../components/common/Input";
+import Button from "../../components/common/Button";
+import { login } from "../../services/authService"; // Uncomment if using a service for login
 
 const LoginScreen = ({ navigation }) => {
-  const [phone, setPhone] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
   const [rememberMe, setRememberMe] = useState(false);
@@ -15,8 +16,8 @@ const LoginScreen = ({ navigation }) => {
     let valid = true;
     const newErrors = {};
 
-    if (!phone.trim()) {
-      newErrors.phone = "Số điện thoại là bắt buộc";
+    if (!username.trim()) {
+      newErrors.username = "Tên đăng nhập là bắt buộc";
       valid = false;
     }
 
@@ -32,15 +33,34 @@ const LoginScreen = ({ navigation }) => {
   const handleLogin = async () => {
     if (validateForm()) {
       try {
-        // In a real app, you would call an API here
-        // For demo purposes, we'll just save a dummy user token
-        await AsyncStorage.setItem("userToken", "dummy-token");
-        if (rememberMe) {
-          await AsyncStorage.setItem("phone", phone);
+        const data = await login(username, password);
+
+        // Truy cập đúng path:
+        const token = data?.accessToken;
+        const user = data?.user;
+
+        if (!data || !token) {
+          setErrors({ general: "Tên đăng nhập hoặc mật khẩu không đúng" });
+          return;
         }
-        navigation.replace("Home");
+
+        await AsyncStorage.setItem("userToken", token);
+        await AsyncStorage.setItem("user", JSON.stringify(user));
+        
+        if (rememberMe) {
+          await AsyncStorage.setItem("user", JSON.stringify(user));
+        }
+
+        navigation.replace("Main");
       } catch (error) {
-        console.error("Login error:", error);
+        if (error.response && error.response.data) {
+          const detail = error.response.data.detail;
+          if (detail) {
+            setErrors({ general: "Tên đăng nhập hoặc mật khẩu không đúng" }); // Hiện thông báo chi tiết từ server
+          }
+        } else {
+          setErrors({ general: "Đã xảy ra lỗi. Vui lòng thử lại sau." });
+        }
       }
     }
   };
@@ -62,13 +82,13 @@ const LoginScreen = ({ navigation }) => {
 
         <View style={styles.formContainer}>
           <Input
-            label="Số điện thoại"
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="Số điện thoại..."
-            keyboardType="phone-pad"
+            label="Username"
+            value={username}
+            onChangeText={setUsername}
+            placeholder="Nhập tên đăng nhập..."
+            keyboardType="default"
             required
-            error={errors.phone}
+            error={errors.username}
           />
 
           <Input
@@ -92,6 +112,12 @@ const LoginScreen = ({ navigation }) => {
             </View>
             <Text style={styles.rememberText}>Lưu thông tin đăng nhập</Text>
           </TouchableOpacity>
+
+          {errors.general && (
+            <Text style={styles.errorText}>
+              *{errors.general}
+            </Text>
+          )}
 
           <Button title="Đăng nhập" onPress={handleLogin} />
 
@@ -173,6 +199,12 @@ const styles = StyleSheet.create({
   },
   rememberText: {
     fontSize: 16,
+  },
+  errorText: {
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: "right",
   },
   forgotPassword: {
     alignItems: "center",
