@@ -9,10 +9,10 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/Ionicons";
-import InputField from "../common/InputFieldIcon";
-import Card from "../common/Card";
-import Button from "../common/Button";
-import { getPatients } from "../../services/patientService";
+import InputField from "../../common/InputFieldIcon";
+import Card from "../../common/Card";
+import Button from "../../common/Button";
+import { getPatients } from "../../../services/patientService";
 
 const ProfileSelection = ({
   selectedProfile,
@@ -27,6 +27,24 @@ const ProfileSelection = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showNewProfileForm, setShowNewProfileForm] = useState(false);
 
+  // Function to calculate age from birth date
+  const calculateAge = (dobString) => {
+    if (!dobString) return "N/A";
+
+    const dob = new Date(dobString);
+    const today = new Date();
+
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+
+    // If birthday hasn't occurred yet this year, subtract a year
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+
+    return age + " tuổi";
+  };
+
   // Fetch profiles on component mount
   useEffect(() => {
     const fetchData = async () => {
@@ -39,17 +57,20 @@ const ProfileSelection = ({
         if (userJSON) {
           mainUser = JSON.parse(userJSON);
           setCurrentUser(mainUser);
-        }
+        } // Lấy danh sách người thân từ API
+        const patients = await getPatients();
+        console.log("Processed patients:", patients);
 
-        // Lấy danh sách người thân từ API
-        const response = await getPatients();
-
-        if (response && Array.isArray(response)) {
-          // Lọc ra danh sách người thân (loại bỏ người dùng chính)
-          const relatives = mainUser
-            ? response.filter((p) => p.id !== mainUser.id)
-            : response;
+        if (patients && Array.isArray(patients)) {
+          // Lọc ra danh sách người thân (loại bỏ người dùng chính nếu có)
+          const relatives =
+            mainUser && mainUser.id
+              ? patients.filter((p) => p.id !== mainUser.id)
+              : patients;
           setFamilyMembers(relatives);
+        } else {
+          console.warn("No patients data or invalid format received");
+          setFamilyMembers([]);
         }
       } catch (error) {
         console.error("Failed to fetch user or patient profiles:", error);
@@ -92,8 +113,6 @@ const ProfileSelection = ({
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.stepTitle}>Chọn Hồ Sơ Bệnh Nhân</Text>
-
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1e88e5" />
@@ -101,41 +120,9 @@ const ProfileSelection = ({
         </View>
       ) : (
         <>
-          {/* Hồ sơ chủ tài khoản */}
-          {currentUser && (
-            <>
-              <Text style={styles.sectionTitle}>Hồ sơ của bạn</Text>
-              <Card
-                onPress={() => handleProfileSelect(currentUser)}
-                selected={selectedProfile?.id === currentUser.id}
-              >
-                <View style={styles.cardContent}>
-                  <View style={styles.profileIconContainer}>
-                    <Icon name="person" size={24} color="#1e88e5" />
-                  </View>
-                  <View style={styles.cardText}>
-                    <Text style={styles.cardTitle}>
-                      {currentUser.fullName || currentUser.name}
-                    </Text>
-                    <Text style={styles.cardDetail}>
-                      Tuổi: {currentUser.age || "40 tuổi"}
-                    </Text>
-                    <Text style={styles.cardDetail}>
-                      Giới tính: {currentUser.gender}
-                    </Text>
-                  </View>
-                  {selectedProfile?.id === currentUser.id && (
-                    <Icon name="checkmark-circle" size={24} color="#2ecc71" />
-                  )}
-                </View>
-              </Card>
-            </>
-          )}
-
-          {/* Hồ sơ người thân */}
           {familyMembers.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Người thân</Text>
+              <Text style={styles.sectionTitle}>Hồ sơ của bạn</Text>
               {familyMembers.map((member) => (
                 <Card
                   key={member.id}
@@ -148,14 +135,17 @@ const ProfileSelection = ({
                     </View>
                     <View style={styles.cardText}>
                       <Text style={styles.cardTitle}>
-                        {member.fullName || member.name}
+                        {member.fullName ||
+                          member.name ||
+                          `${member.firstName || ""} ${
+                            member.lastName || ""
+                          }`.trim()}
                       </Text>
-                      <Text style={styles.cardDetail}>Tuổi: {member.age || "40 tuổi"}</Text>
                       <Text style={styles.cardDetail}>
-                        Giới tính: {member.gender}
+                        {member.dob ? `Tuổi: ${calculateAge(member.dob)}` : ""}
                       </Text>
-                      <Text style={styles.relationBadge}>
-                        {member.relationship || "Người thân"}
+                      <Text style={styles.cardDetail}>
+                        Giới tính: {member.gender === "Male" ? "Nam" : "Nữ"}
                       </Text>
                     </View>
                     {selectedProfile?.id === member.id && (
@@ -167,7 +157,6 @@ const ProfileSelection = ({
             </>
           )}
 
-          {/* Nút tạo hồ sơ người thân mới */}
           <View style={styles.addProfileSection}>
             <TouchableOpacity
               style={styles.addProfileButton}
@@ -180,7 +169,6 @@ const ProfileSelection = ({
             </TouchableOpacity>
           </View>
 
-          {/* Form tạo hồ sơ mới */}
           {showNewProfileForm && (
             <>
               <Text style={styles.sectionTitle}>Thông tin người thân mới</Text>

@@ -57,14 +57,14 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 16,
-    paddingTop: 40,
+    paddingTop: 45,
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
   },
   backButton: {
     position: "absolute",
-    left: 16,
-    top: 40,
+    left: 20,
+    top: 65,
     zIndex: 1,
   },
   title: {

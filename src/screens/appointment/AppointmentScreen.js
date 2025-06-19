@@ -1,18 +1,28 @@
-import { useState, useEffect } from "react";
-import { View, StyleSheet, Alert, SafeAreaView } from "react-native";
+import { useState } from "react";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  SafeAreaView,
+  ActivityIndicator,
+} from "react-native";
 import Header from "../../components/common/Header";
 import { timeSlots } from "../../data/appointmentData";
+import {
+  createAppointment,
+  formatAppointmentData,
+} from "../../services/appointmentService";
 
 // Import các components đã tách
-import ProfileSelection from "../../components/appointment/ProfileSelection";
-import AppointmentSelection from "../../components/appointment/AppointmentSelection";
-import MedicalPackageSelection from "../../components/appointment/MedicalPackageSelection";
-import ServiceSelection from "../../components/appointment/ServiceSelection";
-import DateSelection from "../../components/appointment/DateSelection";
-import TimeSelection from "../../components/appointment/TimeSelection";
-import AppointmentReview from "../../components/appointment/AppointmentReview";
-import PaymentScreen from "../../components/appointment/PaymentScreen";
-import AppointmentConfirmation from "../../components/appointment/AppointmentConfirmation";
+import ProfileSelection from "../../components/appointment/step1/ProfileSelection";
+import AppointmentSelection from "../../components/appointment/step2/AppointmentSelection";
+import MedicalPackageSelection from "../../components/appointment/step2/MedicalPackageSelection";
+import ServiceSelection from "../../components/appointment/step2/ServiceSelection";
+import DateSelection from "../../components/appointment/step2/DateSelection";
+import TimeSelection from "../../components/appointment/step2/TimeSelection";
+import AppointmentReview from "../../components/appointment/step3/AppointmentReview";
+import PaymentScreen from "../../components/appointment/step4/PaymentScreen";
+import AppointmentConfirmation from "../../components/appointment/step5/AppointmentConfirmation";
 
 const AppointmentScreen = ({ navigation }) => {
   const [step, setStep] = useState(1);
@@ -32,8 +42,102 @@ const AppointmentScreen = ({ navigation }) => {
   const [selectedServices, setSelectedServices] = useState([]);
   const [currentDate, setCurrentDate] = useState(null);
   const [currentTime, setCurrentTime] = useState(null);
-  const [currentReason, setCurrentReason] = useState("");
   const [paymentMethod, setPaymentMethod] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Tính tổng tiền thanh toán
+  const calculateTotalAmount = () => {
+    let total = 0;
+
+    // Tính giá của gói khám
+    if (currentPackage) {
+      total += currentPackage.price || 0;
+    }
+
+    // Tính giá của các dịch vụ
+    if (selectedServices && selectedServices.length > 0) {
+      total += selectedServices.reduce(
+        (sum, service) => sum + (service.price || 0),
+        0
+      );
+    }
+
+    return total;
+  };
+
+  // Format the date and time for the API
+  const formatDateTimeForApi = () => {
+    if (!currentDate || !currentTime) return null;
+
+    try {
+      // Parse the date (DD/MM/YYYY) and time
+      const [day, month, year] = currentDate.split("/");
+      const [startTime] = currentTime.time.split(" - ");
+      const [hours, minutes] = startTime.split(":");
+
+      // Create Date object
+      const appointmentDate = new Date(
+        parseInt(year),
+        parseInt(month) - 1, // Month is 0-indexed in JavaScript
+        parseInt(day),
+        parseInt(hours),
+        parseInt(minutes)
+      );
+
+      return appointmentDate;
+    } catch (error) {
+      console.error("Date/time parsing error:", error);
+      return null;
+    }
+  };
+
+  // Submit appointment to API
+  const submitAppointment = async () => {
+    if (
+      !selectedProfile ||
+      (!currentPackage && selectedServices.length === 0)
+    ) {
+      return Alert.alert("Lỗi", "Thông tin lịch khám không đầy đủ");
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Format the appointment datetime
+      const appointmentDateTime = formatDateTimeForApi();
+      if (!appointmentDateTime) {
+        throw new Error("Invalid date or time format");
+      }
+
+      // Format appointment data for API
+      const appointmentData = formatAppointmentData(
+        selectedProfile.id,
+        appointmentDateTime,
+        currentPackage,
+        selectedServices
+      );
+
+      // Send to API
+      await createAppointment(appointmentData);
+
+      // Show success message and go to confirmation step
+      Alert.alert("Thành Công", "Đặt lịch khám thành công!", [
+        { text: "OK", onPress: () => setStep(5) },
+      ]);
+    } catch (error) {
+      console.error("Appointment creation error:", error);
+      Alert.alert(
+        "Lỗi",
+        "Không thể đặt lịch khám. Vui lòng thử lại sau." +
+          (error.response?.data?.message
+            ? `\n\nLỗi: ${error.response.data.message}`
+            : "")
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const saveCurrentAppointment = () => {
     if (
       (currentPackage || selectedServices.length > 0) &&
@@ -45,7 +149,6 @@ const AppointmentScreen = ({ navigation }) => {
         services: selectedServices,
         date: currentDate,
         time: currentTime,
-        reason: currentReason,
       };
       // Thay thế mảng appointments bằng một phần tử duy nhất
       setAppointments([newAppointment]);
@@ -90,9 +193,8 @@ const AppointmentScreen = ({ navigation }) => {
       if (!currentTime) {
         return Alert.alert("Lỗi", "Vui lòng chọn giờ khám.");
       }
-
-      setStep(2.5);
-    } else if (step === 2.5) {
+      setStep(3);
+    } else if (step === 3) {
       // Save the current appointment and move directly to payment step
       if (
         (!currentPackage && selectedServices.length === 0) ||
@@ -106,10 +208,9 @@ const AppointmentScreen = ({ navigation }) => {
     } else if (step === 4) {
       if (!paymentMethod)
         return Alert.alert("Lỗi", "Vui lòng chọn phương thức thanh toán.");
-      setStep(5);
-      Alert.alert("Thành Công", "Đặt lịch khám thành công!", [
-        { text: "OK", onPress: () => setStep(5) },
-      ]);
+
+      // Submit appointment to API
+      submitAppointment();
     }
   };
   const handleBack = () => {
@@ -119,11 +220,11 @@ const AppointmentScreen = ({ navigation }) => {
       step === 2.2 ||
       step === 2.3 ||
       step === 2.4 ||
-      step === 2.5
+      step === 3
     ) {
       setStep(2); // Return to main appointment selection
     } else if (step === 4) {
-      setStep(2.5); // Go back to appointment review from payment
+      setStep(3); // Go back to appointment review from payment
     } else if (step > 1) {
       setStep(step - 1);
     } else {
@@ -173,13 +274,28 @@ const AppointmentScreen = ({ navigation }) => {
     setSelectedServices([]);
     setCurrentDate(null);
     setCurrentTime(null);
-    setCurrentReason("");
+  };
+  const getActiveStep = () => {
+    // Map the step values to the correct icon index (0-4)
+    if (step === 1) return 0; // Hồ sơ khách hàng (Person)
+    if (
+      step === 2 ||
+      step === 2.1 ||
+      step === 2.2 ||
+      step === 2.3 ||
+      step === 2.4
+    )
+      return 1; // Thông tin khám (Medical)
+    if (step === 3) return 2; // Xác nhận thông tin (Clipboard)
+    if (step === 4) return 3; // Thanh toán (Wallet)
+    if (step === 5) return 4; // Phiếu khám bệnh (Document)
+    return 0; // Mặc định là bước đầu tiên
   };
 
   const getHeaderTitle = () => {
     switch (step) {
       case 1:
-        return "Chọn Hồ Sơ Bệnh Nhân";
+        return "Chọn Hồ Sơ Khách Hàng";
       case 2:
         return "Chọn Thông Tin Khám";
       case 2.1:
@@ -190,7 +306,7 @@ const AppointmentScreen = ({ navigation }) => {
         return "Chọn Ngày Khám";
       case 2.4:
         return "Chọn Giờ Khám";
-      case 2.5:
+      case 3:
         return "Xác Nhận Thông Tin";
       case 4:
         return "Thanh Toán";
@@ -203,12 +319,11 @@ const AppointmentScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {" "}
       <Header
         title={getHeaderTitle()}
         onBack={handleBack}
-        progressIcons={["person", "medical", "wallet", "document"]}
-        activeStep={Math.floor(step) > 4 ? 3 : Math.floor(step) - 1}
+        progressIcons={["person", "medical", "clipboard", "wallet", "document"]}
+        activeStep={getActiveStep()}
       />
       <View style={styles.content}>
         {step === 1 && (
@@ -227,8 +342,6 @@ const AppointmentScreen = ({ navigation }) => {
             selectedServices={selectedServices}
             currentDate={currentDate}
             currentTime={currentTime}
-            currentReason={currentReason}
-            setCurrentReason={setCurrentReason}
             setStep={setStep}
             canProceed={canProceed}
           />
@@ -238,6 +351,7 @@ const AppointmentScreen = ({ navigation }) => {
             currentPackage={currentPackage}
             setCurrentPackage={setCurrentPackage}
             setStep={setStep}
+            selectedProfile={selectedProfile}
           />
         )}
         {step === 2.2 && (
@@ -245,6 +359,7 @@ const AppointmentScreen = ({ navigation }) => {
             selectedServices={selectedServices}
             setSelectedServices={setSelectedServices}
             setStep={setStep}
+            currentPackage={currentPackage}
           />
         )}
         {step === 2.3 && (
@@ -263,19 +378,18 @@ const AppointmentScreen = ({ navigation }) => {
             setStep={setStep}
             timeSlots={timeSlots}
           />
-        )}{" "}
-        {step === 2.5 && (
+        )}
+        {step === 3 && (
           <AppointmentReview
             appointments={appointments}
             currentPackage={currentPackage}
             selectedServices={selectedServices}
             currentDate={currentDate}
             currentTime={currentTime}
-            currentReason={currentReason}
             handleNext={handleNext}
             selectedProfile={selectedProfile}
           />
-        )}
+        )}{" "}
         {step === 4 && (
           <PaymentScreen
             appointments={appointments}
@@ -284,6 +398,8 @@ const AppointmentScreen = ({ navigation }) => {
             handleNext={handleNext}
             handleBack={handleBack}
             canProceed={canProceed}
+            totalAmount={calculateTotalAmount()}
+            isSubmitting={isSubmitting}
           />
         )}
         {step === 5 && (

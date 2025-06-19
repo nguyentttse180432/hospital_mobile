@@ -1,14 +1,12 @@
-import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import Button from "../common/Button";
+import Button from "../../common/Button";
 import QRCode from "react-native-qrcode-svg";
 
 const AppointmentConfirmation = ({
   appointments,
   patientProfile,
   navigation,
-  resetAppointment,
 }) => {
   // Calculate total price for an appointment
   const calculateAppointmentPrice = (appt) => {

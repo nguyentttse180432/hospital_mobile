@@ -6,26 +6,42 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
   TextInput,
 } from "react-native";
-import { getServices } from "../../services/serviceService";
+import { getServices } from "../../../services/serviceService";
 import Icon from "react-native-vector-icons/Ionicons";
-import Button from "../common/Button";
+import Button from "../../common/Button";
 
 const ServiceSelection = ({
   selectedServices,
   setSelectedServices,
   setStep,
+  currentPackage,
 }) => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-
   useEffect(() => {
     fetchServices();
   }, []);
+
+  // Helper function to check if a service is included in the package
+  const isServiceInPackage = (serviceId) => {
+    if (
+      !currentPackage ||
+      !currentPackage.details ||
+      !currentPackage.details.testCategories
+    ) {
+      return false;
+    }
+
+    // Check through all test categories and their tests
+    return currentPackage.details.testCategories.some(
+      (category) =>
+        category.tests && category.tests.some((test) => test.id === serviceId)
+    );
+  };
 
   const fetchServices = async () => {
     try {
@@ -55,15 +71,21 @@ const ServiceSelection = ({
       setStep(2); // Return to main appointment selection screen instead of going directly to date selection
     }
   };
-
   const isServiceSelected = (serviceId) => {
     return selectedServices.some((s) => s.id === serviceId);
   };
 
-  const filteredServices = services.filter((service) =>
-    service.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredServices = services.filter((service) => {
+    // Filter by search query
+    const matchesSearch = service.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
 
+    // Filter out services that are already in the selected package
+    const notInPackage = !isServiceInPackage(service.id);
+
+    return matchesSearch && notInPackage;
+  });
   const renderServiceItem = ({ item }) => (
     <TouchableOpacity
       style={[
@@ -72,22 +94,15 @@ const ServiceSelection = ({
       ]}
       onPress={() => handleToggleService(item)}
     >
-      <View style={styles.serviceImageContainer}>
-        {item.imageUrl ? (
-          <Image source={{ uri: item.imageUrl }} style={styles.serviceImage} />
-        ) : (
-          <View style={styles.serviceImagePlaceholder}>
-            <Icon name="medical" size={24} color="#0071CE" />
-          </View>
-        )}
-      </View>
       <View style={styles.serviceDetails}>
-        <Text style={styles.serviceName}>{item.name}</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.serviceName}>{item.name}</Text>
+          <Text style={styles.servicePrice}>
+            {item.price.toLocaleString("vi-VN")} VNĐ
+          </Text>
+        </View>
         <Text style={styles.serviceDescription} numberOfLines={2}>
           {item.description}
-        </Text>
-        <Text style={styles.servicePrice}>
-          {item.price.toLocaleString("vi-VN")} VNĐ
         </Text>
       </View>
       <View style={styles.checkboxContainer}>
@@ -125,14 +140,8 @@ const ServiceSelection = ({
       </View>
     );
   }
-
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Chọn Dịch Vụ</Text>
-      <Text style={styles.subtitle}>
-        Chọn một hoặc nhiều dịch vụ bạn muốn đặt lịch
-      </Text>
-
       <View style={styles.searchContainer}>
         <Icon name="search" size={20} color="#666" style={styles.searchIcon} />
         <TextInput
@@ -153,13 +162,32 @@ const ServiceSelection = ({
           {selectedServices.length} dịch vụ đã chọn
         </Text>
       </View>
-
       <FlatList
         data={filteredServices}
         renderItem={renderServiceItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.servicesList}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Icon name="information-circle-outline" size={40} color="#666" />
+            <Text style={styles.emptyText}>
+              {searchQuery
+                ? `Không tìm thấy dịch vụ phù hợp với từ khóa "${searchQuery}"`
+                : currentPackage
+                ? "Không có dịch vụ bổ sung nào khả dụng"
+                : "Không có dịch vụ nào khả dụng"}
+            </Text>
+            {searchQuery ? (
+              <TouchableOpacity
+                style={styles.clearSearchButton}
+                onPress={() => setSearchQuery("")}
+              >
+                <Text style={styles.clearSearchText}>Xóa tìm kiếm</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        }
       />
 
       <View style={styles.footer}>
@@ -257,11 +285,17 @@ const styles = StyleSheet.create({
   serviceDetails: {
     flex: 1,
   },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   serviceName: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 4,
+    flex: 1,
   },
   serviceDescription: {
     fontSize: 14,
@@ -324,6 +358,29 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     borderTopWidth: 1,
     borderTopColor: "#eee",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+  },
+  emptyText: {
+    color: "#666",
+    fontSize: 16,
+    marginTop: 12,
+    textAlign: "center",
+  },
+  clearSearchButton: {
+    marginTop: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: "#e3f2fd",
+    borderRadius: 8,
+  },
+  clearSearchText: {
+    color: "#0071CE",
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
 
