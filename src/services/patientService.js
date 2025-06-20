@@ -5,7 +5,6 @@ export const getPatients = async () => {
     const response = await api.get(
       "/Accounts/patients?pageSize=10&pageNumber=1"
     );
-    console.log("API response:", response.data);
 
     // Check if response has expected structure with items array
     if (response.data && response.data.items) {

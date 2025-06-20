@@ -44,6 +44,7 @@ const AppointmentScreen = ({ navigation }) => {
   const [currentTime, setCurrentTime] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [appointmentCode, setAppointmentCode] = useState(null);
 
   // Tính tổng tiền thanh toán
   const calculateTotalAmount = () => {
@@ -115,10 +116,25 @@ const AppointmentScreen = ({ navigation }) => {
         appointmentDateTime,
         currentPackage,
         selectedServices
-      );
+      ); // Send to API
+      const response = await createAppointment(appointmentData);
 
-      // Send to API
-      await createAppointment(appointmentData);
+      // Save the appointment code from the response
+      if (
+        response &&
+        response.isSuccess &&
+        response.value &&
+        response.value.code
+      ) {
+        setAppointmentCode(response.value.code);
+      } else if (
+        response &&
+        response.data &&
+        response.data.value &&
+        response.data.value.code
+      ) {
+        setAppointmentCode(response.data.value.code);
+      }
 
       // Show success message and go to confirmation step
       Alert.alert("Thành Công", "Đặt lịch khám thành công!", [
@@ -255,7 +271,6 @@ const AppointmentScreen = ({ navigation }) => {
     }
     return true;
   };
-
   const resetAppointment = () => {
     setStep(1);
     setSelectedProfile(null);
@@ -274,6 +289,7 @@ const AppointmentScreen = ({ navigation }) => {
     setSelectedServices([]);
     setCurrentDate(null);
     setCurrentTime(null);
+    setAppointmentCode(null);
   };
   const getActiveStep = () => {
     // Map the step values to the correct icon index (0-4)
@@ -389,7 +405,7 @@ const AppointmentScreen = ({ navigation }) => {
             handleNext={handleNext}
             selectedProfile={selectedProfile}
           />
-        )}{" "}
+        )}
         {step === 4 && (
           <PaymentScreen
             appointments={appointments}
@@ -408,6 +424,7 @@ const AppointmentScreen = ({ navigation }) => {
             patientProfile={selectedProfile}
             navigation={navigation}
             resetAppointment={resetAppointment}
+            appointmentCode={appointmentCode}
           />
         )}
       </View>

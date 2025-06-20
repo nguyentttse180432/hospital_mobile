@@ -7,6 +7,8 @@ const AppointmentConfirmation = ({
   appointments,
   patientProfile,
   navigation,
+  resetAppointment,
+  appointmentCode,
 }) => {
   // Calculate total price for an appointment
   const calculateAppointmentPrice = (appt) => {
@@ -21,8 +23,13 @@ const AppointmentConfirmation = ({
 
     return total;
   };
-
   const generateQueueNumber = () => {
+    // Sử dụng mã code từ API nếu có
+    if (appointmentCode) {
+      return appointmentCode;
+    }
+
+    // Nếu không có mã code từ API, tạo mã tạm thời
     if (!appointments[0]?.date) return "N/A";
     const [day, month, year] = appointments[0]?.date.split("/");
     const dateStr = `${year.substr(-2)}${month}${day}`;
@@ -32,7 +39,7 @@ const AppointmentConfirmation = ({
 
   const queueNumber = generateQueueNumber();
   const qrData = JSON.stringify({
-    queueNumber,
+    code: queueNumber,
     patientName: patientProfile?.fullName,
     appointments: appointments.map((appt) => ({
       package: appt.package?.name,
@@ -57,6 +64,11 @@ const AppointmentConfirmation = ({
       </View>
       <View style={styles.ticketContainer}>
         <View style={styles.qrSection}>
+          <View style={styles.queueInfo}>
+            <Text style={styles.queueLabel}>Mã đặt lịch:</Text>
+            <Text style={styles.queueNumber}>{queueNumber}</Text>
+            <Text style={styles.queueNote}>Vui lòng đến sớm 15 phút</Text>
+          </View>
           <View style={styles.qrCodeContainer}>
             <QRCode
               value={qrData}
@@ -64,11 +76,6 @@ const AppointmentConfirmation = ({
               color="#333"
               backgroundColor="#fff"
             />
-          </View>
-          <View style={styles.queueInfo}>
-            <Text style={styles.queueLabel}>Số thứ tự khám</Text>
-            <Text style={styles.queueNumber}>#{queueNumber}</Text>
-            <Text style={styles.queueNote}>Vui lòng đến sớm 15 phút</Text>
           </View>
         </View>
 
@@ -78,7 +85,7 @@ const AppointmentConfirmation = ({
             Họ và tên: {patientProfile?.fullName}
           </Text>
           <Text style={styles.infoText}>
-            Giới tính: {patientProfile?.gender}
+            Giới tính: {patientProfile?.gender === "Male" ? "Nam" : "Nữ"}
           </Text>
           <Text style={styles.infoText}>
             Số điện thoại: {patientProfile?.phone}
@@ -162,7 +169,10 @@ const AppointmentConfirmation = ({
       <View style={[styles.buttonContainer, { marginBottom: 0 }]}>
         <Button
           title="Về Trang Chủ"
-          onPress={() => navigation.navigate("Home")}
+          onPress={() => {
+            resetAppointment();
+            navigation.navigate("Home");
+          }}
           style={{ width: "100%" }}
         />
       </View>

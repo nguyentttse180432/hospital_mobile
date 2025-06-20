@@ -59,7 +59,6 @@ const ProfileSelection = ({
           setCurrentUser(mainUser);
         } // Lấy danh sách người thân từ API
         const patients = await getPatients();
-        console.log("Processed patients:", patients);
 
         if (patients && Array.isArray(patients)) {
           // Lọc ra danh sách người thân (loại bỏ người dùng chính nếu có)

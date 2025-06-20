@@ -192,7 +192,7 @@ const MedicalPackageSelection = ({
       {selectedProfile && (
         <View style={styles.filterInfo}>
           <Text style={styles.filterInfoText}>
-            Đang hiển thị gói khám phù hợp với{" "}
+            Những gói khám phù hợp với{" "}
             {selectedProfile.fullName.toUpperCase()} (
             {selectedProfile.gender === "Male" ? "Nam" : "Nữ"}{" "}
             {calculateAge(selectedProfile.dob)} tuổi)
@@ -490,8 +490,8 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     position: "absolute",
-    top: 10,
-    right: 10,
+    top: 0,
+    right: -1,
     zIndex: 10,
   },
   viewDetailsButton: {

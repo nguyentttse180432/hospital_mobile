@@ -60,7 +60,7 @@ const AppointmentSelection = ({
 
         <ViewField
           label="Gói khám"
-          value={currentPackage?.name || "Không có"}
+          value={currentPackage?.name || "Chưa chọn gói khám"}
           subtext={currentPackage?.description}
           icon="medkit"
           onPress={() => setStep(2.1)}

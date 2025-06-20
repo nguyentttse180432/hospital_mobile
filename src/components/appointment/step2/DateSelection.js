@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import Button from "../../common/Button";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 const DateSelection = ({
   currentDate,
@@ -135,8 +136,8 @@ const DateSelection = ({
     <View style={styles.container}>
       <View style={styles.calendar}>
         {/* Month navigation */}
-        <View style={styles.monthNavigation}>
-          <TouchableOpacity
+        <View style={styles.monthNavigation}>         
+           <TouchableOpacity
             style={styles.navButton}
             onPress={goToPreviousMonth}
             // Disable going to past months
@@ -145,17 +146,17 @@ const DateSelection = ({
               (displayYear === currentYear && displayMonth < currentMonth)
             }
           >
-            <Text
+            <Ionicons
+              name="chevron-back"
+              size={24}
               style={[
-                styles.navButtonText,
+                styles.navButtonIcon,
                 (displayYear < currentYear ||
                   (displayYear === currentYear &&
                     displayMonth < currentMonth)) &&
                   styles.navButtonDisabled,
               ]}
-            >
-              ←
-            </Text>
+            />
           </TouchableOpacity>
           <Text style={styles.month}>
             {
@@ -175,9 +176,9 @@ const DateSelection = ({
               ][displayMonth]
             }
             - {displayYear}
-          </Text>
-          <TouchableOpacity style={styles.navButton} onPress={goToNextMonth}>
-            <Text style={styles.navButtonText}>→</Text>
+          </Text>        
+            <TouchableOpacity style={styles.navButton} onPress={goToNextMonth}>
+            <Ionicons name="chevron-forward" size={24} style={styles.navButtonIcon} />
           </TouchableOpacity>
         </View>
 
@@ -254,7 +255,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
-  },
+  },  
   navButton: {
     width: 40,
     height: 40,
@@ -263,9 +264,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#f5f5f5",
   },
-  navButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
+  navButtonIcon: {
     color: "#1976d2",
   },
   navButtonDisabled: {
