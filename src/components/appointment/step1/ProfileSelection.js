@@ -60,6 +60,9 @@ const ProfileSelection = ({
         } // Lấy danh sách người thân từ API
         const patients = await getPatients();
 
+        console.log("Fetched patients:", patients);
+        
+
         if (patients && Array.isArray(patients)) {
           // Lọc ra danh sách người thân (loại bỏ người dùng chính nếu có)
           const relatives =
@@ -115,7 +118,7 @@ const ProfileSelection = ({
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1e88e5" />
-          <Text style={styles.loadingText}>Đang tải hồ sơ bệnh nhân...</Text>
+          <Text style={styles.loadingText}>Đang tải hồ sơ người khám...</Text>
         </View>
       ) : (
         <>

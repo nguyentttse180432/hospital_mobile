@@ -147,7 +147,7 @@ const MedicalPackageSelection = ({
         <View style={styles.headerRow}>
           <Text style={styles.packageName}>{item.name}</Text>
           <Text style={styles.packagePrice}>
-            {item.price.toLocaleString("vi-VN")} VNĐ
+            {item.price.toLocaleString("vi-VN")} 
           </Text>
         </View>
         <Text style={styles.packageDescription} numberOfLines={2}>
@@ -226,7 +226,8 @@ const MedicalPackageSelection = ({
         renderItem={renderPackageItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.packagesList}
-        showsVerticalScrollIndicator={false}        ListEmptyComponent={
+        showsVerticalScrollIndicator={false}        
+        ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Icon name="alert-circle-outline" size={40} color="#666" />
             <Text style={styles.emptyText}>

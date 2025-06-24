@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from "react-native";
 import Button from "../../common/Button";
 
 const AppointmentReview = ({
+  appointment,
   currentPackage,
   selectedServices,
   currentDate,
@@ -10,22 +11,23 @@ const AppointmentReview = ({
   handleNext,
   selectedProfile,
 }) => {
-  // Combine appointments array with the current selection for display
-  const allAppointments = [];
+  // Check if we have a valid appointment object from props
+  const hasAppointmentData =
+    appointment &&
+    (appointment.package ||
+      (appointment.services && appointment.services.length > 0)) &&
+    appointment.date &&
+    appointment.time;
 
-  if (
-    (currentPackage || (selectedServices && selectedServices.length > 0)) &&
-    currentDate &&
-    currentTime
-  ) {
-    allAppointments.push({
-      package: currentPackage,
-      services: selectedServices,
-      date: currentDate,
-      time: currentTime,
-    });
-  }
-
+  // If we don't have an appointment object, construct one from the individual props
+  const appointmentData = hasAppointmentData
+    ? appointment
+    : {
+        package: currentPackage,
+        services: selectedServices,
+        date: currentDate,
+        time: currentTime,
+      };
   // Calculate total price for an appointment
   const calculateAppointmentPrice = (appt) => {
     let total = 0;
@@ -67,7 +69,7 @@ const AppointmentReview = ({
         {selectedProfile && (
           <View style={styles.patientInfoContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>👤 Thông tin bệnh nhân</Text>
+              <Text style={styles.sectionTitle}>👤 Thông tin người khám</Text>
             </View>
             <View style={styles.patientInfo}>
               <View style={styles.infoRow}>
@@ -105,8 +107,13 @@ const AppointmentReview = ({
             </View>
           </View>
         )}
-
-        {allAppointments.length === 0 ? (
+        {!hasAppointmentData &&
+        !(
+          (currentPackage ||
+            (selectedServices && selectedServices.length > 0)) &&
+          currentDate &&
+          currentTime
+        ) ? (
           <View style={styles.noAppointmentsContainer}>
             <Text style={styles.noAppointmentsIcon}>📅</Text>
             <Text style={styles.noAppointments}>
@@ -117,40 +124,41 @@ const AppointmentReview = ({
             </Text>
           </View>
         ) : (
-          allAppointments.map((appt, index) => (
-            <View key={index} style={styles.appointmentContainer}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>🏥 Thông tin lịch khám</Text>
-              </View>
+          <View style={styles.appointmentContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>🏥 Thông tin lịch khám</Text>
+            </View>
 
-              <View style={styles.appointmentSummary}>
-                {appt.package && (
-                  <View style={styles.packageSection}>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Gói khám</Text>
-                      <Text style={styles.packageName}>
-                        {appt.package.name}
-                      </Text>
-                    </View>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Giá gói</Text>
-                      <Text style={styles.packagePrice}>
-                        {appt.package.price.toLocaleString("vi-VN")} VNĐ
-                      </Text>
-                    </View>
+            <View style={styles.appointmentSummary}>
+              {appointmentData.package && (
+                <View style={styles.packageSection}>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Gói khám</Text>
+                    <Text style={styles.packageName}>
+                      {appointmentData.package.name}
+                    </Text>
                   </View>
-                )}
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Giá gói</Text>
+                    <Text style={styles.packagePrice}>
+                      {appointmentData.package.price.toLocaleString("vi-VN")} 
+                      VNĐ
+                    </Text>
+                  </View>
+                </View>
+              )}
 
-                {appt.services && appt.services.length > 0 && (
+              {appointmentData.services &&
+                appointmentData.services.length > 0 && (
                   <View style={styles.servicesSection}>
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Dịch vụ khám</Text>
                       <Text style={styles.serviceCount}>
-                        {appt.services.length} dịch vụ
+                        {appointmentData.services.length} dịch vụ
                       </Text>
                     </View>
                     <View style={styles.servicesList}>
-                      {appt.services.map((service, sIndex) => (
+                      {appointmentData.services.map((service, sIndex) => (
                         <View key={sIndex} style={styles.serviceItem}>
                           <View style={styles.serviceBullet} />
                           <Text style={styles.serviceName}>{service.name}</Text>
@@ -163,51 +171,70 @@ const AppointmentReview = ({
                   </View>
                 )}
 
-                <View style={styles.scheduleSection}>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Ngày khám</Text>
-                    <Text style={styles.dateValue}>
-                      {formatDate(appt.date)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Giờ khám</Text>
-                    <Text style={styles.timeValue}>
-                      {appt.time?.time || "Chưa chọn"}
-                    </Text>
-                  </View>
-
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Phòng khám</Text>
-                    <Text style={styles.roomValue}>
-                      {appt.time?.room || "Sẽ thông báo sau"}
-                    </Text>
-                  </View>
+              <View style={styles.scheduleSection}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Ngày khám</Text>
+                  <Text style={styles.dateValue}>
+                    {formatDate(appointmentData.date)}
+                  </Text>
                 </View>
-                <View style={styles.totalSection}>
-                  <View style={styles.totalRow}>
-                    <Text style={styles.totalLabel}>Tổng chi phí</Text>
-                    <Text style={styles.totalValue}>
-                      {calculateAppointmentPrice(appt).toLocaleString("vi-VN")}
-                      VNĐ
-                    </Text>
-                  </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Giờ khám</Text>
+                  <Text style={styles.timeValue}>
+                    {appointmentData.time?.time || "Chưa chọn"}
+                  </Text>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Phòng khám</Text>
+                  <Text style={styles.roomValue}>
+                    {appointmentData.time?.room || "Sẽ thông báo sau"}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.totalSection}>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Tổng chi phí</Text>
+                  <Text style={styles.totalValue}>
+                    {calculateAppointmentPrice(appointmentData).toLocaleString(
+                      "vi-VN"
+                    )}
+                    VNĐ
+                  </Text>
                 </View>
               </View>
             </View>
-          ))
+          </View>
         )}
       </ScrollView>
-
       <View style={styles.buttonContainer}>
         <Button
           title="Xác Nhận Đặt Lịch"
           onPress={handleNext}
-          disabled={allAppointments.length === 0}
+          disabled={
+            !hasAppointmentData &&
+            !(
+              (currentPackage ||
+                (selectedServices && selectedServices.length > 0)) &&
+              currentDate &&
+              currentTime
+            )
+          }
           style={[
             styles.confirmButton,
-            { opacity: allAppointments.length === 0 ? 0.5 : 1 },
+            {
+              opacity:
+                !hasAppointmentData &&
+                !(
+                  (currentPackage ||
+                    (selectedServices && selectedServices.length > 0)) &&
+                  currentDate &&
+                  currentTime
+                )
+                  ? 0.5
+                  : 1,
+            },
           ]}
         />
       </View>

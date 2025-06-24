@@ -37,7 +37,7 @@ const AppointmentScreen = ({ navigation }) => {
     idNumber: "",
     dob: "",
   });
-  const [appointments, setAppointments] = useState([]);
+  const [appointment, setAppointment] = useState(null);
   const [currentPackage, setCurrentPackage] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
   const [currentDate, setCurrentDate] = useState(null);
@@ -136,10 +136,8 @@ const AppointmentScreen = ({ navigation }) => {
         setAppointmentCode(response.data.value.code);
       }
 
-      // Show success message and go to confirmation step
-      Alert.alert("Thành Công", "Đặt lịch khám thành công!", [
-        { text: "OK", onPress: () => setStep(5) },
-      ]);
+      // Chuyển trực tiếp đến bước xác nhận mà không hiển thị alert
+      setStep(5);
     } catch (error) {
       console.error("Appointment creation error:", error);
       Alert.alert(
@@ -153,7 +151,6 @@ const AppointmentScreen = ({ navigation }) => {
       setIsSubmitting(false);
     }
   };
-
   const saveCurrentAppointment = () => {
     if (
       (currentPackage || selectedServices.length > 0) &&
@@ -166,8 +163,8 @@ const AppointmentScreen = ({ navigation }) => {
         date: currentDate,
         time: currentTime,
       };
-      // Thay thế mảng appointments bằng một phần tử duy nhất
-      setAppointments([newAppointment]);
+      // Lưu thông tin lịch hẹn dưới dạng đối tượng đơn lẻ
+      setAppointment(newAppointment);
     }
   };
 
@@ -284,7 +281,7 @@ const AppointmentScreen = ({ navigation }) => {
       idNumber: "",
       dob: "",
     });
-    setAppointments([]);
+    setAppointment(null);
     setCurrentPackage(null);
     setSelectedServices([]);
     setCurrentDate(null);
@@ -293,7 +290,7 @@ const AppointmentScreen = ({ navigation }) => {
   };
   const getActiveStep = () => {
     // Map the step values to the correct icon index (0-4)
-    if (step === 1) return 0; // Hồ sơ khách hàng (Person)
+    if (step === 1) return 0; // Hồ sơ người khám (Person)
     if (
       step === 2 ||
       step === 2.1 ||
@@ -311,7 +308,7 @@ const AppointmentScreen = ({ navigation }) => {
   const getHeaderTitle = () => {
     switch (step) {
       case 1:
-        return "Chọn Hồ Sơ Khách Hàng";
+        return "Chọn Hồ Sơ Người Khám";
       case 2:
         return "Chọn Thông Tin Khám";
       case 2.1:
@@ -397,7 +394,7 @@ const AppointmentScreen = ({ navigation }) => {
         )}
         {step === 3 && (
           <AppointmentReview
-            appointments={appointments}
+            appointment={appointment}
             currentPackage={currentPackage}
             selectedServices={selectedServices}
             currentDate={currentDate}
@@ -408,7 +405,7 @@ const AppointmentScreen = ({ navigation }) => {
         )}
         {step === 4 && (
           <PaymentScreen
-            appointments={appointments}
+            appointment={appointment}
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
             handleNext={handleNext}
@@ -420,7 +417,7 @@ const AppointmentScreen = ({ navigation }) => {
         )}
         {step === 5 && (
           <AppointmentConfirmation
-            appointments={appointments}
+            appointment={appointment}
             patientProfile={selectedProfile}
             navigation={navigation}
             resetAppointment={resetAppointment}

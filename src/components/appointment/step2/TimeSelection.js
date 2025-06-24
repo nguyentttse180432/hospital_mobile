@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,17 +15,136 @@ const TimeSelection = ({
   setCurrentTime,
   setStep,
 }) => {
+  const [processedTimeSlots, setProcessedTimeSlots] = useState([]);
+
+  // Fixed list of all time slots
   const availableTimeSlots = [
-    { id: "1", time: "07:00 - 08:00", available: true },
-    { id: "2", time: "08:00 - 09:00", available: true },
-    { id: "3", time: "09:00 - 10:00", available: false }, // Đã hết
-    { id: "4", time: "10:00 - 11:00", available: true },
-    { id: "5", time: "11:00 - 12:00", available: false }, // Đã hết
-    { id: "6", time: "13:30 - 14:30", available: true },
-    { id: "7", time: "14:30 - 15:30", available: true },
-    { id: "8", time: "15:30 - 16:30", available: false }, // Đã hết
-    { id: "9", time: "16:30 - 17:30", available: true },
+    {
+      id: "1",
+      time: "07:00 - 08:00",
+      startHour: 7,
+      startMinute: 0,
+      available: true,
+    },
+    {
+      id: "2",
+      time: "08:00 - 09:00",
+      startHour: 8,
+      startMinute: 0,
+      available: true,
+    },
+    {
+      id: "3",
+      time: "09:00 - 10:00",
+      startHour: 9,
+      startMinute: 0,
+      available: false,
+    }, // Đã hết
+    {
+      id: "4",
+      time: "10:00 - 11:00",
+      startHour: 10,
+      startMinute: 0,
+      available: true,
+    },
+    {
+      id: "5",
+      time: "11:00 - 12:00",
+      startHour: 11,
+      startMinute: 0,
+      available: false,
+    }, // Đã hết
+    {
+      id: "6",
+      time: "13:00 - 14:00",
+      startHour: 13,
+      startMinute: 0,
+      available: true,
+    },
+    {
+      id: "7",
+      time: "14:00 - 15:00",
+      startHour: 14,
+      startMinute: 0,
+      available: true,
+    },
+    {
+      id: "8",
+      time: "15:00 - 16:00",
+      startHour: 15,
+      startMinute: 0,
+      available: false,
+    }, // Đã hết
+    {
+      id: "9",
+      time: "16:00 - 17:00",
+      startHour: 16,
+      startMinute: 0,
+      available: true,
+    },
   ];
+  // Update time slots based on current time
+  useEffect(() => {
+    const now = new Date();
+    // Chuyển đổi chuỗi ngày DD/MM/YYYY từ currentDate thành đối tượng Date
+    let isToday = false;
+
+    if (currentDate) {
+      const [day, month, year] = currentDate
+        .split("/")
+        .map((num) => parseInt(num, 10));
+      const selectedDate = new Date(year, month - 1, day); // month là 0-based trong JS Date
+
+      // So sánh ngày, tháng, năm để xác định có phải hôm nay không
+      isToday =
+        selectedDate.getDate() === now.getDate() &&
+        selectedDate.getMonth() === now.getMonth() &&
+        selectedDate.getFullYear() === now.getFullYear();
+    }
+
+    console.log("Ngày được chọn có phải hôm nay không:", isToday);
+
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    const updatedSlots = availableTimeSlots.map((slot) => {
+      // Chỉ kiểm tra thời gian đã qua nếu ngày được chọn là hôm nay
+      if (isToday) {
+        const isPast =
+          slot.startHour < currentHour ||
+          (slot.startHour === currentHour && slot.startMinute <= currentMinute);
+
+        // In ra log để debug
+        if (isPast) {
+          console.log(
+            `Khung giờ ${slot.time} đã qua (${currentHour}:${currentMinute})`
+          );
+        }
+
+        return {
+          ...slot,
+          // Đánh dấu không khả dụng nếu đã được đánh dấu không khả dụng HOẶC đã qua
+          available: slot.available && !isPast,
+          isPast: isPast, // Thêm trường để phân biệt lý do không khả dụng
+        };
+      }
+
+      // Nếu không phải hôm nay, giữ nguyên trạng thái khả dụng ban đầu
+      return { ...slot, isPast: false };
+    });
+
+    setProcessedTimeSlots(updatedSlots);
+
+    // Xóa thời gian đã chọn nếu nó giờ không còn khả dụng
+    if (currentTime) {
+      const selectedSlot = updatedSlots.find(
+        (slot) => slot.id === currentTime.id
+      );
+      if (selectedSlot && !selectedSlot.available) {
+        setCurrentTime(null);
+      }
+    }
+  }, [currentDate]);
 
   // Helper function to check if a time slot is available
   const isTimeSlotAvailable = (timeSlot) => {
@@ -76,7 +195,9 @@ const TimeSelection = ({
           )}
           {!isAvailable && (
             <View style={styles.unavailableContainer}>
-              <Text style={styles.unavailableLabel}>Đã hết</Text>
+              <Text style={styles.unavailableLabel}>
+                {item.isPast ? "Đã qua" : "Đã hết"}
+              </Text>
             </View>
           )}
         </View>
@@ -109,13 +230,13 @@ const TimeSelection = ({
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: "#f5f5f5" }]} />
-          <Text style={styles.legendText}>Đã hết</Text>
+          <Text style={styles.legendText}>Đã hết/Đã qua</Text>
         </View>
       </View>
 
-      {availableTimeSlots && availableTimeSlots.length > 0 ? (
+      {processedTimeSlots && processedTimeSlots.length > 0 ? (
         <FlatList
-          data={availableTimeSlots}
+          data={processedTimeSlots}
           keyExtractor={(item) => item.id}
           numColumns={2}
           showsVerticalScrollIndicator={false}

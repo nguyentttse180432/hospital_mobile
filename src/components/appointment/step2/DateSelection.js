@@ -82,21 +82,25 @@ const DateSelection = ({
       const selectedDay = currentDate
         ? parseInt(currentDate.split("/")[0])
         : null;
-      const isSelected = selectedDay === day;
-
-      // All dates in May 2025 should be available since we're hardcoding the calendar to show future dates
+      const isSelected = selectedDay === day; // All dates in May 2025 should be available since we're hardcoding the calendar to show future dates
       // Just check if the date is not a past date within May 2025 (if we're already in May 2025)
       const dateToCheck = new Date(displayYear, displayMonth, day);
       const todayDate = new Date();
+
+      // Tính toán ngày tối đa cho phép (3 ngày sau ngày hiện tại)
+      const maxDate = new Date(todayDate);
+      maxDate.setDate(todayDate.getDate() + 3);
+
       const isAvailable =
-        // If we're not in May 2025 yet, all dates are available
-        todayDate.getFullYear() < displayYear ||
-        (todayDate.getFullYear() === displayYear &&
-          todayDate.getMonth() < displayMonth) ||
-        // If we're in May 2025, only dates from today onwards are available
-        (todayDate.getFullYear() === displayYear &&
-          todayDate.getMonth() === displayMonth &&
-          day >= todayDate.getDate());
+        // Ngày phải từ hôm nay trở đi
+        dateToCheck >=
+          new Date(
+            todayDate.getFullYear(),
+            todayDate.getMonth(),
+            todayDate.getDate()
+          ) &&
+        // Và không quá 3 ngày sau ngày hiện tại
+        dateToCheck <= maxDate;
 
       days.push(
         <TouchableOpacity
@@ -136,8 +140,8 @@ const DateSelection = ({
     <View style={styles.container}>
       <View style={styles.calendar}>
         {/* Month navigation */}
-        <View style={styles.monthNavigation}>         
-           <TouchableOpacity
+        <View style={styles.monthNavigation}>
+          <TouchableOpacity
             style={styles.navButton}
             onPress={goToPreviousMonth}
             // Disable going to past months
@@ -176,12 +180,15 @@ const DateSelection = ({
               ][displayMonth]
             }
             - {displayYear}
-          </Text>        
-            <TouchableOpacity style={styles.navButton} onPress={goToNextMonth}>
-            <Ionicons name="chevron-forward" size={24} style={styles.navButtonIcon} />
+          </Text>
+          <TouchableOpacity style={styles.navButton} onPress={goToNextMonth}>
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              style={styles.navButtonIcon}
+            />
           </TouchableOpacity>
         </View>
-
         {/* Week days header */}
         <View style={styles.weekDays}>
           {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((day) => (
@@ -190,10 +197,8 @@ const DateSelection = ({
             </View>
           ))}
         </View>
-
         {/* Calendar grid */}
         <View style={styles.calendarGrid}>{renderCalendarDays()}</View>
-
         {/* Legend */}
         <View style={styles.legend}>
           <View style={styles.legendItem}>
@@ -226,6 +231,7 @@ const DateSelection = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginTop: 16,
     paddingHorizontal: 16,
     backgroundColor: "#f5f5f5",
   },
@@ -255,7 +261,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
-  },  
+  },
   navButton: {
     width: 40,
     height: 40,
@@ -282,13 +288,14 @@ const styles = StyleSheet.create({
   },
   weekDays: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     marginBottom: 12,
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   weekDayContainer: {
     width: 40,
     alignItems: "center",
+    margin: 2, // Match the exact margin of day cells
   },
   weekDay: {
     textAlign: "center",

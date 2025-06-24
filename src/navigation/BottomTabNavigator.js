@@ -4,7 +4,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 // Screens
 import HomeScreen from "../screens/HomeScreen";
 import BookAppointmentScreen from "../screens/appointment/AppointmentScreen";
-import ProfileScreen from "../screens/ProfileCreationScreen"; // bạn cần tạo hoặc dummy
+import ProfileScreen from "../screens/ProfileScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -25,7 +25,7 @@ const BottomTabNavigator = () => {
             case "Appointment":
               iconName = "calendar-outline";
               break;
-          
+
             case "Profile":
               iconName = "person-outline";
               break;

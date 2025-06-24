@@ -10,7 +10,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import Button from "../../../components/common/Button";
 
 const PaymentScreen = ({
-  appointments,
+  appointment,
   paymentMethod,
   setPaymentMethod,
   handleNext,

@@ -7,9 +7,11 @@ export const getPatients = async () => {
     );
 
     // Check if response has expected structure with items array
-    if (response.data && response.data.items) {
+    // Response example: { value: { totalCount: 1, items: [...], ... }, isSuccess: true }
+    if (response.data && response.data.isSuccess) {
+      const patientsData = response.data.value?.items || [];
       // Map the patient data to a more consistent format
-      return response.data.items.map((patient) => ({
+      return patientsData.map((patient) => ({
         id: patient.id,
         fullName: `${patient.firstName} ${patient.lastName}`.trim(),
         gender: patient.gender,
@@ -20,7 +22,9 @@ export const getPatients = async () => {
           ? typeof patient.address === "string"
             ? patient.address
             : `${patient.address.street || ""}, ${
-                patient.address.city || ""
+                patient.address.ward || ""
+              }, ${patient.address.district || ""}, ${
+                patient.address.province || ""
               }`.trim()
           : "",
         bhyt: patient.healthInsuranceCode,

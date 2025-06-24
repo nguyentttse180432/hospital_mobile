@@ -56,7 +56,7 @@ const AppointmentSelection = ({
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.selectionSection}>
-        <Text style={styles.sectionTitle}>Dịch vụ đã chọn</Text>
+        <Text style={styles.sectionTitle}>Chọn dịch vụ </Text>
 
         <ViewField
           label="Gói khám"
@@ -117,7 +117,7 @@ const AppointmentSelection = ({
                 Gói khám: {currentPackage.name}
               </Text>
               <Text style={styles.priceItemValue}>
-                {currentPackage.price.toLocaleString("vi-VN")} VNĐ
+                {currentPackage.price.toLocaleString("vi-VN")}
               </Text>
             </View>
           )}
@@ -130,7 +130,7 @@ const AppointmentSelection = ({
                   Dịch vụ: {service.name}
                 </Text>
                 <Text style={styles.priceItemValue}>
-                  {service.price.toLocaleString("vi-VN")} VNĐ
+                  {service.price.toLocaleString("vi-VN")}
                 </Text>
               </View>
             ))}

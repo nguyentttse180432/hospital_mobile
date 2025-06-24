@@ -4,7 +4,7 @@ import Button from "../../common/Button";
 import QRCode from "react-native-qrcode-svg";
 
 const AppointmentConfirmation = ({
-  appointments,
+  appointment,
   patientProfile,
   navigation,
   resetAppointment,
@@ -30,24 +30,25 @@ const AppointmentConfirmation = ({
     }
 
     // Nếu không có mã code từ API, tạo mã tạm thời
-    if (!appointments[0]?.date) return "N/A";
-    const [day, month, year] = appointments[0]?.date.split("/");
+    if (!appointment?.date) return "N/A";
+    const [day, month, year] = appointment.date.split("/");
     const dateStr = `${year.substr(-2)}${month}${day}`;
     const randomNum = Math.floor(Math.random() * 100);
     return `${dateStr}${randomNum.toString().padStart(3, "0")}`;
   };
 
   const queueNumber = generateQueueNumber();
+
   const qrData = JSON.stringify({
     code: queueNumber,
     patientName: patientProfile?.fullName,
-    appointments: appointments.map((appt) => ({
-      package: appt.package?.name,
-      services: appt.services?.map((s) => s.name),
-      date: appt.date,
-      time: appt.time?.time,
-      room: appt.time?.room,
-    })),
+    appointment: {
+      package: appointment?.package?.name,
+      services: appointment?.services?.map((s) => s.name),
+      date: appointment?.date,
+      time: appointment?.time?.time,
+      room: appointment?.time?.room,
+    },
     phone: patientProfile?.phone,
   });
 
@@ -58,7 +59,6 @@ const AppointmentConfirmation = ({
       contentContainerStyle={styles.scrollContent}
     >
       <View style={styles.successHeader}>
-        <Icon name="checkmark-circle" size={60} color="#2ecc71" />
         <Text style={styles.successTitle}>Đặt Lịch Thành Công!</Text>
         <Text style={styles.successSubtitle}>Phiếu khám bệnh của bạn</Text>
       </View>
@@ -78,92 +78,76 @@ const AppointmentConfirmation = ({
             />
           </View>
         </View>
-
-        <Text style={styles.sectionTitle}>Thông tin bệnh nhân</Text>
+        <Text style={styles.sectionTitle}>Thông tin người khám</Text>
         <View style={styles.infoSection}>
-          <Text style={styles.infoText}>
-            Họ và tên: {patientProfile?.fullName}
-          </Text>
-          <Text style={styles.infoText}>
-            Giới tính: {patientProfile?.gender === "Male" ? "Nam" : "Nữ"}
-          </Text>
-          <Text style={styles.infoText}>
-            Số điện thoại: {patientProfile?.phone}
-          </Text>
-          <Text style={styles.infoText}>
-            Địa chỉ: {patientProfile?.address || "Không có"}
-          </Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Họ và tên:</Text>
+            <Text style={styles.infoValue}>{patientProfile?.fullName}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Giới tính:</Text>
+            <Text style={styles.infoValue}>
+              {patientProfile?.gender === "Male" ? "Nam" : "Nữ"}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Số điện thoại:</Text>
+            <Text style={styles.infoValue}>{patientProfile?.phone}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Địa chỉ:</Text>
+            <Text style={styles.infoValue}>
+              {patientProfile?.address || "Không có"}
+            </Text>
+          </View>
         </View>
-
         <Text style={styles.sectionTitle}>Chi tiết đặt khám</Text>
-        {appointments.map((appt, index) => (
-          <View key={index} style={styles.appointmentDetails}>
-            <Text style={styles.appointmentTitle}>Thông tin lịch khám</Text>
-
-            {appt.package && (
+        <View style={styles.appointmentDetails}>
+          {appointment?.package && (
+            <View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Gói khám:</Text>
-                <Text style={styles.detailValue}>{appt.package.name}</Text>
               </View>
-            )}
-
-            {appt.services && appt.services.length > 0 && (
-              <View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Dịch vụ:</Text>
-                  <Text style={styles.detailValue}>
-                    {appt.services.length} dịch vụ
+              <View style={styles.packageRow}>
+                <Text style={styles.packageName}>
+                  {appointment.package.name}
+                </Text>
+                <Text style={styles.price}>
+                  {appointment.package.price.toLocaleString("vi-VN")} VNĐ
+                </Text>
+              </View>
+            </View>
+          )}
+          {appointment?.services && appointment.services.length > 0 && (
+            <View style={styles.servicesContainer}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>
+                  Dịch vụ ({appointment.services.length}):
+                </Text>
+              </View>
+              {appointment.services.map((service, sIndex) => (
+                <View key={sIndex} style={styles.serviceItem}>
+                  <Text style={styles.serviceName}>{service.name}</Text>
+                  <Text style={styles.price}>
+                    {service.price.toLocaleString("vi-VN")} VNĐ
                   </Text>
                 </View>
-                {appt.services.map((service, sIndex) => (
-                  <View key={sIndex} style={styles.serviceItem}>
-                    <Text style={styles.serviceName}>{service.name}</Text>
-                    <Text style={styles.servicePrice}>
-                      {service.price.toLocaleString("vi-VN")} VNĐ
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Ngày khám:</Text>
-              <Text style={styles.detailValue}>{appt.date}</Text>
+              ))}
             </View>
-
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Giờ khám:</Text>
-              <Text style={styles.detailValue}>{appt.time?.time}</Text>
-            </View>
-
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Phòng khám:</Text>
-              <Text style={styles.detailValue}>
-                {appt.time?.room || "Sẽ thông báo sau"}
-              </Text>
-            </View>
-
-            {appt.reason?.trim() && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Lý do khám:</Text>
-                <Text style={styles.detailValue}>{appt.reason}</Text>
-              </View>
-            )}
-
-            <View style={[styles.detailRow, styles.feeRow]}>
-              <Text style={styles.detailLabel}>Tổng chi phí:</Text>
-              <Text style={styles.feeValue}>
-                {calculateAppointmentPrice(appt).toLocaleString("vi-VN")} VNĐ
-              </Text>
-            </View>
+          )}
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Thời gian khám:</Text>
+            <Text style={styles.detailValue}>
+              {appointment?.time?.time}, {appointment?.date}
+            </Text>
           </View>
-        ))}
-
-        <View style={styles.importantNote}>
-          <Icon name="information-circle" size={20} color="#f39c12" />
-          <Text style={styles.noteText}>
-            Vui lòng mang theo giấy tờ tùy thân và đến sớm 15 phút trước giờ hẹn
-          </Text>
+          <View style={[styles.detailRow, styles.feeRow]}>
+            <Text style={styles.detailLabel}>Tổng chi phí:</Text>
+            <Text style={styles.feeValue}>
+              {calculateAppointmentPrice(appointment).toLocaleString("vi-VN")}{" "}
+              VNĐ
+            </Text>
+          </View>
         </View>
       </View>
       <View style={[styles.buttonContainer, { marginBottom: 0 }]}>
@@ -190,8 +174,7 @@ const styles = StyleSheet.create({
   },
   successHeader: {
     alignItems: "center",
-    marginBottom: 20,
-    paddingVertical: 16,
+    paddingVertical: 5,
   },
   successTitle: {
     fontSize: 24,
@@ -208,7 +191,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
-    marginBottom: 20,
     borderWidth: 1,
     borderColor: "#ddd",
     shadowColor: "#000",
@@ -265,10 +247,21 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
   },
-  infoText: {
+  infoRow: {
+    flexDirection: "row",
+    paddingVertical: 4,
+    alignItems: "flex-start", // Change from center to flex-start to align at the top
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: "#555",
+    fontWeight: "500",
+    width: 110, // Fixed width for labels
+  },
+  infoValue: {
     fontSize: 14,
     color: "#333",
-    marginBottom: 6,
+    flex: 1,
   },
   appointmentDetails: {
     backgroundColor: "#f9f9f9",
@@ -299,26 +292,26 @@ const styles = StyleSheet.create({
     flex: 2,
     textAlign: "right",
   },
+  servicesContainer: {
+    marginTop: 4,
+    marginBottom: 8,
+    paddingTop: 4,
+  },
   serviceItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 2,
-    paddingLeft: 16,
+    paddingVertical: 3,
+    paddingLeft: 10,
     marginBottom: 2,
   },
   serviceName: {
     fontSize: 13,
-    color: "#555",
-  },
-  servicePrice: {
-    fontSize: 13,
-    color: "#0071CE",
+    color: "#444",
+    flex: 1,
   },
   feeRow: {
     marginTop: 4,
     paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
   },
   feeValue: {
     fontSize: 14,
@@ -327,19 +320,20 @@ const styles = StyleSheet.create({
     flex: 2,
     textAlign: "right",
   },
-  importantNote: {
+  packageRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: "#fef9e7",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
+    justifyContent: "space-between",
+    paddingVertical: 3,
+    paddingLeft: 10,
+    marginBottom: 2,
   },
-  noteText: {
+  price: {
     fontSize: 13,
+    fontWeight: "500",
+  },
+  packageName: {
     color: "#333",
-    marginLeft: 8,
-    flex: 1,
+    fontSize: 14,
   },
   buttonContainer: {
     flexDirection: "row",
