@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,11 @@ import {
   Easing,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import { getAppointmentById } from "../services/appointmentService";
-import Button from "../components/common/Button";
+import { getAppointmentByCode } from "../../services/appointmentService";
+import Button from "../../components/common/Button";
 
 const AppointmentDetailScreen = ({ route, navigation }) => {
-  const { appointmentId } = route.params;
+  const { appointmentCode, status } = route.params;
   const [appointment, setAppointment] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -49,8 +49,27 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
   const fetchAppointmentDetails = async () => {
     try {
       setIsLoading(true);
-      const data = await getAppointmentById(appointmentId);
-      setAppointment(data);
+      const response = await getAppointmentByCode(appointmentCode);
+      // Nếu response có cấu trúc { isSuccess, value, error }
+      if (response && response.isSuccess && response.value) {
+        // Sử dụng status từ params nếu có, nếu không thì lấy từ response
+        const appointmentData = {
+          ...response.value,
+          // Ưu tiên sử dụng status từ params (nếu có)
+          checkupRecordStatus: status || response.value.checkupRecordStatus,
+        };
+        setAppointment(appointmentData);
+        console.log("Appointment details:", response);
+      } else {
+        // Nếu response không có cấu trúc như trên, có thể là cấu trúc cũ
+        const appointmentData = {
+          ...response,
+          // Ưu tiên sử dụng status từ params (nếu có)
+          checkupRecordStatus: status || response.checkupRecordStatus,
+        };
+        setAppointment(appointmentData);
+        console.log("Appointment details (legacy format):", response);
+      }
     } catch (error) {
       console.error("Error fetching appointment:", error);
       Alert.alert(
@@ -84,15 +103,19 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case "Scheduled":
-        return "#1976d2";
+      case "Confirmed":
+        return "#1976d2"; // Xanh dương - đã xác nhận
+      case "Pending":
+        return "#ff9800"; // Cam - chờ xác nhận
       case "InProgress":
-        return "#ff9800";
+      case "CheckedIn":
+        return "#9c27b0"; // Tím - đang tiến hành
       case "Completed":
-        return "#4caf50";
+        return "#4caf50"; // Xanh lá - hoàn thành
       case "Cancelled":
-        return "#f44336";
+        return "#f44336"; // Đỏ - đã hủy
       default:
-        return "#757575";
+        return "#757575"; // Xám - không xác định
     }
   };
 
@@ -103,13 +126,59 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
       case "InProgress":
         return "Đang xử lý";
       case "Completed":
-        return "Hoàn thành";
+        return "Đã hoàn thành";
       case "Cancelled":
         return "Đã hủy";
+      case "Pending":
+        return "Chờ xác nhận";
+      case "Confirmed":
+        return "Đã xác nhận";
+      case "CheckedIn":
+        return "Đã check-in";
       default:
-        return "Không xác định";
+        return "Chờ xác nhận";
     }
   };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "Completed":
+        return "checkmark-circle";
+      case "Cancelled":
+        return "close-circle";
+      case "InProgress":
+      case "CheckedIn":
+        return "medical";
+      case "Scheduled":
+      case "Confirmed":
+        return "calendar-outline";
+      case "Pending":
+        return "time-outline";
+      default:
+        return "time-outline";
+    }
+  };
+
+  const getStatusDescription = (status) => {
+    switch (status) {
+      case "Completed":
+        return "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi";
+      case "Cancelled":
+        return "Lịch hẹn này đã bị hủy";
+      case "InProgress":
+        return "Lịch hẹn của bạn đang được xử lý";
+      case "CheckedIn":
+        return "Bạn đã check-in thành công, vui lòng chờ đến lượt";
+      case "Scheduled":
+      case "Confirmed":
+        return "Vui lòng đến đúng giờ để được phục vụ tốt nhất";
+      case "Pending":
+        return "Lịch hẹn của bạn đang chờ xác nhận";
+      default:
+        return "Vui lòng đến đúng giờ để được phục vụ tốt nhất";
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -142,27 +211,27 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
           <View
             style={[
               styles.statusIndicator,
-              { backgroundColor: getStatusColor(appointment?.status) },
+              {
+                backgroundColor: getStatusColor(
+                  appointment?.checkupRecordStatus || status || "Scheduled"
+                ),
+              },
             ]}
           >
             <Icon
-              name={
-                appointment?.status === "Completed"
-                  ? "checkmark-circle"
-                  : "time-outline"
-              }
+              name={getStatusIcon(appointment?.checkupRecordStatus || status)}
               size={32}
               color="#fff"
             />
           </View>
           <View style={styles.statusInfo}>
             <Text style={styles.statusTitle}>
-              {getStatusText(appointment?.status)}
+              {getStatusText(
+                appointment?.checkupRecordStatus || status || "Scheduled"
+              )}
             </Text>
             <Text style={styles.statusDescription}>
-              {appointment?.status === "Completed"
-                ? "Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi"
-                : "Vui lòng đến đúng giờ để được phục vụ tốt nhất"}
+              {getStatusDescription(appointment?.checkupRecordStatus || status)}
             </Text>
           </View>
         </View>
@@ -206,7 +275,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>Dịch vụ</Text>
               <Text style={styles.detailValue}>
-                {appointment?.services?.packages?.name || "Dịch vụ khám bệnh"}
+                {appointment?.packageName || "Dịch vụ khám bệnh"}
               </Text>
             </View>
           </View>
@@ -233,11 +302,61 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
             </View>
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>Mã lịch hẹn</Text>
-              <Text style={styles.detailValue}>
-                #{appointment?.code || appointment?.id}
-              </Text>
+              <Text style={styles.detailValue}>#{appointmentCode}</Text>
             </View>
           </View>
+
+          {appointment?.packagePrice && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconContainer}>
+                  <Icon name="cash-outline" size={24} color="#1976d2" />
+                </View>
+                <View style={styles.detailTextContainer}>
+                  <Text style={styles.detailLabel}>Giá gói khám</Text>
+                  <Text style={styles.detailValue}>
+                    {appointment.packagePrice.toLocaleString("vi-VN")} VNĐ
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
+
+          {appointment?.targetGender && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconContainer}>
+                  <Icon name="person-outline" size={24} color="#1976d2" />
+                </View>
+                <View style={styles.detailTextContainer}>
+                  <Text style={styles.detailLabel}>Đối tượng</Text>
+                  <Text style={styles.detailValue}>
+                    {appointment.targetGender === "Male" ? "Nam" : "Nữ"}
+                    {appointment.targetAge ? ` (${appointment.targetAge})` : ""}
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
+
+          {appointment?.patientSymptom && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconContainer}>
+                  <Icon name="fitness-outline" size={24} color="#1976d2" />
+                </View>
+                <View style={styles.detailTextContainer}>
+                  <Text style={styles.detailLabel}>Triệu chứng</Text>
+                  <Text style={styles.detailValue}>
+                    {appointment.patientSymptom || "Không có"}
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
         </View>
 
         {/* Services List */}
@@ -269,51 +388,66 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
 
         {/* Actions */}
         <View style={styles.actionsContainer}>
-          {appointment?.status === "Scheduled" && (
-            <Button
-              title="Hủy lịch hẹn"
-              onPress={() =>
-                Alert.alert(
-                  "Xác nhận",
-                  "Bạn có chắc chắn muốn hủy lịch hẹn này?",
-                  [
-                    { text: "Không", style: "cancel" },
-                    {
-                      text: "Có, hủy lịch",
-                      style: "destructive",
-                      onPress: () => {
-                        // Implement cancel appointment logic
-                        Alert.alert(
-                          "Thông báo",
-                          "Tính năng đang được phát triển"
-                        );
+          {/* Chỉ hiển thị nút "Hủy lịch hẹn" cho lịch hẹn chưa hoàn thành */}
+          {status !== "Completed" &&
+            status !== "Cancelled" &&
+            appointment?.checkupRecordStatus !== "Completed" &&
+            appointment?.checkupRecordStatus !== "Cancelled" && (
+              <Button
+                title="Hủy lịch hẹn"
+                onPress={() =>
+                  Alert.alert(
+                    "Xác nhận",
+                    "Bạn có chắc chắn muốn hủy lịch hẹn này?",
+                    [
+                      { text: "Không", style: "cancel" },
+                      {
+                        text: "Có, hủy lịch",
+                        style: "destructive",
+                        onPress: () => {
+                          // Implement cancel appointment logic
+                          Alert.alert(
+                            "Thông báo",
+                            "Tính năng đang được phát triển"
+                          );
+                        },
                       },
-                    },
-                  ]
-                )
-              }
-              style={styles.cancelButton}
-            />
-          )}
+                    ]
+                  )
+                }
+                style={styles.cancelButton}
+              />
+            )}
 
-          {appointment?.status === "Completed" && !appointment?.hasFeedback && (
+          {/* Chỉ hiển thị nút "Đánh giá dịch vụ" cho lịch hẹn đã hoàn thành */}
+          {(status === "Completed" ||
+            appointment?.checkupRecordStatus === "Completed") && (
             <Button
               title="Đánh giá dịch vụ"
               onPress={() =>
                 navigation.navigate("Feedback", {
-                  appointmentId: appointment.id,
+                  appointmentCode: appointmentCode,
                 })
               }
               style={styles.feedbackButton}
             />
           )}
 
+          {/* Nút "Tạo lịch hẹn mới" hiển thị ở tất cả các trạng thái */}
           <Button
             title="Tạo lịch hẹn mới"
             onPress={() => navigation.navigate("Appointment")}
             style={[
               styles.newAppointmentButton,
-              appointment?.status !== "Completed" && { marginTop: 12 },
+              // Chỉ thêm marginTop khi có nút khác ở trên
+              ((status !== "Completed" &&
+                status !== "Cancelled" &&
+                appointment?.checkupRecordStatus !== "Completed" &&
+                appointment?.checkupRecordStatus !== "Cancelled") ||
+                status === "Completed" ||
+                appointment?.checkupRecordStatus === "Completed") && {
+                marginTop: 12,
+              },
             ]}
           />
         </View>

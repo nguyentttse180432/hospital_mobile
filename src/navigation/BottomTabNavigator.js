@@ -3,8 +3,8 @@ import Icon from "react-native-vector-icons/Ionicons";
 
 // Screens
 import HomeScreen from "../screens/HomeScreen";
-import BookAppointmentScreen from "../screens/appointment/AppointmentScreen";
-import ProfileScreen from "../screens/ProfileScreen";
+import BookAppointmentScreen from "../screens/appointment/AppointmentBookingScreen";
+import ProfileNavigator from "./ProfileNavigator";
 
 const Tab = createBottomTabNavigator();
 
@@ -39,7 +39,7 @@ const BottomTabNavigator = () => {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Appointment" component={BookAppointmentScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={ProfileNavigator} />
     </Tab.Navigator>
   );
 };

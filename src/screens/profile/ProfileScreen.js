@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,15 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Image,
   RefreshControl,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
-import { getPatientAppointments } from "../services/appointmentService";
-import Button from "../components/common/Button";
-import { fakeUserProfile } from "../data/fakeData"; // Import fake user data
+import { getPatientAppointments } from "../../services/appointmentService";
+import Button from "../../components/common/Button";
+import FeedbackTypeSelection from "./FeedbackTypeSelection";
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
@@ -25,6 +24,8 @@ const ProfileScreen = () => {
   });
   const [activeTab, setActiveTab] = useState("upcoming");
   const [isLoading, setIsLoading] = useState(false);
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
 
   useEffect(() => {
     loadUserProfile();
@@ -32,24 +33,17 @@ const ProfileScreen = () => {
   }, []);
   const loadUserProfile = async () => {
     try {
-      // Thử lấy dữ liệu từ AsyncStorage trước
+      // Lấy dữ liệu từ AsyncStorage
       const userDataString = await AsyncStorage.getItem("user");
 
       if (userDataString) {
         const userData = JSON.parse(userDataString);
         setUserProfile(userData);
       } else {
-        // Nếu không có dữ liệu trong AsyncStorage, sử dụng dữ liệu giả
-        console.log("Using fake user profile data");
-        setUserProfile(fakeUserProfile);
-
-        // Lưu dữ liệu giả vào AsyncStorage để sử dụng lần sau
-        await AsyncStorage.setItem("user", JSON.stringify(fakeUserProfile));
+        console.warn("No user data found in AsyncStorage");
       }
     } catch (error) {
       console.error("Error loading user profile:", error);
-      // Nếu có lỗi, vẫn sử dụng dữ liệu giả
-      setUserProfile(fakeUserProfile);
     }
   };
   const fetchAppointments = async () => {
@@ -70,58 +64,64 @@ const ProfileScreen = () => {
             console.warn("Error parsing user data from storage:", e);
           }
         }
-
-        // Nếu vẫn không có patientId, sử dụng ID giả
-        if (!patientId) {
-          console.log("Using fake user ID for appointments");
-          patientId = fakeUserProfile.id;
-        }
       }
 
-      console.log("Fetching appointments for patient ID:", patientId);
-      // Lấy dữ liệu lịch hẹn
-      const appointmentData = await getPatientAppointments(patientId);
-
-      // Đảm bảo dữ liệu trả về là một mảng
-      if (!Array.isArray(appointmentData)) {
-        console.warn("Appointment data is not an array:", appointmentData);
+      if (!patientId) {
+        console.warn("No patient ID available, cannot fetch appointments");
+        setIsLoading(false);
         return;
       }
 
-      console.log(
-        `Received ${appointmentData.length} appointments from service`
-      );
+      // Fetch regular appointments (will be filtered for upcoming ones)
+      const regularResponse = await getPatientAppointments();
 
-      // Phân loại các lịch hẹn thành sắp tới và đã hoàn thành
-      const now = new Date();
-      const upcoming = [];
-      const completed = [];
+      // Fetch completed appointments
+      const completedResponse = await getPatientAppointments("Completed");
+      // Validate regular appointments response
+      if (
+        !regularResponse ||
+        !regularResponse.value ||
+        !Array.isArray(regularResponse.value.items)
+      ) {
+        console.warn(
+          "Unexpected response format for regular appointments:",
+          regularResponse
+        );
+        setIsLoading(false);
+        return;
+      }
 
-      appointmentData.forEach((appt) => {
-        if (!appt || !appt.bookingDate) {
-          console.warn("Invalid appointment data:", appt);
-          return;
-        }
+      // Validate completed appointments response
+      if (
+        !completedResponse ||
+        !completedResponse.value ||
+        !Array.isArray(completedResponse.value.items)
+      ) {
+        console.warn(
+          "Unexpected response format for completed appointments:",
+          completedResponse
+        );
+        setIsLoading(false);
+        return;
+      }
 
+      const regularAppointments = regularResponse.value.items;
+      const completedAppointments = completedResponse.value.items;
+      // Filter regular appointments to get only upcoming ones
+      const currentDate = new Date();
+      const upcoming = regularAppointments.filter((appt) => {
+        if (!appt || !appt.bookingDate) return false;
         try {
           const apptDate = new Date(appt.bookingDate);
-          if (apptDate > now || appt.status === "Scheduled") {
-            upcoming.push(appt);
-          } else if (appt.status === "Completed") {
-            completed.push(appt);
-          }
+          return apptDate > currentDate;
         } catch (e) {
           console.warn("Error processing appointment date:", e, appt);
+          return false;
         }
       });
-
-      console.log(
-        `Processed ${upcoming.length} upcoming and ${completed.length} completed appointments`
-      );
-
       setAppointments({
         upcoming,
-        completed,
+        completed: completedAppointments,
       });
     } catch (error) {
       console.error("Error fetching appointments:", error);
@@ -162,9 +162,37 @@ const ProfileScreen = () => {
     ]);
   };
 
-  const handleFeedback = (appointmentId) => {
-    // Chuyển đến màn hình feedback với ID của lịch hẹn
-    navigation.navigate("Feedback", { appointmentId });
+  const handleFeedback = (appointmentCode) => {
+    // Trước khi hiển thị modal đánh giá, kiểm tra xem lịch hẹn đã có đánh giá chưa
+    try {
+      // Trong một ứng dụng thực tế, bạn có thể gọi API để kiểm tra trạng thái đánh giá
+      // Ví dụ: const hasFeedback = await checkAppointmentFeedbackStatus(appointmentCode);
+
+      // Hiển thị modal lựa chọn loại đánh giá
+      setSelectedAppointmentId(appointmentCode);
+      setFeedbackModalVisible(true);
+    } catch (error) {
+      console.error("Error checking feedback status:", error);
+      Alert.alert(
+        "Lỗi",
+        "Không thể kiểm tra trạng thái đánh giá. Vui lòng thử lại sau."
+      );
+    }
+  };
+
+  const handleSelectFeedbackType = (appointmentCode, feedbackType) => {
+    // Điều hướng đến màn hình feedback với mã lịch hẹn và loại đánh giá
+    console.log(
+      `Navigating to feedback screen for appointment ${appointmentCode} with type ${feedbackType}`
+    );
+    navigation.navigate("Feedback", {
+      appointmentCode,
+      feedbackType,
+      onFeedbackComplete: () => {
+        // Làm mới danh sách lịch hẹn sau khi đánh giá hoàn tất
+        fetchAppointments();
+      },
+    });
   };
 
   const formatDate = (dateString) => {
@@ -232,15 +260,15 @@ const ProfileScreen = () => {
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>
-                {userProfile?.fullName || userProfile?.name || "Chưa cập nhật"}
+                {userProfile?.name || "Chưa cập nhật"}
               </Text>
               <Text style={styles.profileDetail}>
                 <Icon name="call-outline" size={16} color="#555" />
-                {userProfile?.phone || userProfile?.sdt || "0914659705"}
+                {" "}{userProfile?.phoneNumber || "Chưa cập nhật"}
               </Text>
               <Text style={styles.profileDetail}>
                 <Icon name="mail-outline" size={16} color="#555" />
-                {userProfile?.email || "huong@gmail.com"}
+                {" "}{userProfile?.email || userProfile?.username || "huong@gmail.com"}
               </Text>
             </View>
           </View>
@@ -342,7 +370,8 @@ const ProfileScreen = () => {
                     style={styles.viewDetailsButton}
                     onPress={() =>
                       navigation.navigate("AppointmentDetail", {
-                        appointmentId: appointment.id,
+                        appointmentCode: appointment.code,
+                        // Không truyền status để sử dụng mặc định
                       })
                     }
                   >
@@ -405,7 +434,8 @@ const ProfileScreen = () => {
                       style={[styles.actionButton, styles.detailsButton]}
                       onPress={() =>
                         navigation.navigate("AppointmentDetail", {
-                          appointmentId: appointment.id,
+                          appointmentCode: appointment.code,
+                          status: "Completed", // Truyền status Completed cho lịch sử khám
                         })
                       }
                     >
@@ -413,7 +443,7 @@ const ProfileScreen = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.actionButton, styles.feedbackButton]}
-                      onPress={() => handleFeedback(appointment.id)}
+                      onPress={() => handleFeedback(appointment.code)}
                     >
                       <Text style={styles.feedbackButtonText}>Đánh giá</Text>
                     </TouchableOpacity>
@@ -429,6 +459,14 @@ const ProfileScreen = () => {
         <Icon name="log-out-outline" size={20} color="#e53935" />
         <Text style={styles.logoutText}>Đăng xuất</Text>
       </TouchableOpacity>
+
+      {/* Feedback Type Selection Modal */}
+      <FeedbackTypeSelection
+        visible={feedbackModalVisible}
+        onClose={() => setFeedbackModalVisible(false)}
+        onSelectType={handleSelectFeedbackType}
+        appointmentCode={selectedAppointmentId}
+      />
     </View>
   );
 };

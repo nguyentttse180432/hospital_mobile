@@ -3,9 +3,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 
 import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
-import BottomTabNavigator from "./BottomTabNavigator";
-import AppointmentDetailScreen from "../screens/AppointmentDetailScreen";
-import FeedbackScreen from "../screens/FeedbackScreen";
+import BottomTabNavigator from "./BottomTabNavigator"; 
 
 const Stack = createStackNavigator();
 
@@ -26,16 +24,6 @@ const AppNavigator = () => {
         <Stack.Screen
           name="Main"
           component={BottomTabNavigator}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="AppointmentDetail"
-          component={AppointmentDetailScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Feedback"
-          component={FeedbackScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
