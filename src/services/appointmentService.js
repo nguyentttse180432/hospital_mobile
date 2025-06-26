@@ -50,21 +50,6 @@ export const formatAppointmentData = (
 export const getPatientAppointments = async (status = null) => {
   try {
     let url = "/Appointments";
-    // {
-    //   "checkupRecordId": "339b60c1-5a0a-43b4-10ae-08ddb48032e6",
-    //   "patientName": "Phạm Nguyễn Như Quỳnh",
-    //   "checkupRecordCode": "6320948",
-    //   "code": "6320948",
-    //   "bookingDate": "2025-06-27T00:00:00Z",
-    //   "identityNumber": "049306013315",
-    //   "phoneNumber": "0896980889",
-    //   "bookType": "Web",
-    //   "serviceType": "General Health Checkup",
-    //   "checkupRecordStatus": "completed",
-    //   "feedbackId": null,
-    //   "feedbackDoctorId": null
-    // },
-    // Add query parameter if status is provided
     if (status) {
       url += `?Status=${status}`;
     }

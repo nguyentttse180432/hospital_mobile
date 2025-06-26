@@ -5,9 +5,11 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import Button from "../../common/Button";
+import { getAvailableTimeSlotsByDate } from "../../../services/workingDateService";
 
 const TimeSelection = ({
   currentDate,
@@ -16,133 +18,135 @@ const TimeSelection = ({
   setStep,
 }) => {
   const [processedTimeSlots, setProcessedTimeSlots] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Fixed list of all time slots
-  const availableTimeSlots = [
-    {
-      id: "1",
-      time: "07:00 - 08:00",
-      startHour: 7,
-      startMinute: 0,
-      available: true,
-    },
-    {
-      id: "2",
-      time: "08:00 - 09:00",
-      startHour: 8,
-      startMinute: 0,
-      available: true,
-    },
-    {
-      id: "3",
-      time: "09:00 - 10:00",
-      startHour: 9,
-      startMinute: 0,
-      available: false,
-    }, // Đã hết
-    {
-      id: "4",
-      time: "10:00 - 11:00",
-      startHour: 10,
-      startMinute: 0,
-      available: true,
-    },
-    {
-      id: "5",
-      time: "11:00 - 12:00",
-      startHour: 11,
-      startMinute: 0,
-      available: false,
-    }, // Đã hết
-    {
-      id: "6",
-      time: "13:00 - 14:00",
-      startHour: 13,
-      startMinute: 0,
-      available: true,
-    },
-    {
-      id: "7",
-      time: "14:00 - 15:00",
-      startHour: 14,
-      startMinute: 0,
-      available: true,
-    },
-    {
-      id: "8",
-      time: "15:00 - 16:00",
-      startHour: 15,
-      startMinute: 0,
-      available: false,
-    }, // Đã hết
-    {
-      id: "9",
-      time: "16:00 - 17:00",
-      startHour: 16,
-      startMinute: 0,
-      available: true,
-    },
-  ];
-  // Update time slots based on current time
-  useEffect(() => {
-    const now = new Date();
-    // Chuyển đổi chuỗi ngày DD/MM/YYYY từ currentDate thành đối tượng Date
-    let isToday = false;
+  // Function to convert API time blocks to display format
+  const convertApiTimeToDisplayFormat = (blocks) => {
+    if (!blocks || blocks.length === 0) return [];
 
-    if (currentDate) {
-      const [day, month, year] = currentDate
-        .split("/")
-        .map((num) => parseInt(num, 10));
-      const selectedDate = new Date(year, month - 1, day); // month là 0-based trong JS Date
+    return blocks.map((block, index) => {
+      // Parse ISO date strings
+      const startTime = new Date(block.startBlock);
+      const endTime = new Date(block.endBlock);
 
-      // So sánh ngày, tháng, năm để xác định có phải hôm nay không
-      isToday =
-        selectedDate.getDate() === now.getDate() &&
-        selectedDate.getMonth() === now.getMonth() &&
-        selectedDate.getFullYear() === now.getFullYear();
-    }
+      // Format time to HH:MM - try both local and UTC to see which one makes sense
+      const formatTime = (date) => {
+        const localHours = date.getHours().toString().padStart(2, "0");
+        const localMinutes = date.getMinutes().toString().padStart(2, "0");
+        return `${localHours}:${localMinutes}`;
+      };
 
-    console.log("Ngày được chọn có phải hôm nay không:", isToday);
+      const timeSlot = {
+        id: (index + 1).toString(),
+        time: `${formatTime(startTime)} - ${formatTime(endTime)}`,
+        startHour: startTime.getHours(), // Use local time
+        startMinute: startTime.getMinutes(),
+        available: block.isAvailable,
+        isPast: false, // Will be calculated later based on current time
+        rawStartTime: startTime, // Keep raw time for debugging
+        rawEndTime: endTime,
+      };
 
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+      console.log(`Block ${index + 1}:`, {
+        startBlock: block.startBlock,
+        endBlock: block.endBlock,
+        localStartTime: startTime.toLocaleString(),
+        utcStartTime: startTime.toISOString(),
+        formatted: timeSlot,
+      });
 
-    const updatedSlots = availableTimeSlots.map((slot) => {
-      // Chỉ kiểm tra thời gian đã qua nếu ngày được chọn là hôm nay
-      if (isToday) {
-        const isPast =
-          slot.startHour < currentHour ||
-          (slot.startHour === currentHour && slot.startMinute <= currentMinute);
-
-        // In ra log để debug
-        if (isPast) {
-          console.log(
-            `Khung giờ ${slot.time} đã qua (${currentHour}:${currentMinute})`
-          );
-        }
-
-        return {
-          ...slot,
-          // Đánh dấu không khả dụng nếu đã được đánh dấu không khả dụng HOẶC đã qua
-          available: slot.available && !isPast,
-          isPast: isPast, // Thêm trường để phân biệt lý do không khả dụng
-        };
-      }
-
-      // Nếu không phải hôm nay, giữ nguyên trạng thái khả dụng ban đầu
-      return { ...slot, isPast: false };
+      return timeSlot;
     });
+  };
 
-    setProcessedTimeSlots(updatedSlots);
+  // Fetch time slots from API
+  const fetchTimeSlots = async (selectedDate) => {
+    if (!selectedDate) return;
 
-    // Xóa thời gian đã chọn nếu nó giờ không còn khả dụng
-    if (currentTime) {
-      const selectedSlot = updatedSlots.find(
-        (slot) => slot.id === currentTime.id
-      );
-      if (selectedSlot && !selectedSlot.available) {
-        setCurrentTime(null);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await getAvailableTimeSlotsByDate(selectedDate);
+
+      if (response.isSuccess && response.value && response.value.blocks) {
+        const timeSlots = convertApiTimeToDisplayFormat(response.value.blocks);
+
+        // Process time slots based on current time if it's today
+        const now = new Date();
+        const [day, month, year] = selectedDate
+          .split("/")
+          .map((num) => parseInt(num, 10));
+        const selectedDateObj = new Date(year, month - 1, day);
+
+        const isToday =
+          selectedDateObj.getDate() === now.getDate() &&
+          selectedDateObj.getMonth() === now.getMonth() &&
+          selectedDateObj.getFullYear() === now.getFullYear();
+
+        console.log("Is today:", isToday);
+        console.log("Time slots from API:", timeSlots);
+
+        // Use local time for comparison
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+
+        console.log("Current time:", {
+          currentHour,
+          currentMinute,
+          currentTime: now.toLocaleString(),
+          isToday,
+        });
+
+        const processedSlots = timeSlots.map((slot) => {
+          if (isToday) {
+            const isPast =
+              slot.startHour < currentHour ||
+              (slot.startHour === currentHour &&
+                slot.startMinute <= currentMinute);
+
+            console.log(
+              `Slot ${slot.time}: startHour=${slot.startHour}, currentHour=${currentHour}, isPast=${isPast}`
+            );
+
+            return {
+              ...slot,
+              available: slot.available && !isPast,
+              isPast: isPast,
+            };
+          }
+          return slot;
+        });
+
+        console.log("Processed slots:", processedSlots);
+        setProcessedTimeSlots(processedSlots);
+
+        // Clear selected time if it's no longer available
+        if (currentTime) {
+          const selectedSlot = processedSlots.find(
+            (slot) => slot.id === currentTime.id
+          );
+          if (selectedSlot && !selectedSlot.available) {
+            setCurrentTime(null);
+          }
+        }
+      } else {
+        setError("Không thể tải thông tin khung giờ");
+        setProcessedTimeSlots([]);
       }
+    } catch (err) {
+      console.error("Error fetching time slots:", err);
+      setError("Lỗi khi tải khung giờ khám");
+      setProcessedTimeSlots([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // Load time slots when date changes
+  useEffect(() => {
+    if (currentDate) {
+      fetchTimeSlots(currentDate);
     }
   }, [currentDate]);
 
@@ -234,7 +238,24 @@ const TimeSelection = ({
         </View>
       </View>
 
-      {processedTimeSlots && processedTimeSlots.length > 0 ? (
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0071CE" />
+          <Text style={styles.loadingText}>Đang tải khung giờ...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle-outline" size={40} color="#f44336" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => fetchTimeSlots(currentDate)}
+          >
+            <Icon name="refresh" size={16} color="#0071CE" />
+            <Text style={styles.retryText}>Thử lại</Text>
+          </TouchableOpacity>
+        </View>
+      ) : processedTimeSlots && processedTimeSlots.length > 0 ? (
         <FlatList
           data={processedTimeSlots}
           keyExtractor={(item) => item.id}
@@ -411,6 +432,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#999",
     marginTop: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#f44336",
+    marginTop: 12,
+    textAlign: "center",
+  },
+  retryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f8ff",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: "#0071CE",
+  },
+  retryText: {
+    fontSize: 14,
+    color: "#0071CE",
+    marginLeft: 4,
+    fontWeight: "500",
   },
 });
 

@@ -104,7 +104,10 @@ const FeedbackScreenNew = ({ route, navigation }) => {
                 cleanFacility: fb.cleanFacility || "Neutral",
                 modernEquipment: fb.modernEquipment || "Neutral",
                 overallSatisfaction: fb.overallSatisfaction || "Neutral",
-                recommendToOthers: fb.recommendToOthers !== undefined ? fb.recommendToOthers : true,
+                recommendToOthers:
+                  fb.recommendToOthers !== undefined
+                    ? fb.recommendToOthers
+                    : true,
               });
             }
           }
@@ -270,7 +273,8 @@ const FeedbackScreenNew = ({ route, navigation }) => {
               key={option.value.toString()}
               style={[
                 styles.booleanOption,
-                feedbackFields[field] === option.value && styles.selectedBooleanOption,
+                feedbackFields[field] === option.value &&
+                  styles.selectedBooleanOption,
               ]}
               onPress={() =>
                 !isViewMode &&
