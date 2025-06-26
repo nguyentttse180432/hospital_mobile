@@ -9,6 +9,7 @@ import {
   Animated,
   Easing,
 } from "react-native";
+import { useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { getAppointmentByCode } from "../../services/appointmentService";
 import Button from "../../components/common/Button";
@@ -45,6 +46,17 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
   useEffect(() => {
     fetchAppointmentDetails();
   }, []);
+
+  // Effect to refresh appointment details when coming back from feedback screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      // Refresh appointment data when screen comes into focus
+      fetchAppointmentDetails();
+    });
+
+    // Cleanup the listener on component unmount
+    return unsubscribe;
+  }, [navigation]);
 
   const fetchAppointmentDetails = async () => {
     try {
@@ -423,12 +435,29 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
           {(status === "Completed" ||
             appointment?.checkupRecordStatus === "Completed") && (
             <Button
-              title="Đánh giá dịch vụ"
-              onPress={() =>
-                navigation.navigate("Feedback", {
-                  appointmentCode: appointmentCode,
-                })
+              title={
+                appointment?.feedbackId || appointment?.feedbackDoctorId
+                  ? "Xem đánh giá"
+                  : "Đánh giá"
               }
+              onPress={() => {
+                const hasDoctorFeedback =
+                  appointment?.feedbackDoctorId !== null;
+                const hasServiceFeedback = appointment?.feedbackId !== null;
+
+                // Always navigate to the feedback type selection screen
+                // This allows the user to choose which type of feedback to give
+                // Using navigate, then the FeedbackTypeSelectionScreen will replace itself with FeedbackScreen
+                navigation.navigate("FeedbackTypeSelection", {
+                  appointmentCode: appointmentCode,
+                  feedbackStatus: {
+                    hasDoctorFeedback,
+                    hasServiceFeedback,
+                    hasAllFeedbacks: hasDoctorFeedback && hasServiceFeedback,
+                  },
+                  fromAppointmentDetail: true,
+                });
+              }}
               style={styles.feedbackButton}
             />
           )}

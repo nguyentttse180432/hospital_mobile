@@ -1,3 +1,4 @@
+import React from "react";
 import {
   View,
   Text,
@@ -8,7 +9,8 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 
-const FeedbackTypeSelection = ({
+// Simplified version of feedback type selection
+const FeedbackTypeSelectionSimple = ({
   visible,
   onClose,
   onSelectType,
@@ -21,7 +23,6 @@ const FeedbackTypeSelection = ({
 }) => {
   const handleSelectType = (type, isView = false) => {
     onSelectType(appointmentCode, type, isView);
-    onClose();
   };
 
   // Determine if we're viewing or creating feedback
@@ -55,9 +56,10 @@ const FeedbackTypeSelection = ({
                 styles.optionCard,
                 feedbackStatus.hasDoctorFeedback && styles.optionCardViewed,
               ]}
-              onPress={() =>
-                handleSelectType("doctor", feedbackStatus.hasDoctorFeedback)
-              }
+              onPress={() => {
+                console.log("Selected doctor feedback");
+                handleSelectType("doctor", feedbackStatus.hasDoctorFeedback);
+              }}
             >
               <View
                 style={[
@@ -102,9 +104,10 @@ const FeedbackTypeSelection = ({
                 styles.optionCard,
                 feedbackStatus.hasServiceFeedback && styles.optionCardViewed,
               ]}
-              onPress={() =>
-                handleSelectType("service", feedbackStatus.hasServiceFeedback)
-              }
+              onPress={() => {
+                console.log("Selected service feedback");
+                handleSelectType("service", feedbackStatus.hasServiceFeedback);
+              }}
             >
               <View
                 style={[
@@ -243,4 +246,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FeedbackTypeSelection;
+export default FeedbackTypeSelectionSimple;

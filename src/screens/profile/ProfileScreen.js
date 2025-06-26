@@ -9,14 +9,15 @@ import {
   RefreshControl,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { getPatientAppointments } from "../../services/appointmentService";
 import Button from "../../components/common/Button";
-import FeedbackTypeSelection from "./FeedbackTypeSelection";
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const [userProfile, setUserProfile] = useState(null);
   const [appointments, setAppointments] = useState({
     upcoming: [],
@@ -24,13 +25,21 @@ const ProfileScreen = () => {
   });
   const [activeTab, setActiveTab] = useState("upcoming");
   const [isLoading, setIsLoading] = useState(false);
-  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
 
   useEffect(() => {
     loadUserProfile();
     fetchAppointments();
   }, []);
+
+  // Effect to refresh appointments when feedback is completed
+  useEffect(() => {
+    if (route.params?.feedbackCompleted) {
+      // Clear the parameter so it doesn't trigger again on other navigation events
+      navigation.setParams({ feedbackCompleted: undefined });
+      // Refresh appointments
+      fetchAppointments();
+    }
+  }, [route.params?.feedbackCompleted]);
   const loadUserProfile = async () => {
     try {
       // Lấy dữ liệu từ AsyncStorage
@@ -162,15 +171,23 @@ const ProfileScreen = () => {
     ]);
   };
 
-  const handleFeedback = (appointmentCode) => {
-    // Trước khi hiển thị modal đánh giá, kiểm tra xem lịch hẹn đã có đánh giá chưa
-    try {
-      // Trong một ứng dụng thực tế, bạn có thể gọi API để kiểm tra trạng thái đánh giá
-      // Ví dụ: const hasFeedback = await checkAppointmentFeedbackStatus(appointmentCode);
+  const handleFeedback = (appointment) => {
+    // Check if the appointment has any feedback IDs
+    const hasDoctorFeedback = appointment.feedbackDoctorId !== null;
+    const hasServiceFeedback = appointment.feedbackId !== null;
+    const hasAllFeedbacks = hasDoctorFeedback && hasServiceFeedback;
 
-      // Hiển thị modal lựa chọn loại đánh giá
-      setSelectedAppointmentId(appointmentCode);
-      setFeedbackModalVisible(true);
+    try {
+      // Navigate to the feedback type selection screen with the appropriate status
+      navigation.navigate("FeedbackTypeSelection", {
+        appointmentCode: appointment.code || appointment.checkupRecordCode,
+        feedbackStatus: {
+          hasDoctorFeedback,
+          hasServiceFeedback,
+          hasAllFeedbacks,
+          appointment,
+        },
+      });
     } catch (error) {
       console.error("Error checking feedback status:", error);
       Alert.alert(
@@ -178,21 +195,6 @@ const ProfileScreen = () => {
         "Không thể kiểm tra trạng thái đánh giá. Vui lòng thử lại sau."
       );
     }
-  };
-
-  const handleSelectFeedbackType = (appointmentCode, feedbackType) => {
-    // Điều hướng đến màn hình feedback với mã lịch hẹn và loại đánh giá
-    console.log(
-      `Navigating to feedback screen for appointment ${appointmentCode} with type ${feedbackType}`
-    );
-    navigation.navigate("Feedback", {
-      appointmentCode,
-      feedbackType,
-      onFeedbackComplete: () => {
-        // Làm mới danh sách lịch hẹn sau khi đánh giá hoàn tất
-        fetchAppointments();
-      },
-    });
   };
 
   const formatDate = (dateString) => {
@@ -263,12 +265,14 @@ const ProfileScreen = () => {
                 {userProfile?.name || "Chưa cập nhật"}
               </Text>
               <Text style={styles.profileDetail}>
-                <Icon name="call-outline" size={16} color="#555" />
-                {" "}{userProfile?.phoneNumber || "Chưa cập nhật"}
+                <Icon name="call-outline" size={16} color="#555" />{" "}
+                {userProfile?.phoneNumber || "Chưa cập nhật"}
               </Text>
               <Text style={styles.profileDetail}>
-                <Icon name="mail-outline" size={16} color="#555" />
-                {" "}{userProfile?.email || userProfile?.username || "huong@gmail.com"}
+                <Icon name="mail-outline" size={16} color="#555" />{" "}
+                {userProfile?.email ||
+                  userProfile?.username ||
+                  "huong@gmail.com"}
               </Text>
             </View>
           </View>
@@ -443,9 +447,14 @@ const ProfileScreen = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.actionButton, styles.feedbackButton]}
-                      onPress={() => handleFeedback(appointment.code)}
+                      onPress={() => handleFeedback(appointment)}
                     >
-                      <Text style={styles.feedbackButtonText}>Đánh giá</Text>
+                      <Text style={styles.feedbackButtonText}>
+                        {appointment.feedbackId !== null ||
+                        appointment.feedbackDoctorId !== null
+                          ? "Xem đánh giá"
+                          : "Đánh giá"}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -459,14 +468,6 @@ const ProfileScreen = () => {
         <Icon name="log-out-outline" size={20} color="#e53935" />
         <Text style={styles.logoutText}>Đăng xuất</Text>
       </TouchableOpacity>
-
-      {/* Feedback Type Selection Modal */}
-      <FeedbackTypeSelection
-        visible={feedbackModalVisible}
-        onClose={() => setFeedbackModalVisible(false)}
-        onSelectType={handleSelectFeedbackType}
-        appointmentCode={selectedAppointmentId}
-      />
     </View>
   );
 };
