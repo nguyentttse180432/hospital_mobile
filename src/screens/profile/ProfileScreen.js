@@ -23,7 +23,7 @@ const ProfileScreen = () => {
     upcoming: [],
     completed: [],
   });
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const [activeTab, setActiveTab] = useState("today");
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -289,6 +289,19 @@ const ProfileScreen = () => {
         {/* Tabs for Appointments */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
+            style={[styles.tab, activeTab === "today" && styles.activeTab]}
+            onPress={() => setActiveTab("today")}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "today" && styles.activeTabText,
+              ]}
+            >
+              Hôm nay
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.tab, activeTab === "upcoming" && styles.activeTab]}
             onPress={() => setActiveTab("upcoming")}
           >
@@ -318,6 +331,24 @@ const ProfileScreen = () => {
 
         {/* Appointment List */}
         <View style={styles.appointmentsContainer}>
+          {activeTab === "today" && (
+            <View style={styles.todayContainer}>
+              <View style={styles.todayCard}>
+                <Text style={styles.todayTitle}>Lịch khám hôm nay</Text>
+                <Text style={styles.todayDescription}>
+                  Xem danh sách các cuộc hẹn khám và theo dõi tiến trình xét
+                  nghiệm
+                </Text>
+                <TouchableOpacity
+                  style={styles.todayButton}
+                  onPress={() => navigation.navigate("TodayCheckup")}
+                >
+                  <Text style={styles.todayButtonText}>Xem chi tiết</Text>
+                  <Icon name="arrow-forward" size={20} color="#4CAF50" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
           {activeTab === "upcoming" &&
             (appointments.upcoming.length === 0 ? (
               <View style={styles.emptyState}>
@@ -702,6 +733,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#e53935",
+  },
+  todayContainer: {
+    padding: 16,
+  },
+  todayCard: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  todayTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+  todayDescription: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  todayButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E8F5E8",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  todayButtonText: {
+    color: "#4CAF50",
+    fontSize: 16,
+    fontWeight: "600",
+    marginRight: 8,
   },
 });
 
