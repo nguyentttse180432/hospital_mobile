@@ -1,0 +1,14 @@
+# EAS Build ignore file
+.git/
+.expo/
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+.vscode/
+.idea/
+android/build/
+android/app/build/
+*.iml

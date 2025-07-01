@@ -56,6 +56,7 @@ const HomeScreen = ({ navigation }) => {
 
   const handleLogout = async () => {
     try {
+      await AsyncStorage.removeItem("user");
       await AsyncStorage.removeItem("userToken");
       navigation.reset({
         index: 0,
@@ -252,16 +253,20 @@ const HomeScreen = ({ navigation }) => {
               style={styles.avatarContainer}
               activeOpacity={0.8}
             >
-              {userData?.profileImage ? (
+              {userData?.photo || userData?.profileImage ? (
                 <Image
-                  source={{ uri: userData.profileImage }}
+                  source={{ uri: userData.photo || userData.profileImage }}
                   style={styles.avatar}
                   onError={() => {
                     console.log("Failed to load profile image");
                   }}
                 />
               ) : (
-                <DefaultAvatar firstName={userData?.firstName || "Thao"} />
+                <DefaultAvatar
+                  firstName={
+                    userData?.name?.split(" ")[0] || userData?.firstName || "U"
+                  }
+                />
               )}
               <View style={styles.onlineIndicator} />
             </TouchableOpacity>

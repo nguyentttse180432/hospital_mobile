@@ -1,231 +1,249 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ImageBackground,
+  Dimensions,
+  Alert,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import ScreenContainer from "../../components/common/ScreenContainer";
-import Input from "../../components/common/Input";
-import Button from "../../components/common/Button";
-import { login } from "../../services/authService"; // Uncomment if using a service for login
+
+import { loginWithGoogle } from "../../services/authService";
+import * as WebBrowser from "expo-web-browser"; // ✅ Sửa lỗi import sai
+import * as Google from "expo-auth-session/providers/google";
+import * as AuthSession from "expo-auth-session";
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  isErrorWithCode,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
+
+const { width, height } = Dimensions.get("window");
+
+WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = ({ navigation }) => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState({});
-  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId:
+        "879263326241-q390su58qmmkcvhrkk69r59pvqt4smot.apps.googleusercontent.com",
+      offlineAccess: true,
+      scopes: ["profile", "email"],
+      iosClientId:
+        "879263326241-lgtn5qc4ict46et8636211k37hiuunl8.apps.googleusercontent.com",
+    });
+  }, []);
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      console.log("Google user info:", response);
 
-  const validateForm = () => {
-    let valid = true;
-    const newErrors = {};
+      // Extract the actual data from the response
+      // The response structure is: { data: { user, idToken, ... }, type: "success" }
+      const { user, idToken } = response.data || response;
 
-    if (!username.trim()) {
-      newErrors.username = "Tên đăng nhập là bắt buộc";
-      valid = false;
-    }
+      console.log("User data:", user);
+      console.log("ID Token:", idToken);
 
-    if (!password) {
-      newErrors.password = "Mật khẩu là bắt buộc";
-      valid = false;
-    }
+      // Save user data to AsyncStorage
+      const userProfile = {
+        email: user.email,
+        name: user.name,
+        photo: user.photo,
+        id: user.id,
+      };
+      await AsyncStorage.setItem("user", JSON.stringify(userProfile));
 
-    setErrors(newErrors);
-    return valid;
-  };
-
-  const handleLogin = async () => {
-    if (validateForm()) {
+      // Gửi token lên backend (nếu cần)
       try {
-        const data = await login(username, password);
-
-        // Truy cập đúng path:
-        const token = data?.accessToken;
-        const user = data?.user;
-
-        if (!data || !token) {
-          setErrors({ general: "Tên đăng nhập hoặc mật khẩu không đúng" });
-          return;
-        }
-
-        await AsyncStorage.setItem("userToken", token);
-        await AsyncStorage.setItem("user", JSON.stringify(user));
-        
-        if (rememberMe) {
-          await AsyncStorage.setItem("user", JSON.stringify(user));
-        }
-
-        navigation.replace("Main");
-      } catch (error) {
-        if (error.response && error.response.data) {
-          const detail = error.response.data.detail;
-          if (detail) {
-            setErrors({ general: "Tên đăng nhập hoặc mật khẩu không đúng" }); // Hiện thông báo chi tiết từ server
-          }
-        } else {
-          setErrors({ general: "Đã xảy ra lỗi. Vui lòng thử lại sau." });
-        }
+        const backendResponse = await loginWithGoogle(idToken);
+        console.log("Backend response:", backendResponse);
+      } catch (e) {
+        console.warn("Login with backend failed, fallback to frontend only.");
       }
+
+      // Điều hướng sau khi đăng nhập thành công
+      navigation.navigate("Main");
+    } catch (error) {
+      if (isErrorWithCode(error)) {
+        switch (error.code) {
+          case statusCodes.SIGN_IN_CANCELLED:
+            Alert.alert("Lỗi đăng nhập", "Bạn đã hủy đăng nhập Google.");
+            break;
+          case statusCodes.IN_PROGRESS:
+            Alert.alert("Lỗi đăng nhập", "Đang tiến hành đăng nhập Google.");
+            break;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            Alert.alert("Lỗi đăng nhập", "Dịch vụ Google Play không khả dụng.");
+            break;
+          case statusCodes.NETWORK_ERROR:
+            Alert.alert("Lỗi đăng nhập", "Lỗi mạng khi đăng nhập Google.");
+            break;
+          default:
+            console.error("Google Sign-In Error:", error);
+            Alert.alert("Lỗi đăng nhập", "Không thể đăng nhập Google.");
+        }
+      } else {
+        console.error("Unexpected error:", error);
+        Alert.alert("Lỗi", "Đã xảy ra lỗi không mong muốn.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <ScreenContainer>
-      <View style={styles.container}>
-        <View style={styles.logoContainer}>
-          {/* <Image
-            source={require("../assets/images/placeholder-logo.png")}
-            style={styles.logo}
-            defaultSource={require("../assets/images/placeholder-logo.png")}
-          /> */}
-          <Text style={styles.welcomeText}>Chào mừng đến với</Text>
-          <Text style={styles.brandText}>HOSPITAL CARE</Text>
-        </View>
+    <ImageBackground
+      source={require("../../assets/background.png")}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay}>
+        <View style={styles.container}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require("../../assets/hospital.png")}
+              style={styles.logo}
+            />
+            <Text style={styles.welcomeText}>Chào mừng đến với</Text>
+            <Text style={styles.brandText}>HOSPITAL CARE</Text>
+          </View>
 
-        <Text style={styles.loginText}>Vui lòng đăng nhập để sử dụng</Text>
-
-        <View style={styles.formContainer}>
-          <Input
-            label="Username"
-            value={username}
-            onChangeText={setUsername}
-            placeholder="Nhập tên đăng nhập..."
-            keyboardType="default"
-            required
-            error={errors.username}
-          />
-
-          <Input
-            label="Mật khẩu"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Nhập mật khẩu"
-            secureTextEntry
-            required
-            error={errors.password}
-          />
-
-          <TouchableOpacity
-            style={styles.rememberContainer}
-            onPress={() => setRememberMe(!rememberMe)}
-          >
-            <View
-              style={[styles.checkbox, rememberMe && styles.checkboxChecked]}
+          <View style={styles.loginContainer}>
+            <TouchableOpacity
+              style={[
+                styles.googleButton,
+                loading && styles.googleButtonDisabled,
+              ]}
+              onPress={handleGoogleLogin}
             >
-              {rememberMe && <Text style={styles.checkmark}>✓</Text>}
+              <View style={styles.googleButtonContent}>
+                <GoogleSigninButton style={styles.googleIcon} />
+                <Text style={styles.googleButtonText}>
+                  {loading ? "Đang đăng nhập..." : "Đăng nhập với Google"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.termsContainer}>
+              <Text style={styles.termsText}>
+                Bằng cách đăng nhập, bạn đồng ý với{" "}
+                <Text style={styles.linkText}>Điều khoản sử dụng</Text> và{" "}
+                <Text style={styles.linkText}>Chính sách bảo mật</Text>
+              </Text>
             </View>
-            <Text style={styles.rememberText}>Lưu thông tin đăng nhập</Text>
-          </TouchableOpacity>
-
-          {errors.general && (
-            <Text style={styles.errorText}>
-              *{errors.general}
-            </Text>
-          )}
-
-          <Button title="Đăng nhập" onPress={handleLogin} />
-
-          <TouchableOpacity
-            style={styles.forgotPassword}
-            onPress={() => console.log("Forgot password")}
-          >
-            <Text style={styles.forgotPasswordText}>
-              Quên tài khoản hoặc mật khẩu
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.registerButton}
-            onPress={() => navigation.navigate("Register")}
-          >
-            <Text style={styles.registerText}>Đăng ký tài khoản mới</Text>
-          </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </ScreenContainer>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width,
+    height,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+  },
   container: {
     flex: 1,
-    padding: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 30,
   },
   logoContainer: {
     alignItems: "center",
-    marginTop: 10,
     marginBottom: 30,
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     resizeMode: "contain",
+    marginBottom: 20,
   },
   welcomeText: {
     fontSize: 18,
-    marginTop: 10,
+    color: "#FFFFFF",
+    marginBottom: 5,
+    textAlign: "center",
   },
   brandText: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
-    color: "#0066CC",
-    marginTop: 5,
-  },
-  loginText: {
-    fontSize: 16,
+    color: "#FFFFFF",
     textAlign: "center",
-    marginBottom: 20,
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
-  formContainer: {
+  loginContainer: {
     width: "100%",
+    alignItems: "center",
   },
-  rememberContainer: {
+  googleButton: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 25,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    width: "100%",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  googleButtonDisabled: {
+    opacity: 0.6,
+  },
+  googleButtonContent: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    marginRight: 10,
     justifyContent: "center",
-    alignItems: "center",
   },
-  checkboxChecked: {
-    backgroundColor: "#0066CC",
-    borderColor: "#0066CC",
+  googleIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 10,
   },
-  checkmark: {
-    color: "white",
-    fontSize: 14,
+  googleIconImage: {
+    width: 24,
+    height: 24,
   },
-  rememberText: {
+  googleButtonText: {
     fontSize: 16,
-  },
-  errorText: {
-    color: "red",
-    fontSize: 14,
-    marginBottom: 10,
-    textAlign: "right",
-  },
-  forgotPassword: {
-    alignItems: "center",
-    marginTop: 15,
-    marginBottom: 30,
-  },
-  forgotPasswordText: {
-    color: "#0066CC",
-    fontSize: 16,
-  },
-  registerButton: {
-    borderWidth: 1,
-    borderColor: "#0066CC",
-    borderRadius: 5,
-    paddingVertical: 15,
-    alignItems: "center",
-  },
-  registerText: {
-    color: "#0066CC",
-    fontSize: 16,
+    color: "#000000",
     fontWeight: "bold",
+  },
+  termsContainer: {
+    marginTop: 30,
+    paddingHorizontal: 20,
+  },
+  termsText: {
+    fontSize: 12,
+    color: "#FFFFFF",
+    textAlign: "center",
+    lineHeight: 18,
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  linkText: {
+    color: "#87CEEB",
+    textDecorationLine: "underline",
   },
 });
 

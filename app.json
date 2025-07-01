@@ -6,20 +6,27 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "com.hospital.app",
     "splash": {
       "image": "./src/assets/hospital.png",
       "resizeMode": "contain"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hospital.app"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.hospital.app"
     },
-    "web": {
+    "web": {},
+    "extra": {
+      "eas": {
+        "projectId": "78999423-2063-4aaf-8e91-2fa5da31a49a"
+      }
     }
   }
 }
