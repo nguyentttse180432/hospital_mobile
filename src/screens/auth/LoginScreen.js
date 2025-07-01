@@ -12,7 +12,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { loginWithGoogle } from "../../services/authService";
-import * as WebBrowser from "expo-web-browser"; // ✅ Sửa lỗi import sai
+import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import * as AuthSession from "expo-auth-session";
 import {
@@ -37,7 +37,34 @@ const LoginScreen = ({ navigation }) => {
       iosClientId:
         "879263326241-lgtn5qc4ict46et8636211k37hiuunl8.apps.googleusercontent.com",
     });
+
+    // Check if user is already logged in
+    checkLoginStatus();
   }, []);
+
+  const checkLoginStatus = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem("accessToken");
+      const user = await AsyncStorage.getItem("user");
+
+      if (accessToken && user) {
+        // User is already logged in, determine which screen to navigate to
+        const userData = JSON.parse(user);
+        const phoneVerified = JSON.parse(
+          (await AsyncStorage.getItem("phoneVerified")) || "false"
+        );
+
+        if (phoneVerified) {
+          navigation.replace("Main");
+        } else {
+          navigation.replace("HomeScreen"); // ViewOnly mode
+        }
+      }
+    } catch (error) {
+      console.error("Error checking login status:", error);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
@@ -46,31 +73,48 @@ const LoginScreen = ({ navigation }) => {
       console.log("Google user info:", response);
 
       // Extract the actual data from the response
-      // The response structure is: { data: { user, idToken, ... }, type: "success" }
       const { user, idToken } = response.data || response;
 
       console.log("User data:", user);
       console.log("ID Token:", idToken);
 
-      // Save user data to AsyncStorage
-      const userProfile = {
-        email: user.email,
-        name: user.name,
-        photo: user.photo,
-        id: user.id,
-      };
-      await AsyncStorage.setItem("user", JSON.stringify(userProfile));
-
-      // Gửi token lên backend (nếu cần)
+      // Call the backend API for authentication
       try {
         const backendResponse = await loginWithGoogle(idToken);
         console.log("Backend response:", backendResponse);
-      } catch (e) {
-        console.warn("Login with backend failed, fallback to frontend only.");
-      }
 
-      // Điều hướng sau khi đăng nhập thành công
-      navigation.navigate("Main");
+        if (backendResponse.isSuccess) {
+          const { accessToken, refreshToken, user, requiredOtp } =
+            backendResponse.value;
+
+          // Save authentication data to AsyncStorage
+          await AsyncStorage.setItem("accessToken", accessToken);
+          await AsyncStorage.setItem("refreshToken", refreshToken);
+          await AsyncStorage.setItem("user", JSON.stringify(user));
+          await AsyncStorage.setItem(
+            "phoneVerified",
+            JSON.stringify(!!user.phoneNumber && !requiredOtp)
+          );
+
+          // Determine navigation based on requiredOtp and phoneNumber
+          if (!requiredOtp || !user.phoneNumber) {
+            navigation.replace("HomeScreen"); // ViewOnly mode
+          } else {
+            navigation.replace("EnterOtpScreen");
+          }
+        } else {
+          Alert.alert(
+            "Lỗi",
+            backendResponse.error?.message || "Đăng nhập thất bại"
+          );
+        }
+      } catch (e) {
+        console.error("Login with backend failed:", e);
+        Alert.alert(
+          "Lỗi",
+          "Không thể kết nối tới máy chủ. Vui lòng thử lại sau."
+        );
+      }
     } catch (error) {
       if (isErrorWithCode(error)) {
         switch (error.code) {
