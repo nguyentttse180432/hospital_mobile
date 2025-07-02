@@ -36,6 +36,8 @@ const HomeScreen = (props) => {
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [medicalPackages, setMedicalPackages] = useState([]);
   const [services, setServices] = useState([]);
+  const [googleAvatar, setGoogleAvatar] = useState(null);
+  const [googleUserName, setGoogleUserName] = useState(null);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -44,9 +46,20 @@ const HomeScreen = (props) => {
         const isPhoneVerified = JSON.parse(
           (await AsyncStorage.getItem("phoneVerified")) || "false"
         );
+        // Get Google avatar and name from AsyncStorage
+        const googleUserAvatar = await AsyncStorage.getItem("googleUserAvatar");
+        const googleName = await AsyncStorage.getItem("googleUserName");
 
         if (userProfile) {
           setUserData(JSON.parse(userProfile));
+        }
+
+        if (googleUserAvatar) {
+          setGoogleAvatar(googleUserAvatar);
+        }
+
+        if (googleName) {
+          setGoogleUserName(googleName);
         }
 
         setPhoneVerified(isPhoneVerified);
@@ -157,6 +170,9 @@ const HomeScreen = (props) => {
       await AsyncStorage.removeItem("accessToken");
       await AsyncStorage.removeItem("refreshToken");
       await AsyncStorage.removeItem("phoneVerified");
+      await AsyncStorage.removeItem("googleUserAvatar");
+      await AsyncStorage.removeItem("googleUserName");
+      await AsyncStorage.removeItem("otpAlreadySent");
 
       navigation.reset({
         index: 0,
@@ -169,7 +185,10 @@ const HomeScreen = (props) => {
 
   // Enhanced Default Avatar
   const DefaultAvatar = ({ firstName }) => {
-    const initials = firstName ? firstName.charAt(0).toUpperCase() : "T";
+    // If we have a firstName, use it, otherwise check if we have userData.name or googleUserName
+    const nameToUse =
+      firstName || googleUserName || (userData && userData.name) || "U";
+    const initials = nameToUse.charAt(0).toUpperCase();
     return (
       <View style={styles.defaultAvatar}>
         <Text style={styles.avatarText}>{initials}</Text>
@@ -195,7 +214,9 @@ const HomeScreen = (props) => {
       {/* Header with user info */}
       <View style={styles.header}>
         <View style={styles.userInfo}>
-          {userData && userData.photo ? (
+          {googleAvatar ? (
+            <Image source={{ uri: googleAvatar }} style={styles.avatar} />
+          ) : userData && userData.photo ? (
             <Image source={{ uri: userData.photo }} style={styles.avatar} />
           ) : (
             <DefaultAvatar firstName={userData?.name} />
@@ -203,7 +224,7 @@ const HomeScreen = (props) => {
           <View style={styles.userDetails}>
             <Text style={styles.greeting}>Xin chào,</Text>
             <Text style={styles.userName}>
-              {userData?.name || "Người dùng"}
+              {googleUserName || (userData && userData.name) || "Người dùng"}
             </Text>
           </View>
         </View>

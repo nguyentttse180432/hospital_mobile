@@ -123,7 +123,15 @@ const TodayCheckupScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       {todayCheckups.length === 0 && !loading ? (
         <View style={styles.container}>
-          <Text style={styles.title}>Lịch khám hôm nay</Text>
+          <View style={styles.headerTitleContainer}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.backButtonText}>‹</Text>
+            </TouchableOpacity>
+            <Text style={styles.title}>Lịch khám hôm nay</Text>
+          </View>
           <Text style={styles.subtitle}>
             Vui lòng tiến hành xét nghiệm thêm. Nếu có vấn đề, vui lòng ấn vào
             biểu tượng điện thoại phía trên để yêu cầu hỗ trợ.
@@ -148,7 +156,15 @@ const TodayCheckupScreen = () => {
           contentContainerStyle={styles.listContainer}
           ListHeaderComponent={
             <View style={styles.header}>
-              <Text style={styles.title}>Lịch khám hôm nay</Text>
+              <View style={styles.headerTitleContainer}>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => navigation.goBack()}
+                >
+                  <Text style={styles.backButtonText}>‹</Text>
+                </TouchableOpacity>
+                <Text style={styles.title}>Lịch khám hôm nay</Text>
+              </View>
               <Text style={styles.subtitle}>
                 Vui lòng tiến hành xét nghiệm thêm. Nếu có vấn đề, vui lòng ấn
                 vào biểu tượng điện thoại phía trên để yêu cầu hỗ trợ.
@@ -176,10 +192,23 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 0,
   },
+  headerTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  backButton: {
+    padding: 5,
+    marginRight: 10,
+  },
+  backButtonText: {
+    fontSize: 30,
+    fontWeight: "bold",
+    color: "#333",
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 8,
     color: "#333",
   },
   subtitle: {

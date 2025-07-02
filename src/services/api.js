@@ -39,10 +39,18 @@ api.interceptors.response.use(
         const refreshToken = await AsyncStorage.getItem("refreshToken");
 
         if (refreshToken) {
-          // Gọi API để lấy access token mới
+          // Lấy thông tin user từ AsyncStorage
+          const userString = await AsyncStorage.getItem("user");
+          const user = userString ? JSON.parse(userString) : {};
+
+          // Gọi API để lấy access token mới với body đúng format
           const response = await axios.post(
             "https://hair-salon-fpt.io.vn/api/Auth/refresh-token",
-            { refreshToken }
+            {
+              userId: user.id || "",
+              role: user.role || "",
+              refreshToken,
+            }
           );
 
           if (response.data.isSuccess) {
@@ -62,7 +70,8 @@ api.interceptors.response.use(
           }
         }
       } catch (refreshError) {
-        console.error("Refresh token error:", refreshError);
+        // Bỏ console.error để tránh cảnh báo
+        // console.error("Refresh token error:", refreshError);
       }
 
       // Xóa token và chuyển về màn hình đăng nhập nếu refresh token thất bại

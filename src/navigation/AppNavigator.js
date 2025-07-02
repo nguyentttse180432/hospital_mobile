@@ -5,11 +5,11 @@ import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
 import VerifyPhoneScreen from "../screens/auth/VerifyPhoneScreen";
 import EnterOtpScreen from "../screens/auth/EnterOtpScreen";
-import CreateProfileScreen from "../screens/auth/CreateProfileScreen";
-import LinkProfileScreen from "../screens/auth/LinkProfileScreen";
+import CreateProfileScreen from "../screens/patientProfile/CreateProfileScreen";
+import LinkProfileScreen from "../screens/patientProfile/LinkProfileScreen";
 import BottomTabNavigator from "./BottomTabNavigator";
 import HomeScreen from "../screens/HomeScreen";
-import PatientScreen from "../screens/profile/ProfileScreen";
+import PatientScreen from "../screens/account/ProfileScreen";
 
 const Stack = createStackNavigator();
 

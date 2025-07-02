@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { verifyOtp, sendOtpToPhone } from "../../services/authService";
+import { verifyOtpLogin, sendOtpToPhone } from "../../services/authService";
 import ScreenContainer from "../../components/common/ScreenContainer";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
@@ -17,10 +17,41 @@ const EnterOtpScreen = ({ navigation }) => {
     const getUserPhone = async () => {
       try {
         const userData = JSON.parse(await AsyncStorage.getItem("user"));
+        console.log("User data in EnterOtpScreen:", userData);
+
         if (userData && userData.phoneNumber) {
           setPhoneNumber(userData.phoneNumber);
+          console.log("Found phone number:", userData.phoneNumber);
+
+          // Check if we already have a flag indicating OTP has been sent
+          const otpAlreadySent = await AsyncStorage.getItem("otpAlreadySent");
+
+          if (otpAlreadySent === "true") {
+            console.log("OTP was already sent, not sending again");
+          } else {
+            // Automatically send OTP when screen loads
+            console.log("No previous OTP was sent, sending now...");
+
+            sendOtpToPhone(userData.phoneNumber)
+              .then((response) => {
+                if (response.isSuccess) {
+                  console.log("OTP sent automatically on screen load");
+                  // Set flag to indicate OTP has been sent
+                  AsyncStorage.setItem("otpAlreadySent", "true");
+                } else {
+                  console.log(
+                    "Failed to send OTP automatically:",
+                    response.error
+                  );
+                }
+              })
+              .catch((err) => console.error("Error auto-sending OTP:", err));
+          }
         } else {
           // If no phone number, redirect to VerifyPhoneScreen
+          console.log(
+            "No phone number found, redirecting to VerifyPhoneScreen"
+          );
           navigation.replace("VerifyPhoneScreen");
         }
       } catch (error) {
@@ -41,7 +72,11 @@ const EnterOtpScreen = ({ navigation }) => {
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      // Clear the OTP sent flag when component unmounts
+      AsyncStorage.removeItem("otpAlreadySent");
+    };
   }, []);
 
   const formatTime = (seconds) => {
@@ -58,11 +93,24 @@ const EnterOtpScreen = ({ navigation }) => {
 
     try {
       setLoading(true);
-      const response = await verifyOtp(phoneNumber, otp);
+      console.log("Verifying OTP:", otp, "for phone:", phoneNumber);
+
+      const response = await verifyOtpLogin(phoneNumber, otp);
+      console.log("accessToken in response:", response.value.accessToken);
+  
 
       if (response.isSuccess) {
+        // Check if we have an access token now (should be saved by verifyOtp function)
+        const accessToken = await AsyncStorage.getItem("accessToken");
+        console.log("Access token after OTP verification:", !!accessToken);
+
+        if (!accessToken) {
+          console.warn("No access token received after OTP verification!");
+        }
+
         // Set phone as verified
         await AsyncStorage.setItem("phoneVerified", JSON.stringify(true));
+        console.log("Phone verified successfully. Navigating to Main screen");
 
         Alert.alert("Thành công", "Xác minh OTP thành công", [
           {
@@ -74,7 +122,6 @@ const EnterOtpScreen = ({ navigation }) => {
         Alert.alert("Lỗi", response.error?.message || "Mã OTP không hợp lệ");
       }
     } catch (error) {
-      console.error("Error verifying OTP:", error);
       Alert.alert("Lỗi", "Xác minh OTP thất bại, vui lòng thử lại");
     } finally {
       setLoading(false);
@@ -85,9 +132,12 @@ const EnterOtpScreen = ({ navigation }) => {
     try {
       setLoading(true);
       const response = await sendOtpToPhone(phoneNumber);
-      console.log(phoneNumber);
+      console.log("Resending OTP to:", phoneNumber);
 
       if (response.isSuccess) {
+        // Update the flag to indicate new OTP has been sent
+        await AsyncStorage.setItem("otpAlreadySent", "true");
+
         setCountdown(120); // Reset countdown
         Alert.alert(
           "Thành công",

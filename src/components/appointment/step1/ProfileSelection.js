@@ -56,23 +56,46 @@ const ProfileSelection = ({
 
         if (userJSON) {
           mainUser = JSON.parse(userJSON);
+          console.log("Current user from AsyncStorage:", mainUser);
           setCurrentUser(mainUser);
         } // Lấy danh sách người thân từ API
-        const patients = await getPatients();
+        const patientsResponse = await getPatients();
+        console.log("Fetched patients:", patientsResponse);
+
+        let patients = [];
+        if (
+          patientsResponse &&
+          patientsResponse.isSuccess &&
+          patientsResponse.value
+        ) {
+          patients = patientsResponse.value;
+        }
 
         if (patients && Array.isArray(patients)) {
+          // Normalize patient data to handle any formatting issues
+          patients = patients.map((p) => ({
+            ...p,
+            // Fix gender field if needed
+            gender: p.gender || p["g   gender"] || "Unknown",
+          }));
+
           // Lọc ra danh sách người thân (loại bỏ người dùng chính nếu có)
           const relatives =
             mainUser && mainUser.id
               ? patients.filter((p) => p.id !== mainUser.id)
               : patients;
           setFamilyMembers(relatives);
+
+          if (relatives.length === 0) {
+            console.log("No family members found");
+          }
         } else {
-          console.warn("No patients data or invalid format received");
+          console.log("Invalid patients data format:", patients);
           setFamilyMembers([]);
         }
       } catch (error) {
         console.error("Failed to fetch user or patient profiles:", error);
+        setFamilyMembers([]);
       } finally {
         setIsLoading(false);
       }
@@ -119,7 +142,7 @@ const ProfileSelection = ({
         </View>
       ) : (
         <>
-          {familyMembers.length > 0 && (
+          {familyMembers.length > 0 ? (
             <>
               <Text style={styles.sectionTitle}>Hồ sơ của bạn</Text>
               {familyMembers.map((member) => (
@@ -144,7 +167,10 @@ const ProfileSelection = ({
                         {member.dob ? `Tuổi: ${calculateAge(member.dob)}` : ""}
                       </Text>
                       <Text style={styles.cardDetail}>
-                        Giới tính: {member.gender === "Male" ? "Nam" : "Nữ"}
+                        Giới tính:{" "}
+                        {member.gender === "Male" || member.gender === true
+                          ? "Nam"
+                          : "Nữ"}
                       </Text>
                     </View>
                     {selectedProfile?.id === member.id && (
@@ -154,6 +180,11 @@ const ProfileSelection = ({
                 </Card>
               ))}
             </>
+          ) : (
+            <View style={styles.noProfilesContainer}>
+              <Icon name="information-circle-outline" size={24} color="#888" />
+              <Text style={styles.noProfilesText}>Chưa có hồ sơ nào</Text>
+            </View>
           )}
 
           <View style={styles.addProfileSection}>
@@ -338,6 +369,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 8,
   },
+  noProfilesContainer: {
+    padding: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+    marginVertical: 20,
+  },
+  noProfilesText: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 10,
+    textAlign: "center",
+  },
 });
-
 export default ProfileSelection;

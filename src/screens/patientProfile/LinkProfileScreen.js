@@ -27,6 +27,7 @@ const LinkProfileScreen = ({ route, navigation }) => {
         const response = await getPatientByIdNumber(idCard);
 
         if (response.isSuccess && response.value) {
+          console.log("Patient info received:", response.value);
           setPatientInfo(response.value);
           setPhoneNumber(response.value.phone || response.value.phoneNumber);
         } else {
@@ -83,14 +84,51 @@ const LinkProfileScreen = ({ route, navigation }) => {
     try {
       setLoading(true);
 
+      // First verify the OTP code
+      const verifyResponse = await verifyOtp(phoneNumber, otp);
+
+      if (!verifyResponse.isSuccess) {
+        Alert.alert("Lỗi", "Mã OTP không hợp lệ hoặc đã hết hạn");
+        setLoading(false);
+        return;
+      }
+
+      // Show success message for OTP verification
+      Alert.alert("Thành công", "Xác minh OTP thành công", [
+        {
+          text: "Liên kết hồ sơ",
+          onPress: () => proceedWithLinking(),
+        },
+      ]);
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      Alert.alert("Lỗi", "Không thể xác minh OTP, vui lòng thử lại");
+      setLoading(false);
+    }
+  };
+
+  const proceedWithLinking = async () => {
+    try {
+      setLoading(true);
+
+      const patientId = patientInfo.id || patientInfo.patientId;
+
+      if (!patientId) {
+        console.error("Patient ID not found in:", patientInfo);
+        Alert.alert("Lỗi", "Không tìm thấy ID hồ sơ bệnh nhân");
+        setLoading(false);
+        return;
+      }
+
       const linkData = {
-        idCard,
-        phoneNumber,
-        code: otp,
+        patientId,
         isPrimary,
       };
 
       const response = await linkPatientProfile(linkData);
+      console.log("Link response:", response);
 
       if (response.isSuccess) {
         if (isPrimary) {
@@ -109,6 +147,7 @@ const LinkProfileScreen = ({ route, navigation }) => {
           ]);
         }
       } else {
+        console.error("Link profile error:", response.error);
         Alert.alert(
           "Lỗi",
           response.error?.message || "Không thể liên kết hồ sơ"
@@ -201,7 +240,7 @@ const LinkProfileScreen = ({ route, navigation }) => {
             />
 
             <Button
-              title="Liên kết hồ sơ"
+              title="Xác minh OTP"
               onPress={linkProfile}
               loading={loading}
               style={styles.button}

@@ -222,10 +222,8 @@ export const linkPatientToAccount = async (patientId, isPrimary = true) => {
 // Link patient profile with ID card and OTP verification
 export const linkPatientProfile = async (linkData) => {
   try {
-    const response = await api.post("/Patients/link-by-id-card", {
-      idCard: linkData.idCard,
-      phoneNumber: linkData.phoneNumber,
-      code: linkData.code,
+    const response = await api.post("/Patients/link", {
+      patientId: linkData.patientId,
       isPrimary: linkData.isPrimary,
     });
 

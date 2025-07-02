@@ -1,4 +1,5 @@
 import api from "./api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const loginWithGoogle = async (token) => {
   try {
@@ -39,10 +40,52 @@ export const verifyOtp = async (phoneNumber, code) => {
       phoneNumber,
       code,
     });
+    console.log("Response from verifyOtp:", response.data);
+
     // {
     //   "phoneNumber": "string",
     //   "code": "string"
     // }
+
+    return response.data;
+  } catch (error) {
+    console.error("Error verifying OTP:", error);
+    return {
+      isSuccess: false,
+      error: { message: "Mã OTP không hợp lệ hoặc đã hết hạn" },
+    };
+  }
+};
+
+export const verifyOtpLogin = async (phoneNumber, code) => {
+  try {
+    const response = await api.post("Auth/verification-phone-login", {
+      phoneNumber,
+      code,
+    });
+    console.log("Response from verifyOtp:", response.data);
+
+    // {
+    //   "phoneNumber": "string",
+    //   "code": "string"
+    // }
+
+    // Handle the case where the response includes access/refresh tokens
+    // This happens in the requiredOtp flow after successful OTP verification
+    if (response.data.isSuccess && response.data.value) {
+      const { accessToken, refreshToken } = response.data.value;
+
+      if (accessToken) {
+        await AsyncStorage.setItem("accessToken", accessToken);
+        console.log("Access token saved from OTP verification");
+      }
+
+      if (refreshToken) {
+        await AsyncStorage.setItem("refreshToken", refreshToken);
+        console.log("Refresh token saved from OTP verification");
+      }
+    }
+
     return response.data;
   } catch (error) {
     console.error("Error verifying OTP:", error);
@@ -85,6 +128,28 @@ export const refreshToken = async (refreshToken) => {
     return {
       isSuccess: false,
       error: { message: "Không thể làm mới token" },
+    };
+  }
+};
+
+export const logout = async () => {
+  try {
+    // Clear all authentication and user data from AsyncStorage
+    await AsyncStorage.removeItem("user");
+    await AsyncStorage.removeItem("userData");
+    await AsyncStorage.removeItem("authToken");
+    await AsyncStorage.removeItem("accessToken");
+    await AsyncStorage.removeItem("refreshToken");
+
+    // You could also make an API call to invalidate the token on the server if needed
+    // const response = await api.post("Auth/logout");
+
+    return { isSuccess: true };
+  } catch (error) {
+    console.error("Error during logout:", error);
+    return {
+      isSuccess: false,
+      error: { message: "Không thể đăng xuất. Vui lòng thử lại." },
     };
   }
 };

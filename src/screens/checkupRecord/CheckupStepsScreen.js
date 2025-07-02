@@ -128,6 +128,11 @@ const CheckupStepsScreen = () => {
     }, [cleanupSignalR])
   );
 
+  // Add function to handle going back
+  const handleGoBack = () => {
+    navigation.goBack();
+  };
+
   const getServiceStatus = (service) => {
     if (service.serviceName === "Đo sinh hiệu") {
       return service.vitalSignStatus || "Pending";
@@ -162,11 +167,6 @@ const CheckupStepsScreen = () => {
         return "Chưa có kết quả";
     }
   };
-
-  const handleGoBack = useCallback(() => {
-    cleanupSignalR();
-    navigation.goBack();
-  }, [cleanupSignalR, navigation]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

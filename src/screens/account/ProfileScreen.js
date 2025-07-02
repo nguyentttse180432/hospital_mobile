@@ -9,11 +9,17 @@ import {
   RefreshControl,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import {
+  useNavigation,
+  useFocusEffect,
+  CommonActions,
+} from "@react-navigation/native";
 import { useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { getPatientAppointments } from "../../services/appointmentService";
+import { logout } from "../../services/authService";
 import Button from "../../components/common/Button";
+import ScreenContainer from "../../components/common/ScreenContainer";
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
@@ -152,16 +158,20 @@ const ProfileScreen = () => {
         text: "Đăng xuất",
         onPress: async () => {
           try {
-            // Xóa dữ liệu người dùng từ AsyncStorage
-            await AsyncStorage.removeItem("user");
-            await AsyncStorage.removeItem("userData");
-            await AsyncStorage.removeItem("authToken");
+            // Sử dụng service logout để xử lý việc đăng xuất và xóa dữ liệu
+            const result = await logout();
 
-            // Chuyển đến màn hình đăng nhập
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "Login" }],
-            });
+            if (result.isSuccess) {
+              // Reset navigation stack về màn hình Login
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: "Login" }],
+                })
+              );
+            } else {
+              throw new Error(result.error?.message || "Lỗi không xác định");
+            }
           } catch (error) {
             console.error("Error during logout:", error);
             Alert.alert("Lỗi", "Không thể đăng xuất. Vui lòng thử lại.");
@@ -179,7 +189,7 @@ const ProfileScreen = () => {
 
     try {
       // Navigate to the feedback type selection screen with the appropriate status
-      navigation.navigate("FeedbackTypeSelection", {
+      navigateToExamination("FeedbackTypeSelection", {
         appointmentCode: appointment.code || appointment.checkupRecordCode,
         feedbackStatus: {
           hasDoctorFeedback,
@@ -238,14 +248,25 @@ const ProfileScreen = () => {
     }
   };
 
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Hồ Sơ</Text>
-      </View>
+  // Helper function to navigate to Examination tab with specific screens
+  const navigateToExamination = (screenName, params) => {
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: "Phiếu khám",
+        params: {
+          screen: screenName,
+          params: params,
+        },
+      })
+    );
+  };
 
-      {/* Profile Information */}
+  return (
+    <ScreenContainer
+      scrollable={false}
+      title="Hồ Sơ"
+      headerBackgroundColor="#4299e1"
+    >
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -286,7 +307,6 @@ const ProfileScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Tabs for Appointments */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === "today" && styles.activeTab]}
@@ -329,7 +349,6 @@ const ProfileScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Appointment List */}
         <View style={styles.appointmentsContainer}>
           {activeTab === "today" && (
             <View style={styles.todayContainer}>
@@ -341,7 +360,7 @@ const ProfileScreen = () => {
                 </Text>
                 <TouchableOpacity
                   style={styles.todayButton}
-                  onPress={() => navigation.navigate("TodayCheckup")}
+                  onPress={() => navigateToExamination("TodayCheckup")}
                 >
                   <Text style={styles.todayButtonText}>Xem chi tiết</Text>
                   <Icon name="arrow-forward" size={20} color="#4CAF50" />
@@ -358,7 +377,7 @@ const ProfileScreen = () => {
                 </Text>
                 <Button
                   title="Đặt lịch khám"
-                  onPress={() => navigation.navigate("Appointment")}
+                  onPress={() => navigation.navigate("Đặt lịch")}
                   style={styles.bookButton}
                 />
               </View>
@@ -404,7 +423,7 @@ const ProfileScreen = () => {
                   <TouchableOpacity
                     style={styles.viewDetailsButton}
                     onPress={() =>
-                      navigation.navigate("AppointmentDetail", {
+                      navigateToExamination("AppointmentDetail", {
                         appointmentCode: appointment.code,
                         // Không truyền status để sử dụng mặc định
                       })
@@ -468,7 +487,7 @@ const ProfileScreen = () => {
                     <TouchableOpacity
                       style={[styles.actionButton, styles.detailsButton]}
                       onPress={() =>
-                        navigation.navigate("AppointmentDetail", {
+                        navigateToExamination("AppointmentDetail", {
                           appointmentCode: appointment.code,
                           status: "Completed", // Truyền status Completed cho lịch sử khám
                         })
@@ -494,12 +513,11 @@ const ProfileScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Logout Button */}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Icon name="log-out-outline" size={20} color="#e53935" />
         <Text style={styles.logoutText}>Đăng xuất</Text>
       </TouchableOpacity>
-    </View>
+    </ScreenContainer>
   );
 };
 
@@ -507,18 +525,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f7fa",
-  },
-  header: {
-    backgroundColor: "#1976d2",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#fff",
   },
   scrollView: {
     flex: 1,

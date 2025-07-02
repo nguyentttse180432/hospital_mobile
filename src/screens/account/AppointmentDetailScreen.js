@@ -13,6 +13,7 @@ import { useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { getAppointmentByCode } from "../../services/appointmentService";
 import Button from "../../components/common/Button";
+import ScreenContainer from "../../components/common/ScreenContainer";
 
 const AppointmentDetailScreen = ({ route, navigation }) => {
   const { appointmentCode, status } = route.params;
@@ -193,30 +194,24 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <Animated.View
-          style={{ transform: [{ rotate: spin }], marginBottom: 15 }}
-        >
-          <Icon name="sync" size={70} color="#1976d2" />
-        </Animated.View>
-        <Text style={styles.loadingText}>Đang tải...</Text>
-      </View>
+      <ScreenContainer
+        title="Chi tiết lịch hẹn"
+        headerBackgroundColor="#4299e1"
+      >
+        <View style={styles.loadingContainer}>
+          <Animated.View
+            style={{ transform: [{ rotate: spin }], marginBottom: 15 }}
+          >
+            <Icon name="sync" size={70} color="#1976d2" />
+          </Animated.View>
+          <Text style={styles.loadingText}>Đang tải...</Text>
+        </View>
+      </ScreenContainer>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chi tiết lịch hẹn</Text>
-        <View style={styles.rightPlaceholder} />
-      </View>
-
+    <ScreenContainer title="Chi tiết lịch hẹn" headerBackgroundColor="#4299e1">
       <ScrollView style={styles.scrollView}>
         {/* Appointment Status */}
         <View style={styles.statusCard}>
@@ -465,7 +460,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
           {/* Nút "Tạo lịch hẹn mới" hiển thị ở tất cả các trạng thái */}
           <Button
             title="Tạo lịch hẹn mới"
-            onPress={() => navigation.navigate("Appointment")}
+            onPress={() => navigation.navigate("Đặt lịch")}
             style={[
               styles.newAppointmentButton,
               // Chỉ thêm marginTop khi có nút khác ở trên
@@ -481,7 +476,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
           />
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 };
 

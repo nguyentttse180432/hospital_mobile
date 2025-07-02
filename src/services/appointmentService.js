@@ -49,7 +49,7 @@ export const formatAppointmentData = (
 // Lấy tất cả lịch hẹn của một người khám
 export const getPatientAppointments = async (status = null) => {
   try {
-    let url = "/Appointments";
+    let url = "/Accounts/appointments";
     if (status) {
       url += `?Status=${status}`;
     }

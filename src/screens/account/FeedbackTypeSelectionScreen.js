@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import FeedbackTypeSelectionSimple from "./FeedbackTypeSelectionSimple";
+import ScreenContainer from "../../components/common/ScreenContainer";
 
 const FeedbackTypeSelectionScreen = ({ route, navigation }) => {
   const { appointmentCode, feedbackStatus, fromAppointmentDetail } =
@@ -41,30 +42,32 @@ const FeedbackTypeSelectionScreen = ({ route, navigation }) => {
   });
 
   return (
-    <View style={styles.container}>
-      <FeedbackTypeSelectionSimple
-        visible={modalVisible}
-        onClose={handleClose}
-        onSelectType={handleSelectType}
-        appointmentCode={appointmentCode}
-        feedbackStatus={
-          feedbackStatus || {
-            hasDoctorFeedback: false,
-            hasServiceFeedback: false,
-            hasAllFeedbacks: false,
+    <ScreenContainer title="Đánh giá" headerBackgroundColor="#4299e1">
+      <View style={styles.container}>
+        <FeedbackTypeSelectionSimple
+          visible={modalVisible}
+          onClose={handleClose}
+          onSelectType={handleSelectType}
+          appointmentCode={appointmentCode}
+          feedbackStatus={
+            feedbackStatus || {
+              hasDoctorFeedback: false,
+              hasServiceFeedback: false,
+              hasAllFeedbacks: false,
+            }
           }
-        }
-      />
-    </View>
+        />
+      </View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "transparent",
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
 });
 
