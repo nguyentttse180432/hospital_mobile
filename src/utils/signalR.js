@@ -31,8 +31,6 @@ const signalRConnect = async (checkupRecordDetail) => {
           on: (eventName, callback) => {
             ws.onmessage = (event) => {
               try {
-                console.log("Raw WebSocket message:", event.data);
-
                 // SignalR messages can end with ASCII 30 (record separator)
                 const cleanMessage = event.data.replace(/\x1e$/, "");
 

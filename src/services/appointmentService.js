@@ -61,15 +61,39 @@ export const formatAppointmentData = (
 };
 
 // Lấy tất cả lịch hẹn của một người khám
-export const getPatientAppointments = async (status = null) => {
+export const getPatientAppointments = async (
+  status = null,
+  bookingDate = null
+) => {
   try {
     let url = "/Accounts/appointments";
+    const params = new URLSearchParams();
+
     if (status) {
-      url += `?checkupRecordStatus=${status}`;
+      params.append("checkupRecordStatus", status);
+    }
+
+    if (bookingDate) {
+      params.append("bookingDate", bookingDate);
+
+      // Validate that the date format is correct (YYYY-MM-DD)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(bookingDate)) {
+        console.warn(
+          `Warning: bookingDate format may be incorrect: ${bookingDate}`
+        );
+      }
+    }
+
+    // Nếu có tham số, thêm vào URL
+    const queryString = params.toString();
+    if (queryString) {
+      url += `?${queryString}`;
     }
     const response = await api.get(url);
     return response.data;
   } catch (error) {
+    console.error("Error fetching appointments:", error);
     throw error;
   }
 };
@@ -165,4 +189,29 @@ export const getServiceFeedback = async (code) => {
     console.error(`Error fetching service feedback for code ${code}:`, error);
     throw error;
   }
+};
+
+// Helper function to format today's date in different common formats
+// This can help test which format the backend is expecting
+export const getDateInMultipleFormats = () => {
+  const today = new Date();
+  return {
+    isoDate: today.toISOString(), // Full ISO: 2025-07-04T14:30:00.000Z
+    shortIsoDate: today.toISOString().split("T")[0], // YYYY-MM-DD: 2025-07-04
+    localDate: today.toLocaleDateString(), // Local format: 7/4/2025 (US) or 04/07/2025 (EU)
+    formattedDate: `${today.getFullYear()}-${String(
+      today.getMonth() + 1
+    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`, // Manual YYYY-MM-DD
+    alternateFormat: `${String(today.getDate()).padStart(2, "0")}-${String(
+      today.getMonth() + 1
+    ).padStart(2, "0")}-${today.getFullYear()}`, // DD-MM-YYYY
+    noHyphenFormat: `${today.getFullYear()}${String(
+      today.getMonth() + 1
+    ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`, // YYYYMMDD
+    timezoneInfo: {
+      offset: today.getTimezoneOffset(),
+      offsetHours: Math.abs(today.getTimezoneOffset()) / 60,
+      offsetSign: today.getTimezoneOffset() <= 0 ? "+" : "-",
+    },
+  };
 };

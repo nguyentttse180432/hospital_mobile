@@ -63,14 +63,31 @@ export const checkPlayServices = async () => {
 };
 
 /**
- * Đăng xuất khỏi Google
+ * Đăng xuất khỏi Google và xóa dữ liệu đăng nhập
  */
 export const signOutGoogle = async () => {
   try {
     // Thêm timeout để đảm bảo activity đã sẵn sàng
     await new Promise((resolve) => setTimeout(resolve, 500));
 
+    // Thử xóa mọi dữ liệu đăng nhập hiện có
     await GoogleSignin.signOut();
+
+    // Thử xóa dữ liệu WebView nếu expo-web-browser có sẵn
+    try {
+      // Nếu đang sử dụng expo
+      if (WebBrowser && typeof WebBrowser.clearAllCookies === "function") {
+        await WebBrowser.clearAllCookies();
+        console.log("Cleared all WebView cookies");
+      }
+    } catch (cookieError) {
+      console.log("Error clearing cookies:", cookieError);
+    }
+
+    // Đặt lại cấu hình sau khi đăng xuất
+    initGoogleSignIn();
+
+    console.log("Google sign out completed successfully");
     return true;
   } catch (error) {
     console.log("Google Sign-Out error (ignored):", error);
@@ -397,10 +414,58 @@ export const getCurrentGoogleUser = async () => {
   }
 };
 
+/**
+ * Xóa hoàn toàn quyền truy cập của ứng dụng vào tài khoản Google
+ * Sử dụng hàm này khi muốn xóa hoàn toàn liên kết giữa ứng dụng và tài khoản Google
+ */
+export const revokeGoogleAccess = async () => {
+  try {
+    // Kiểm tra xem GoogleSignin có sẵn và đã được khởi tạo chưa
+    initGoogleSignIn();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Kiểm tra xem người dùng có đăng nhập không
+    const isSignedIn = await GoogleSignin.isSignedIn();
+
+    if (isSignedIn) {
+      try {
+        // Cố gắng thu hồi quyền truy cập trước khi đăng xuất
+        if (typeof GoogleSignin.revokeAccess === "function") {
+          await GoogleSignin.revokeAccess();
+          console.log("Successfully revoked Google access");
+        }
+      } catch (revokeError) {
+        console.log("Error revoking access (continuing):", revokeError);
+      }
+    }
+
+    // Đăng xuất sau khi thu hồi quyền truy cập
+    await signOutGoogle();
+
+    // Xóa cookies và dữ liệu WebView nếu có thể
+    if (WebBrowser) {
+      if (typeof WebBrowser.clearAllCookies === "function") {
+        await WebBrowser.clearAllCookies();
+      }
+
+      if (typeof WebBrowser.maybeCompleteAuthSession === "function") {
+        WebBrowser.maybeCompleteAuthSession();
+      }
+    }
+
+    console.log("Complete Google account revocation and logout");
+    return true;
+  } catch (error) {
+    console.log("Error during Google access revocation:", error);
+    return false;
+  }
+};
+
 export default {
   initGoogleSignIn,
   checkPlayServices,
   signOutGoogle,
   performGoogleSignIn,
   getCurrentGoogleUser,
+  revokeGoogleAccess,
 };

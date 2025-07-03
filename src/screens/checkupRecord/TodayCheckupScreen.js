@@ -24,58 +24,62 @@ const TodayCheckupScreen = () => {
     return today.toISOString().split("T")[0];
   };
 
-  const fetchTodayCheckups = async () => {
+  const fetchTodayCheckups = useCallback(async () => {
     try {
       setLoading(true);
 
-      // Sử dụng ngày cụ thể để test, sau này có thể thay bằng getTodayDate()
-      const testDate = "2025-06-27";
-      // const today = getTodayDate();
+      // Sử dụng ngày hiện tại
+      const today = getTodayDate();
+      console.log("Fetching appointments for date:", today);
 
-      const response = await getCheckupRecordsByDateAndStatus(testDate, "Paid");
+      const response = await getCheckupRecordsByDateAndStatus(today, "Paid");
 
       if (response.isSuccess) {
         console.log("API Response:", response);
         setTodayCheckups(response.value.items);
+      } else {
+        console.warn("Failed to fetch appointments:", response);
+        Alert.alert("Lỗi", "Không thể tải danh sách lịch khám ngày hôm nay");
       }
     } catch (error) {
       console.error("Error fetching today checkups:", error);
+      Alert.alert("Lỗi", "Đã xảy ra lỗi khi tải danh sách lịch khám");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchTodayCheckups();
     setRefreshing(false);
-  };
+  }, [fetchTodayCheckups]);
 
   useEffect(() => {
     fetchTodayCheckups();
-  }, []);
+  }, [fetchTodayCheckups]);
 
-  const handleCheckupPress = (checkup) => {
-    console.log("Navigating to CheckupSteps with:", {
-      checkupCode: checkup.code,
-      patientName: checkup.fullname,
-      bookingDate: checkup.bookingDate,
-    });
-
-    try {
-      // Test với TestScreen trước
-      //   navigation.navigate("TestScreen");
-
-      // Nếu TestScreen hoạt động, thử CheckupSteps
-      navigation.navigate("CheckupSteps", {
+  const handleCheckupPress = useCallback(
+    (checkup) => {
+      console.log("Navigating to CheckupSteps with:", {
         checkupCode: checkup.code,
         patientName: checkup.fullname,
         bookingDate: checkup.bookingDate,
       });
-    } catch (error) {
-      console.error("Navigation error:", error);
-    }
-  };
+
+      try {
+        navigation.navigate("CheckupSteps", {
+          checkupCode: checkup.code,
+          patientName: checkup.fullname,
+          bookingDate: checkup.bookingDate,
+        });
+      } catch (error) {
+        console.error("Navigation error:", error);
+        Alert.alert("Lỗi", "Không thể mở màn hình chi tiết xét nghiệm");
+      }
+    },
+    [navigation]
+  );
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);

@@ -3,17 +3,18 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   RefreshControl,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import { useRoute, useFocusEffect } from "@react-navigation/native";
 import ScreenContainer from "../../components/common/ScreenContainer";
-import Header from "../../components/common/Header";
 import Card from "../../components/common/Card";
 import { getCheckupRecordServices } from "../../services/checkupRecordService";
 import signalRConnect from "../../utils/signalR";
 import { useNavigation } from "@react-navigation/native";
+import Icon from "react-native-vector-icons/Ionicons";
 
 const CheckupStepsScreen = () => {
   const navigation = useNavigation();
@@ -24,21 +25,40 @@ const CheckupStepsScreen = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const signalRConnectionRef = useRef(null);
+  const autoRefreshIntervalRef = useRef(null);
 
-  const fetchServices = async () => {
+  const getServiceStatus = (service) => {
+    if (service.serviceName === "Đo sinh hiệu") {
+      return service.vitalSignStatus || "Pending";
+    }
+    if (service.testRecordStatus && service.testRecordStatus !== "Paid") {
+      return service.testRecordStatus;
+    }
+    if (service.checkupRecordStatus && service.checkupRecordStatus !== "Paid") {
+      return service.checkupRecordStatus;
+    }
+    if (
+      service.testRecordStatus === "Paid" ||
+      service.checkupRecordStatus === "Paid"
+    ) {
+      return "Pending";
+    }
+    return "Pending";
+  };
+
+  const fetchServices = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getCheckupRecordServices(checkupCode);
-
-      if (response.isSuccess) {
-        // Sắp xếp services: Đo sinh hiệu luôn đứng đầu, các service khác theo thứ tự
+      if (response && response.isSuccess) {
         const sortedServices = response.value.sort((a, b) => {
           if (a.serviceName === "Đo sinh hiệu") return -1;
           if (b.serviceName === "Đo sinh hiệu") return 1;
           return 0;
         });
-
         setServices(sortedServices);
+      } else {
+        console.warn("Failed to fetch services or empty response", response);
       }
     } catch (error) {
       console.error("Error fetching services:", error);
@@ -46,125 +66,130 @@ const CheckupStepsScreen = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [checkupCode]);
 
-  const initializeSignalR = async () => {
+  const initializeSignalR = useCallback(async () => {
     try {
       console.log("Initializing SignalR connection for:", checkupCode);
       const connection = await signalRConnect({ code: checkupCode });
-
-      // Lắng nghe sự kiện cập nhật status
       connection.on("UpdateStatus", (statusUpdate) => {
         console.log("Status updated via SignalR:", statusUpdate);
         if (statusUpdate) {
           updateServiceStatus(statusUpdate);
         }
       });
-
       signalRConnectionRef.current = connection;
-      console.log("SignalR connection established successfully");
     } catch (error) {
       console.error("SignalR connection failed:", error);
-      // Không hiển thị alert để không làm phiền user
-      // Vẫn có thể sử dụng pull-to-refresh để cập nhật
     }
-  };
+  }, [checkupCode, updateServiceStatus]);
 
   const cleanupSignalR = useCallback(() => {
     if (signalRConnectionRef.current) {
-      console.log("Cleaning up SignalR connection");
       try {
         signalRConnectionRef.current.stop();
         signalRConnectionRef.current = null;
-        console.log("SignalR connection stopped successfully");
       } catch (error) {
         console.error("Error stopping SignalR connection:", error);
       }
     }
   }, []);
 
-  const updateServiceStatus = (statusUpdate) => {
+  const updateServiceStatus = useCallback((statusUpdate) => {
     setServices((prevServices) =>
       prevServices.map((service) => {
-        // Cập nhật status dựa trên serviceCode hoặc testRecordCode
-        if (
-          service.serviceCode.trim() === statusUpdate.serviceCode ||
-          service.testRecordCode === statusUpdate.testRecordCode
-        ) {
+        const serviceCodeMatches =
+          service.serviceCode &&
+          statusUpdate.serviceCode &&
+          service.serviceCode.trim() === statusUpdate.serviceCode.trim();
+        const testRecordMatches =
+          service.testRecordCode &&
+          statusUpdate.testRecordCode &&
+          service.testRecordCode === statusUpdate.testRecordCode;
+        if (serviceCodeMatches || testRecordMatches) {
           return {
             ...service,
             vitalSignStatus:
-              statusUpdate.vitalSignStatus || service.vitalSignStatus,
+              statusUpdate.vitalSignStatus ?? service.vitalSignStatus,
             testRecordStatus:
-              statusUpdate.testRecordStatus || service.testRecordStatus,
+              statusUpdate.testRecordStatus ?? service.testRecordStatus,
             checkupRecordStatus:
-              statusUpdate.checkupRecordStatus || service.checkupRecordStatus,
+              statusUpdate.checkupRecordStatus ?? service.checkupRecordStatus,
           };
         }
         return service;
       })
     );
-  };
+  }, []);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchServices();
     setRefreshing(false);
-  };
+  }, [fetchServices]);
 
   useEffect(() => {
     fetchServices();
-  }, []);
+    const cleanup = setupAutoRefresh();
+    return () => {
+      if (cleanup) cleanup();
+      cleanupSignalR();
+    };
+  }, [fetchServices, setupAutoRefresh, cleanupSignalR]);
 
   useFocusEffect(
     useCallback(() => {
       console.log("Screen focused - initializing SignalR");
+      fetchServices();
       initializeSignalR();
-
+      const cleanup = setupAutoRefresh();
       return () => {
         console.log("Screen unfocused - cleaning up SignalR");
         cleanupSignalR();
+        if (cleanup) cleanup();
       };
-    }, [cleanupSignalR])
+    }, [cleanupSignalR, setupAutoRefresh, fetchServices, initializeSignalR])
   );
 
-  // Add function to handle going back
-  const handleGoBack = () => {
-    navigation.goBack();
-  };
-
-  const getServiceStatus = (service) => {
-    if (service.serviceName === "Đo sinh hiệu") {
-      return service.vitalSignStatus || "Pending";
-    }
-    return service.testRecordStatus || service.checkupRecordStatus || "Pending";
-  };
-
+  // No need for a separate handleGoBack function since we're using ScreenContainer with title
+  // which already has back navigation built-in
   const getStatusColor = (status) => {
     switch (status) {
       case "Completed":
       case "Finished":
-        return "#4CAF50";
+        return "#2E7D32"; // Màu xanh lá cây đậm (hoàn thành)
       case "InProgress":
       case "Processing":
-        return "#FF9800";
+      case "Testing":
+        return "#F57C00"; // Màu cam (đang thực hiện)
       case "Pending":
+        return "#B0BEC5"; // Màu xám nhạt (chờ đợi)
+      case "Checkin":
+        return "#0288D1"; // Màu xanh dương nhạt (chờ cận lâm sàng)
+      case "ProcessingResult":
+        return "#F9A825"; // Màu vàng nhạt (đang chờ kết quả)
       default:
-        return "#9E9E9E";
+        return "#9E9E9E"; // Màu xám mặc định (nếu có trạng thái khác)
     }
   };
 
   const getStatusText = (status) => {
     switch (status) {
       case "Completed":
+        return "Đã hoàn thành";
+      case "Checkin":
+        return "Chờ cận lâm sàng";
       case "Finished":
         return "Đã có kết quả";
-      case "InProgress":
+      case "ProcessingResult":
+        return "Đang chờ kết quả";
+      case "Testing":
+        return "Đang tiến hành";
       case "Processing":
         return "Đang thực hiện";
       case "Pending":
       default:
-        return "Chưa có kết quả";
+        return "Chưa tiến hành";
     }
   };
 
@@ -173,22 +198,32 @@ const CheckupStepsScreen = () => {
     return date.toLocaleDateString("vi-VN");
   };
 
-  const renderServiceItem = (service, index) => {
-    const status = getServiceStatus(service);
+  const renderServiceItem = ({ item, index }) => {
+    const status = getServiceStatus(item);
     const statusColor = getStatusColor(status);
     const statusText = getStatusText(status);
 
     return (
-      <Card key={service.id} style={styles.serviceCard}>
+      <Card
+        key={item.id}
+        style={[
+          styles.serviceCard,
+          { borderLeftWidth: 4, borderLeftColor: statusColor },
+        ]}
+      >
         <View style={styles.serviceContent}>
-          <View style={styles.serviceNumber}>
+          <View
+            style={[styles.serviceNumber, { backgroundColor: statusColor }]}
+          >
             <Text style={styles.serviceNumberText}>{index + 1}</Text>
           </View>
           <View style={styles.serviceInfo}>
-            <Text style={styles.serviceName}>{service.serviceName}</Text>
-            <Text style={styles.roomNumber}>{service.roomNumber}</Text>
-            {service.serviceNote && (
-              <Text style={styles.serviceNote}>{service.serviceNote}</Text>
+            <Text style={styles.serviceName}>{item.serviceName}</Text>
+            {item.roomNumber && (
+              <View style={styles.roomInfoContainer}>
+                <Text style={styles.roomLabel}>Phòng:</Text>
+                <Text style={styles.roomNumber}>{item.roomNumber}</Text>
+              </View>
             )}
           </View>
           <View style={styles.statusContainer}>
@@ -203,57 +238,71 @@ const CheckupStepsScreen = () => {
     );
   };
 
+  const setupAutoRefresh = useCallback(() => {
+    if (autoRefreshIntervalRef.current) {
+      clearInterval(autoRefreshIntervalRef.current);
+    }
+    autoRefreshIntervalRef.current = setInterval(() => {
+      console.log("Auto refreshing service data...");
+      fetchServices();
+    }, 15000);
+    return () => {
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+      }
+    };
+  }, [fetchServices]);
+
   return (
-    <ScreenContainer scrollable={false}>
-      <Header title="Danh sách xét nghiệm" onBack={handleGoBack} />
-      <ScrollView
-        style={styles.container}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#4CAF50"
-          />
-        }
-      >
-        <View style={styles.header}>
-          <View style={styles.patientInfo}>
-            <Text style={styles.patientName}>{patientName}</Text>
-            <Text style={styles.checkupDate}>
-              Ngày khám: {formatDate(bookingDate)}
-            </Text>
-            <Text style={styles.checkupCode}>Mã: {checkupCode}</Text>
-          </View>
-        </View>
-
-        <View style={styles.sectionTitle}>
-          <Text style={styles.sectionTitleText}>Chờ xét nghiệm</Text>
-        </View>
-
-        {services
-          .filter((service) =>
-            ["Pending", "InProgress", "Processing"].includes(
-              getServiceStatus(service)
-            )
-          )
-          .map((service, index) => renderServiceItem(service, index))}
-
-        {services.filter((service) =>
-          ["Completed", "Finished"].includes(getServiceStatus(service))
-        ).length > 0 && (
-          <>
-            <View style={styles.sectionTitle}>
-              <Text style={styles.sectionTitleText}>Đã xét nghiệm</Text>
+    <ScreenContainer
+      scrollable={false}
+      style={{ padding: 0 }}
+      title="Chi tiết phiếu khám"
+      headerBackgroundColor="#4299e1"
+    >
+      <View style={styles.container}>
+        <Card style={styles.headerCard}>
+          <View style={styles.patientInfoSection}>
+            <View style={styles.patientHeader}>
+              <Text style={styles.patientNameLabel}>Bệnh nhân:</Text>
+              <Text style={styles.patientName}>{patientName}</Text>
             </View>
+            <View style={styles.infoGrid}>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Mã phiếu:</Text>
+                <Text style={styles.infoValue}>{checkupCode}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Ngày khám:</Text>
+                <Text style={styles.infoValue}>{formatDate(bookingDate)}</Text>
+              </View>
+            </View>
+          </View>
+        </Card>
 
-            {services
-              .filter((service) =>
-                ["Completed", "Finished"].includes(getServiceStatus(service))
-              )
-              .map((service, index) => renderServiceItem(service, index))}
-          </>
+        {services.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              Không có dịch vụ xét nghiệm nào
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={services}
+            renderItem={renderServiceItem}
+            keyExtractor={(item) => item.id?.toString()}
+            contentContainerStyle={styles.serviceList}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="#4299e1"
+              />
+            }
+            style={{ marginBottom: 0 }} // Ensure the FlatList doesn't overflow
+          />
         )}
-      </ScrollView>
+      </View>
     </ScreenContainer>
   );
 };
@@ -263,103 +312,138 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
-  header: {
-    backgroundColor: "white",
-    padding: 16,
-    marginBottom: 8,
+  headerCard: {
+    padding: 0,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderLeftWidth: 4,
+    borderLeftColor: "#4299e1",
+    elevation: 2,
+    marginHorizontal: 12,
+    marginTop: 12,
+    marginBottom: 12,
   },
-  subtitle: {
+  patientInfoSection: {
+    padding: 16,
+  },
+  patientHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  patientNameLabel: {
     fontSize: 14,
     color: "#666",
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  patientInfo: {
-    backgroundColor: "#f8f9fa",
-    padding: 12,
-    borderRadius: 8,
+    marginRight: 8,
   },
   patientName: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 4,
+    flex: 1,
   },
-  checkupDate: {
+  infoGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  infoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  infoLabel: {
     fontSize: 14,
     color: "#666",
-    marginBottom: 2,
+    marginRight: 4,
   },
-  checkupCode: {
+  infoValue: {
     fontSize: 14,
-    color: "#666",
+    color: "#1976d2",
+    fontWeight: "500",
   },
-  sectionTitle: {
-    backgroundColor: "white",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 8,
-  },
-  sectionTitleText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#4CAF50",
+  serviceList: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 80, // Added extra padding at the bottom to account for the bottom tab navigation
   },
   serviceCard: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-    padding: 0,
+    marginVertical: 8,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   serviceContent: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
   },
   serviceNumber: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#4CAF50",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 10,
   },
   serviceNumberText: {
-    color: "white",
-    fontSize: 16,
+    color: "#fff",
+    fontSize: 14,
     fontWeight: "bold",
   },
   serviceInfo: {
     flex: 1,
+    paddingRight: 10,
   },
   serviceName: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 15,
+    fontWeight: "600",
     color: "#333",
     marginBottom: 4,
   },
-  roomNumber: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 2,
+  roomInfoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  serviceNote: {
-    fontSize: 12,
-    color: "#888",
-    fontStyle: "italic",
+  roomLabel: {
+    fontSize: 13,
+    color: "#555",
+    marginRight: 4,
+  },
+  roomNumber: {
+    fontSize: 13,
+    color: "#1976d2",
   },
   statusContainer: {
     alignItems: "flex-end",
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   statusText: {
-    color: "white",
+    color: "#fff",
     fontSize: 12,
     fontWeight: "500",
+  },
+  emptyContainer: {
+    flex: 1,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    margin: 12,
+    marginBottom: 80, // Added extra margin at the bottom to account for the bottom tab navigation
+    borderRadius: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
   },
 });
 

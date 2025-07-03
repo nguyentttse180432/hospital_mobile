@@ -33,7 +33,6 @@ import googleSignInHelper from "../../utils/googleSignInHelper";
 
 const { width, height } = Dimensions.get("window");
 
-
 const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
@@ -116,7 +115,7 @@ const LoginScreen = ({ navigation }) => {
 
       // Khởi tạo lại GoogleSignin
       googleSignInHelper.initGoogleSignIn();
-      
+
       // Thêm delay để đảm bảo UI được cập nhật và GoogleSignin được khởi tạo đầy đủ
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -125,25 +124,29 @@ const LoginScreen = ({ navigation }) => {
 
       if (!result.success) {
         // Không hiển thị Alert nếu user đã hủy đăng nhập
-        if (result.error && result.error.includes("Bạn đã hủy đăng nhập Google")) {
+        if (
+          result.error &&
+          result.error.includes("Bạn đã hủy đăng nhập Google")
+        ) {
           console.log("User cancelled Google sign-in");
           setLoading(false);
           return;
         }
-        
+
         // Thử khởi tạo lại GoogleSignin và thử lại một lần nữa
-        if (result.error && (
-            result.error.includes("activity is null") || 
+        if (
+          result.error &&
+          (result.error.includes("activity is null") ||
             result.error.includes("isSignedIn is not a function") ||
-            result.error.includes("Không thể khởi tạo đăng nhập Google"))) {
-          
+            result.error.includes("Không thể khởi tạo đăng nhập Google"))
+        ) {
           console.log("Retrying Google sign-in after initialization error");
-          
+
           // Thêm delay dài hơn và thử lại
           await new Promise((resolve) => setTimeout(resolve, 2000));
           googleSignInHelper.initGoogleSignIn();
           await new Promise((resolve) => setTimeout(resolve, 1000));
-          
+
           // Thử lại lần nữa
           const retryResult = await googleSignInHelper.performGoogleSignIn();
           if (!retryResult.success) {
@@ -288,6 +291,43 @@ const LoginScreen = ({ navigation }) => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Hàm xóa hoàn toàn phiên đăng nhập Google
+  const clearGoogleSession = async () => {
+    try {
+      setLoading(true);
+      setLoadingMessage("Đang xóa dữ liệu đăng nhập Google...");
+
+      // Xóa dữ liệu AsyncStorage
+      await AsyncStorage.removeItem("googleUserAvatar");
+      await AsyncStorage.removeItem("googleUserName");
+
+      // Thu hồi quyền truy cập Google
+      await googleSignInHelper.revokeGoogleAccess();
+
+      // Đặt lại state
+      setUserAvatar(null);
+      setUserName(null);
+
+      console.log("Google session cleared successfully");
+      setLoading(false);
+      setLoadingMessage("");
+
+      Alert.alert(
+        "Thành công",
+        "Đã xóa dữ liệu đăng nhập Google. Bạn có thể đăng nhập lại với tài khoản khác."
+      );
+    } catch (error) {
+      console.log("Error clearing Google session:", error);
+      setLoading(false);
+      setLoadingMessage("");
+
+      Alert.alert(
+        "Lỗi",
+        "Không thể xóa hoàn toàn dữ liệu đăng nhập. Vui lòng thử lại sau."
+      );
     }
   };
 
@@ -550,6 +590,19 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     marginTop: 5,
+    textAlign: "center",
+  },
+  clearSessionButton: {
+    marginTop: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 15,
+  },
+  clearSessionText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "500",
     textAlign: "center",
   },
 });
