@@ -6,6 +6,20 @@ export const createAppointment = async (appointmentData) => {
     console.log("Creating appointment with data:", response.data);
     return response.data;
   } catch (error) {
+    console.error("API Error in createAppointment:", error.message);
+
+    // Log detailed error information if available
+    if (error.response) {
+      console.error("Error response data:", error.response.data);
+      console.error("Error response status:", error.response.status);
+
+      // Log the specific error message for debugging
+      if (error.response.data?.detail) {
+        console.error("API error detail:", error.response.data.detail);
+      }
+    }
+
+    // Re-throw the error to be handled by the UI layer
     throw error;
   }
 };
@@ -51,7 +65,7 @@ export const getPatientAppointments = async (status = null) => {
   try {
     let url = "/Accounts/appointments";
     if (status) {
-      url += `?Status=${status}`;
+      url += `?checkupRecordStatus=${status}`;
     }
     const response = await api.get(url);
     return response.data;

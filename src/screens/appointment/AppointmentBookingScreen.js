@@ -118,6 +118,8 @@ const AppointmentScreen = ({ navigation }) => {
         selectedServices
       ); // Send to API
       const response = await createAppointment(appointmentData);
+      console.log("Submitting appointment with data:", appointmentData);
+      console.log("Appointment creation response:", response);
 
       // Save the appointment code from the response
       if (
@@ -140,13 +142,28 @@ const AppointmentScreen = ({ navigation }) => {
       setStep(5);
     } catch (error) {
       console.error("Appointment creation error:", error);
-      Alert.alert(
-        "Lỗi",
-        "Không thể đặt lịch khám. Vui lòng thử lại sau." +
-          (error.response?.data?.message
-            ? `\n\nLỗi: ${error.response.data.message}`
-            : "")
-      );
+
+      // Kiểm tra lỗi cụ thể "This patient had enough booking in one day"
+      if (
+        error.response?.data?.detail ===
+        "This patient had enough booking in one day."
+      ) {
+        Alert.alert(
+          "Không thể đặt lịch",
+          "Bạn đã đặt lịch khám trong ngày này rồi. Mỗi bệnh nhân chỉ được đặt một lịch khám trong một ngày."
+        );
+      } else {
+        // Hiển thị thông báo lỗi chung cho các trường hợp khác
+        Alert.alert(
+          "Lỗi",
+          "Không thể đặt lịch khám. Vui lòng thử lại sau." +
+            (error.response?.data?.message || error.response?.data?.detail
+              ? `\n\nLỗi: ${
+                  error.response.data.message || error.response.data.detail
+                }`
+              : "")
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }

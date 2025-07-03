@@ -113,7 +113,7 @@ const AppointmentConfirmation = ({
                   {appointment.package.name}
                 </Text>
                 <Text style={styles.price}>
-                  {appointment.package.price.toLocaleString("vi-VN")} VNĐ
+                  {appointment.package.price.toLocaleString("vi-VN")} 
                 </Text>
               </View>
             </View>
@@ -129,7 +129,7 @@ const AppointmentConfirmation = ({
                 <View key={sIndex} style={styles.serviceItem}>
                   <Text style={styles.serviceName}>{service.name}</Text>
                   <Text style={styles.price}>
-                    {service.price.toLocaleString("vi-VN")} VNĐ
+                    {service.price.toLocaleString("vi-VN")} 
                   </Text>
                 </View>
               ))}
@@ -144,8 +144,8 @@ const AppointmentConfirmation = ({
           <View style={[styles.detailRow, styles.feeRow]}>
             <Text style={styles.detailLabel}>Tổng chi phí:</Text>
             <Text style={styles.feeValue}>
-              {calculateAppointmentPrice(appointment).toLocaleString("vi-VN")}{" "}
-              VNĐ
+              {calculateAppointmentPrice(appointment).toLocaleString("vi-VN")}
+              
             </Text>
           </View>
         </View>
@@ -155,7 +155,7 @@ const AppointmentConfirmation = ({
           title="Về Trang Chủ"
           onPress={() => {
             resetAppointment();
-            navigation.navigate("Home");
+            navigation.navigate("Main");
           }}
           style={{ width: "100%" }}
         />
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   infoSection: {
     backgroundColor: "#f9f9f9",
     borderRadius: 8,
-    padding: 12,
+    padding: 8,
     marginBottom: 16,
   },
   infoRow: {
@@ -266,14 +266,13 @@ const styles = StyleSheet.create({
   appointmentDetails: {
     backgroundColor: "#f9f9f9",
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    padding: 8,
   },
   appointmentTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#1e88e5",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   detailRow: {
     flexDirection: "row",
@@ -289,6 +288,7 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 14,
     color: "#333",
+    fontWeight: "500",
     flex: 2,
     textAlign: "right",
   },
@@ -325,7 +325,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 3,
     paddingLeft: 10,
-    marginBottom: 2,
   },
   price: {
     fontSize: 13,

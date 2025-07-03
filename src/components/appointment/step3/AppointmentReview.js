@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#1976d2",
     fontWeight: "600",
-    flex: 1.5,
+    flex: 2.75,
     textAlign: "right",
   },
   packagePrice: {

@@ -6,8 +6,8 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  ScrollView,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import ScreenContainer from "../../components/common/ScreenContainer";
@@ -15,11 +15,12 @@ import { getPatientAppointments } from "../../services/appointmentService";
 
 const ExaminationRecordsScreen = () => {
   const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState("completed");
+  const [activeTab, setActiveTab] = useState("paid");
   const [appointments, setAppointments] = useState({
-    upcoming: [],
+    paid: [],
+    booked: [],
     completed: [],
-    pending: [],
+    canceled: [],
   });
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -42,41 +43,74 @@ const ExaminationRecordsScreen = () => {
     setRefreshing(true);
     try {
       // Fetch appointments with different statuses
+      const paidResponse = await getPatientAppointments("Paid");
+      const bookedResponse = await getPatientAppointments("Booked");
       const completedResponse = await getPatientAppointments("Completed");
-      const pendingResponse = await getPatientAppointments("Pending");
-      const upcomingResponse = await getPatientAppointments(); // Default fetches upcoming
+      // const canceledResponse = await getPatientAppointments("Canceled");
 
+      // Xử lý dữ liệu Paid
+      if (paidResponse?.isSuccess && Array.isArray(paidResponse.value)) {
+        const paidAppointments = paidResponse.value.flatMap(
+          (item) => item.patientAppointments || []
+        );
+        setAppointments((prev) => ({
+          ...prev,
+          paid: paidAppointments || [],
+        }));
+      }
+
+      // Xử lý dữ liệu Booked
+      if (bookedResponse?.isSuccess && Array.isArray(bookedResponse.value)) {
+        const bookedAppointments = bookedResponse.value.flatMap(
+          (item) => item.patientAppointments || []
+        );
+        setAppointments((prev) => ({
+          ...prev,
+          booked: bookedAppointments || [],
+        }));
+      }
+
+      // Xử lý dữ liệu Completed (VitalsDone)
       if (
         completedResponse?.isSuccess &&
-        Array.isArray(completedResponse.value?.items)
+        Array.isArray(completedResponse.value)
       ) {
+        const completedAppointments = completedResponse.value.flatMap(
+          (item) => item.patientAppointments || []
+        );
         setAppointments((prev) => ({
           ...prev,
-          completed: completedResponse.value.items || [],
+          completed: completedAppointments || [],
         }));
       }
 
-      if (
-        pendingResponse?.isSuccess &&
-        Array.isArray(pendingResponse.value?.items)
-      ) {
-        setAppointments((prev) => ({
-          ...prev,
-          pending: pendingResponse.value.items || [],
-        }));
-      }
-
-      if (
-        upcomingResponse?.isSuccess &&
-        Array.isArray(upcomingResponse.value?.items)
-      ) {
-        setAppointments((prev) => ({
-          ...prev,
-          upcoming: upcomingResponse.value.items || [],
-        }));
-      }
+      // Xử lý dữ liệu Canceled
+      // if (
+      //   canceledResponse?.isSuccess &&
+      //   Array.isArray(canceledResponse.value)
+      // ) {
+      //   const canceledAppointments = canceledResponse.value.flatMap(
+      //     (item) => item.patientAppointments || []
+      //   );
+      //   setAppointments((prev) => ({
+      //     ...prev,
+      //     canceled: canceledAppointments || [],
+      //   }));
+      // }
     } catch (error) {
       console.error("Error fetching appointments:", error);
+      if (error.response) {
+        // Hiển thị thông tin lỗi chi tiết từ response
+        console.error("Error response data:", error.response.data);
+        console.error("Error response status:", error.response.status);
+        console.error("Error response headers:", error.response.headers);
+      } else if (error.request) {
+        // Lỗi không có response
+        console.error("Error request:", error.request);
+      } else {
+        // Lỗi khác
+        console.error("Error message:", error.message);
+      }
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -92,10 +126,13 @@ const ExaminationRecordsScreen = () => {
       appointmentCode: appointment.code,
       status: appointment.checkupRecordStatus,
     });
+  console.log("Appointment data:", appointment);
   };
 
+  
+
   const renderAppointmentItem = ({ item }) => {
-    const date = item.scheduledDate ? new Date(item.scheduledDate) : null;
+    const date = item.bookingDate ? new Date(item.bookingDate) : null;
     const formattedDate = date
       ? `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1)
           .toString()
@@ -109,29 +146,75 @@ const ExaminationRecordsScreen = () => {
       >
         <View style={styles.appointmentHeader}>
           <Text style={styles.appointmentDate}>{formattedDate}</Text>
-          <View style={styles.statusContainer}>
-            <Icon name="checkmark-circle" size={16} color="#4CAF50" />
-            <Text style={styles.statusText}>
-              {item.checkupRecordStatus === "Completed"
-                ? "Đã hoàn thành"
-                : item.checkupRecordStatus === "Pending"
+          <View
+            style={[
+              styles.statusContainer,
+              item.checkupRecordStatus === "Paid"
+                ? styles.paidStatus
+                : item.checkupRecordStatus === "Booked"
+                ? styles.bookedStatus
+                : item.checkupRecordStatus === "VitalsDone"
+                ? styles.completedStatus
+                : styles.canceledStatus,
+            ]}
+          >
+            <Icon
+              name={
+                item.checkupRecordStatus === "Canceled"
+                  ? "close-circle"
+                  : item.checkupRecordStatus === "Booked"
+                  ? "time"
+                  : "checkmark-circle"
+              }
+              size={16}
+              color={
+                item.checkupRecordStatus === "Paid"
+                  ? "#4CAF50"
+                  : item.checkupRecordStatus === "Booked"
+                  ? "#FF9800"
+                  : item.checkupRecordStatus === "VitalsDone"
+                  ? "#2196F3"
+                  : "#F44336"
+              }
+            />
+            <Text
+              style={[
+                styles.statusText,
+                item.checkupRecordStatus === "Paid"
+                  ? styles.paidText
+                  : item.checkupRecordStatus === "Booked"
+                  ? styles.bookedText
+                  : item.checkupRecordStatus === "VitalsDone"
+                  ? styles.completedText
+                  : styles.canceledText,
+              ]}
+            >
+              {item.checkupRecordStatus === "Paid"
+                ? "Đã thanh toán"
+                : item.checkupRecordStatus === "Booked"
                 ? "Chưa thanh toán"
-                : "Đã khám"}
+                : item.checkupRecordStatus === "VitalsDone"
+                ? "Đã khám"
+                : "Đã hủy"}
             </Text>
           </View>
         </View>
         <View style={styles.appointmentDivider} />
         <View style={styles.appointmentDetails}>
           <View style={styles.detailRow}>
-            <Icon name="person" size={16} color="#666" />
-            <Text style={styles.detailText}>
-              {item.doctorName || "Chưa có thông tin bác sĩ"}
+            <Icon name="medical" size={20} color="#4299e1" />
+            <Text
+              style={styles.detailText}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.packageName || "Không có thông tin gói khám"}
             </Text>
           </View>
           <View style={styles.detailRow}>
-            <Icon name="medical" size={16} color="#666" />
+            <Icon name="barcode" size={20} color="#4299e1" />
             <Text style={styles.detailText}>
-              {item.specialtyName || "Chưa có thông tin khoa"}
+              Mã phiếu: {item.code || "Không có mã"}
             </Text>
           </View>
         </View>
@@ -148,7 +231,39 @@ const ExaminationRecordsScreen = () => {
     >
       <View style={styles.container}>
         <View style={styles.tabContainer}>
-          <View style={styles.tabRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabScrollContent}
+          >
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "paid" && styles.activeTab]}
+              onPress={() => setActiveTab("paid")}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "paid" && styles.activeTabText,
+                ]}
+              >
+                Đã thanh toán
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "booked" && styles.activeTab]}
+              onPress={() => setActiveTab("booked")}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "booked" && styles.activeTabText,
+                ]}
+              >
+                Chưa thanh toán
+              </Text>
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={[
                 styles.tab,
@@ -162,47 +277,35 @@ const ExaminationRecordsScreen = () => {
                   activeTab === "completed" && styles.activeTabText,
                 ]}
               >
-                Đã thanh toán
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "pending" && styles.activeTab]}
-              onPress={() => setActiveTab("pending")}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === "pending" && styles.activeTabText,
-                ]}
-              >
-                Chưa thanh toán
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "upcoming" && styles.activeTab]}
-              onPress={() => setActiveTab("upcoming")}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === "upcoming" && styles.activeTabText,
-                ]}
-              >
                 Đã khám
               </Text>
             </TouchableOpacity>
-          </View>
+
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "canceled" && styles.activeTab]}
+              onPress={() => setActiveTab("canceled")}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "canceled" && styles.activeTabText,
+                ]}
+              >
+                Đã hủy
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
 
         <FlatList
           data={
-            activeTab === "completed"
+            activeTab === "paid"
+              ? appointments.paid
+              : activeTab === "booked"
+              ? appointments.booked
+              : activeTab === "completed"
               ? appointments.completed
-              : activeTab === "pending"
-              ? appointments.pending
-              : appointments.upcoming
+              : appointments.canceled
           }
           keyExtractor={(item) =>
             item.id?.toString() || Math.random().toString()
@@ -240,30 +343,32 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
-  tabRow: {
+  tabScrollContent: {
     flexDirection: "row",
-    width: "100%",
+    paddingHorizontal: 5,
   },
   tab: {
     paddingVertical: 15,
+    paddingHorizontal: 20,
     borderBottomWidth: 3,
     borderBottomColor: "transparent",
-    flex: 1,
     alignItems: "center",
+    marginHorizontal: 5,
   },
   activeTab: {
     borderBottomColor: "#4299e1",
   },
   tabText: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#666",
+    textAlign: "center",
   },
   activeTabText: {
     color: "#4299e1",
     fontWeight: "600",
   },
   listContainer: {
-    padding: 8,
+    padding: 20,
     paddingBottom: 80, // Extra padding at the bottom to ensure all items are visible
   },
   appointmentCard: {
@@ -291,16 +396,38 @@ const styles = StyleSheet.create({
   statusContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#e8f5e9",
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 16,
   },
+  paidStatus: {
+    backgroundColor: "#e8f5e9",
+  },
+  bookedStatus: {
+    backgroundColor: "#fff3e0",
+  },
+  completedStatus: {
+    backgroundColor: "#e3f2fd",
+  },
+  canceledStatus: {
+    backgroundColor: "#ffebee",
+  },
   statusText: {
     fontSize: 12,
-    color: "#4CAF50",
     marginLeft: 4,
     fontWeight: "500",
+  },
+  paidText: {
+    color: "#4CAF50",
+  },
+  bookedText: {
+    color: "#FF9800",
+  },
+  completedText: {
+    color: "#2196F3",
+  },
+  canceledText: {
+    color: "#F44336",
   },
   appointmentDivider: {
     height: 1,
@@ -316,7 +443,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailText: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#666",
   },
   emptyContainer: {

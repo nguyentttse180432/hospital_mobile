@@ -25,7 +25,6 @@ const PatientRecordsScreen = () => {
     try {
       setLoading(true);
       const response = await getPatients();
-      console.log("API Response:", response);
 
       if (response.isSuccess) {
         setPatients(response.value || []);

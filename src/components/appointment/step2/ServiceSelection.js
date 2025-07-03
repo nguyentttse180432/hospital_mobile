@@ -47,7 +47,8 @@ const ServiceSelection = ({
     try {
       setLoading(true);
       const data = await getServices();
-      setServices(data);
+      
+      setServices(data.value);
       setError(null);
     } catch (err) {
       setError("Không thể tải dịch vụ. Vui lòng thử lại sau.");

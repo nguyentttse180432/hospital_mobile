@@ -78,8 +78,9 @@ const MedicalPackageSelection = ({
 
       // Call API with gender and age parameters
       const data = await getMedicalPackages(gender, age);
-      setPackages(data);
-      setFilteredPackages(data);
+      
+      setPackages(data.value);
+      setFilteredPackages(data.value);
       setError(null);
     } catch (err) {
       setError("Không thể tải gói khám. Vui lòng thử lại sau.");
