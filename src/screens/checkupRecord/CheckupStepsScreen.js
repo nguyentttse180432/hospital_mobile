@@ -7,6 +7,8 @@ import {
   RefreshControl,
   Alert,
   TouchableOpacity,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { useRoute, useFocusEffect } from "@react-navigation/native";
 import ScreenContainer from "../../components/common/ScreenContainer";
@@ -253,11 +255,24 @@ const CheckupStepsScreen = () => {
     };
   }, [fetchServices]);
 
+  const renderCustomHeader = () => (
+    <View style={styles.customHeader}>
+      <TouchableOpacity
+        style={styles.headerBackButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Icon name="chevron-back" size={24} color="#fff" />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle}>Chi tiết phiếu khám</Text>
+      <View style={styles.headerRightPlaceholder} />
+    </View>
+  );
+
   return (
     <ScreenContainer
       scrollable={false}
       style={{ padding: 0 }}
-      title="Chi tiết phiếu khám"
+      header={renderCustomHeader()}
       headerBackgroundColor="#4299e1"
     >
       <View style={styles.container}>
@@ -444,6 +459,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     textAlign: "center",
+  },
+  customHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#4299e1",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight + 10 : 10,
+    paddingBottom: 10,
+    paddingHorizontal: 16,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  headerBackButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    flex: 1,
+  },
+  headerRightPlaceholder: {
+    width: 40,
   },
 });
 
