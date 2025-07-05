@@ -899,7 +899,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffebee", // Kept for future use when backend supports Canceled status
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 13,
     marginLeft: 4,
     fontWeight: "500",
   },

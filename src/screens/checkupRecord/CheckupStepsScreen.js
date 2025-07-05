@@ -159,19 +159,19 @@ const CheckupStepsScreen = () => {
     switch (status) {
       case "Completed":
       case "Finished":
-        return "#2E7D32"; // Màu xanh lá cây đậm (hoàn thành)
+        return "#4CAF50"; // Xanh lá - hoàn thành
       case "InProgress":
       case "Processing":
       case "Testing":
-        return "#F57C00"; // Màu cam (đang thực hiện)
+        return "#FF5722"; // Cam đỏ - đang thực hiện
       case "Pending":
-        return "#B0BEC5"; // Màu xám nhạt (chờ đợi)
+        return "#9E9E9E"; // Xám - chờ đợi
       case "Checkin":
-        return "#0288D1"; // Màu xanh dương nhạt (chờ cận lâm sàng)
+        return "#2196F3"; // Xanh dương - chờ cận lâm sàng
       case "ProcessingResult":
-        return "#F9A825"; // Màu vàng nhạt (đang chờ kết quả)
+        return "#ff8300"; // Cam - đang chờ kết quả
       default:
-        return "#9E9E9E"; // Màu xám mặc định (nếu có trạng thái khác)
+        return "#9E9E9E"; // Xám mặc định
     }
   };
 
@@ -195,6 +195,24 @@ const CheckupStepsScreen = () => {
     }
   };
 
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "Completed":
+      case "Finished":
+        return "checkmark-circle";
+      case "Checkin":
+        return "time";
+      case "Processing":
+      case "Testing":
+        return "flask";
+      case "ProcessingResult":
+        return "document-text";
+      case "Pending":
+      default:
+        return "help-circle";
+    }
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("vi-VN");
@@ -204,6 +222,7 @@ const CheckupStepsScreen = () => {
     const status = getServiceStatus(item);
     const statusColor = getStatusColor(status);
     const statusText = getStatusText(status);
+    const statusIcon = getStatusIcon(status);
 
     return (
       <Card
@@ -230,9 +249,31 @@ const CheckupStepsScreen = () => {
           </View>
           <View style={styles.statusContainer}>
             <View
-              style={[styles.statusBadge, { backgroundColor: statusColor }]}
+              style={[
+                styles.statusBadge,
+                {
+                  backgroundColor:
+                    status === "Completed" || status === "Finished"
+                      ? "#e8f5e9"
+                      : status === "Processing" || status === "Testing"
+                      ? "#fbe9e7"
+                      : status === "Checkin"
+                      ? "#e3f2fd"
+                      : status === "ProcessingResult"
+                      ? "#fff3e0"
+                      : "#f5f5f5",
+                },
+              ]}
             >
-              <Text style={styles.statusText}>{statusText}</Text>
+              <Icon
+                name={statusIcon}
+                size={16}
+                color={statusColor}
+                style={styles.statusIcon}
+              />
+              <Text style={[styles.statusText, { color: statusColor }]}>
+                {statusText}
+              </Text>
             </View>
           </View>
         </View>
@@ -346,7 +387,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   patientNameLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#666",
     marginRight: 8,
   },
@@ -366,12 +407,12 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#666",
     marginRight: 4,
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#1976d2",
     fontWeight: "500",
   },
@@ -405,7 +446,7 @@ const styles = StyleSheet.create({
   },
   serviceNumberText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "bold",
   },
   serviceInfo: {
@@ -413,7 +454,7 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   serviceName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "600",
     color: "#333",
     marginBottom: 4,
@@ -428,20 +469,24 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   roomNumber: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#1976d2",
   },
   statusContainer: {
     alignItems: "flex-end",
   },
   statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 12,
   },
+  statusIcon: {
+    marginRight: 4,
+  },
   statusText: {
-    color: "#fff",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "500",
   },
   emptyContainer: {
@@ -478,7 +523,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     textAlign: "center",
     flex: 1,
