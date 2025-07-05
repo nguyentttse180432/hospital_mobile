@@ -155,7 +155,7 @@ const AppointmentConfirmation = ({
           title="Về Trang Chủ"
           onPress={() => {
             resetAppointment();
-            navigation.navigate("Main");
+            navigation.navigate("Home");
           }}
           style={{ width: "100%" }}
         />

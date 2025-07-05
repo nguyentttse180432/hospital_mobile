@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 8,
+    padding: 4, // Giảm khoảng cách chung
   },
   standardHeader: {
     backgroundColor: "#4299e1",

@@ -129,7 +129,7 @@ const HomeScreen = (props) => {
     }
   };
 
-  const handleBookAppointment = async (packageId) => {
+  const handleBookAppointment = async (itemId, isService = false) => {
     // Check if phone is verified
     if (!phoneVerified) {
       Alert.alert(
@@ -147,8 +147,12 @@ const HomeScreen = (props) => {
         ]
       );
     } else {
-      // Navigate to appointment booking screen
-      navigation.navigate("AppointmentBookingScreen", { packageId });
+      // Navigate to appointment booking screen with the appropriate ID
+      if (isService) {
+        navigation.navigate("AppointmentBookingScreen", { serviceId: itemId });
+      } else {
+        navigation.navigate("AppointmentBookingScreen", { packageId: itemId });
+      }
     }
   };
 
@@ -235,7 +239,6 @@ const HomeScreen = (props) => {
             onPress={() => navigation.navigate("VerifyPhoneScreen")}
           >
             <Icon name="alert-circle-outline" size={18} color="#ff6b6b" />
-            <Text style={styles.verifyText}>Xác thực</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -293,12 +296,14 @@ const HomeScreen = (props) => {
                   <Text style={styles.packagePrice}>
                     {item.price.toLocaleString("vi-VN")} đ
                   </Text>
-                  <Text style={styles.packageDescription} numberOfLines={2}>
-                    {item.description}
-                  </Text>
+                  <View style={styles.packageDescriptionContainer}>
+                    <Text style={styles.packageDescription} numberOfLines={2}>
+                      {item.description}
+                    </Text>
+                  </View>
                   <TouchableOpacity
                     style={styles.bookButton}
-                    onPress={() => handleBookAppointment(item.id)}
+                    onPress={() => handleBookAppointment(item.id, false)}
                   >
                     <Text style={styles.bookButtonText}>Đặt khám</Text>
                   </TouchableOpacity>
@@ -337,9 +342,17 @@ const HomeScreen = (props) => {
                   <Text style={styles.servicePrice}>
                     {item.price.toLocaleString("vi-VN")} đ
                   </Text>
-                  <Text style={styles.serviceDescription} numberOfLines={2}>
-                    {item.description}
-                  </Text>
+                  <View style={styles.serviceDescriptionContainer}>
+                    <Text style={styles.serviceDescription} numberOfLines={2}>
+                      {item.description}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.bookButton}
+                    onPress={() => handleBookAppointment(item.id, true)}
+                  >
+                    <Text style={styles.bookButtonText}>Đặt khám</Text>
+                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             )}
@@ -415,7 +428,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#4299e1",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -497,8 +510,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   seeAllText: {
-    color: "#4CAF50",
-    fontSize: 14,
+    color: "#4299e1",
+    fontSize: 16,
     fontWeight: "600",
   },
   packageCard: {
@@ -508,9 +521,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     elevation: 2,
     overflow: "hidden",
+    marginBottom: 16,
   },
   packageCardContent: {
     padding: 16,
+    height: 200, // Đặt chiều cao cố định cho card content
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
   },
   packageName: {
     fontSize: 18,
@@ -519,17 +537,20 @@ const styles = StyleSheet.create({
   },
   packagePrice: {
     fontSize: 16,
-    color: "#4CAF50",
+    color: "#4299e1",
     fontWeight: "bold",
     marginBottom: 8,
+  },
+  packageDescriptionContainer: {
+    minHeight: 40, // Đặt chiều cao tối thiểu cho phần mô tả
+    marginBottom: 12,
   },
   packageDescription: {
     fontSize: 14,
     color: "#666",
-    marginBottom: 12,
   },
   bookButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#4299e1",
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
@@ -537,6 +558,7 @@ const styles = StyleSheet.create({
   bookButtonText: {
     color: "#fff",
     fontWeight: "600",
+    fontSize: 16,
   },
   serviceCard: {
     width: width * 0.6,
@@ -544,9 +566,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "#fff",
     elevation: 2,
+    marginBottom: 10,
+    overflow: "hidden",
   },
   serviceCardContent: {
     padding: 16,
+    height: 180, // Increased height to accommodate the button
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
   },
   serviceName: {
     fontSize: 16,
@@ -555,9 +583,12 @@ const styles = StyleSheet.create({
   },
   servicePrice: {
     fontSize: 14,
-    color: "#4CAF50",
+    color: "#4299e1",
     fontWeight: "bold",
     marginBottom: 8,
+  },
+  serviceDescriptionContainer: {
+    minHeight: 40, // Đặt chiều cao tối thiểu cho phần mô tả
   },
   serviceDescription: {
     fontSize: 14,

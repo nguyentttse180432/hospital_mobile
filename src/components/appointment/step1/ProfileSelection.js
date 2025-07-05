@@ -56,11 +56,9 @@ const ProfileSelection = ({
 
         if (userJSON) {
           mainUser = JSON.parse(userJSON);
-          console.log("Current user from AsyncStorage:", mainUser);
           setCurrentUser(mainUser);
         } // Lấy danh sách người thân từ API
         const patientsResponse = await getPatients();
-        console.log("Fetched patients:", patientsResponse);
 
         let patients = [];
         if (
@@ -157,11 +155,7 @@ const ProfileSelection = ({
                     </View>
                     <View style={styles.cardText}>
                       <Text style={styles.cardTitle}>
-                        {member.fullName ||
-                          member.name ||
-                          `${member.firstName || ""} ${
-                            member.lastName || ""
-                          }`.trim()}
+                        {member.fullName}
                       </Text>
                       <Text style={styles.cardDetail}>
                         {member.dob ? `Tuổi: ${calculateAge(member.dob)}` : ""}

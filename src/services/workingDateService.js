@@ -64,3 +64,22 @@ export const getAvailableTimeSlotsByDate = async (date) => {
     throw error;
   }
 };
+
+//lấy giờ theo hệ thống
+export const getSystemTime = async () => {
+  try {
+    const response = await api.get("/WorkingDates/datetime-server");
+    // {
+    //   "value": "2025-07-05T03:10:04.2392176",
+    //   "error": {
+    //     "code": "",
+    //     "message": ""
+    //   },
+    //   "isSuccess": true
+    // }
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching system time:`, error);
+    throw error;
+  }
+}

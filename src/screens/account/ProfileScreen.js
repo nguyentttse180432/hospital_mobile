@@ -286,11 +286,11 @@ const ProfileScreen = () => {
                 {userProfile?.name || "Chưa cập nhật"}
               </Text>
               <Text style={styles.profileDetail}>
-                <Icon name="call-outline" size={16} color="#555" />{" "}
+                <Icon name="call-outline" size={16} color="#555" />
                 {userProfile?.phoneNumber || "Chưa cập nhật"}
               </Text>
               <Text style={styles.profileDetail}>
-                <Icon name="mail-outline" size={16} color="#555" />{" "}
+                <Icon name="mail-outline" size={16} color="#555" />
                 {userProfile?.email ||
                   userProfile?.username ||
                   "huong@gmail.com"}

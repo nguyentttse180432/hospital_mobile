@@ -48,14 +48,6 @@ const TimeSelection = ({
         rawEndTime: endTime,
       };
 
-      console.log(`Block ${index + 1}:`, {
-        startBlock: block.startBlock,
-        endBlock: block.endBlock,
-        localStartTime: startTime.toLocaleString(),
-        utcStartTime: startTime.toISOString(),
-        formatted: timeSlot,
-      });
-
       return timeSlot;
     });
   };
@@ -86,7 +78,6 @@ const TimeSelection = ({
           selectedDateObj.getFullYear() === now.getFullYear();
 
         console.log("Is today:", isToday);
-        console.log("Time slots from API:", timeSlots);
 
         // Use local time for comparison
         const currentHour = now.getHours();
@@ -119,7 +110,6 @@ const TimeSelection = ({
           return slot;
         });
 
-        console.log("Processed slots:", processedSlots);
         setProcessedTimeSlots(processedSlots);
 
         // Clear selected time if it's no longer available

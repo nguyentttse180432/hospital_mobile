@@ -29,6 +29,8 @@ const LinkProfileScreen = ({ route, navigation }) => {
         if (response.isSuccess && response.value) {
           console.log("Patient info received:", response.value);
           setPatientInfo(response.value);
+          console.log(response.value);
+
           setPhoneNumber(response.value.phone || response.value.phoneNumber);
         } else {
           Alert.alert(
@@ -87,7 +89,7 @@ const LinkProfileScreen = ({ route, navigation }) => {
       // First verify the OTP code
       const verifyResponse = await verifyOtp(phoneNumber, otp);
 
-      if (!verifyResponse.isSuccess) {
+      if (!verifyResponse.value) {
         Alert.alert("Lỗi", "Mã OTP không hợp lệ hoặc đã hết hạn");
         setLoading(false);
         return;
@@ -182,8 +184,8 @@ const LinkProfileScreen = ({ route, navigation }) => {
             <Text style={styles.infoItem}>
               Họ tên:{" "}
               <Text style={styles.infoValue}>
-                {patientInfo.fullName ||
-                  `${patientInfo.firstName} ${patientInfo.lastName}`}
+                {`${patientInfo.firstName} ${patientInfo.lastName}` ||
+                  patientInfo.fullName}
               </Text>
             </Text>
             <Text style={styles.infoItem}>

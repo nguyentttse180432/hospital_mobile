@@ -118,8 +118,6 @@ const AppointmentScreen = ({ navigation }) => {
         selectedServices
       ); // Send to API
       const response = await createAppointment(appointmentData);
-      console.log("Submitting appointment with data:", appointmentData);
-      console.log("Appointment creation response:", response);
 
       // Save the appointment code from the response
       if (

@@ -245,9 +245,8 @@ const CheckupStepsScreen = () => {
       clearInterval(autoRefreshIntervalRef.current);
     }
     autoRefreshIntervalRef.current = setInterval(() => {
-      console.log("Auto refreshing service data...");
       fetchServices();
-    }, 15000);
+    }, 1000);
     return () => {
       if (autoRefreshIntervalRef.current) {
         clearInterval(autoRefreshIntervalRef.current);

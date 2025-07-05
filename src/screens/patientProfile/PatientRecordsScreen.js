@@ -141,19 +141,7 @@ const PatientRecordsScreen = () => {
               </View>
             </View>
           ) : (
-            <View>
-              <View style={styles.infoContainer}>
-                <Icon
-                  name="information-circle-outline"
-                  size={24}
-                  color="#4299e1"
-                />
-                <Text style={styles.infoMessage}>
-                  Vui lòng chọn 1 trong các hồ sơ bên dưới, hoặc bấm vào biểu
-                  tượng ở trên để thêm hồ sơ người bệnh.
-                </Text>
-              </View>
-
+            <View>           
               <View style={styles.patientList}>
                 {patients.map((patient, index) => (
                   <View key={patient.id || index} style={styles.patientCard}>

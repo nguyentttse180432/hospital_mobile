@@ -1,5 +1,5 @@
 // ExaminationRecordsScreen.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,10 +13,9 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import ScreenContainer from "../../components/common/ScreenContainer";
-import {
-  getPatientAppointments,
-  getDateInMultipleFormats,
-} from "../../services/appointmentService";
+import { getPatientAppointments } from "../../services/appointmentService";
+import { getSystemTime } from "../../services/workingDateService";
+import signalRConnect from "../../utils/signalR";
 
 const ExaminationRecordsScreen = () => {
   const navigation = useNavigation();
@@ -29,35 +28,88 @@ const ExaminationRecordsScreen = () => {
     inProgress: [], // Added to track in-progress appointments
     // canceled: [], // Commented until backend supports Canceled status
   });
-  const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [systemDate, setSystemDate] = useState(null);
+  const signalRConnectionRef = useRef(null);
+  const autoRefreshIntervalRef = useRef(null);
 
   // Fetch appointments when component mounts or refreshes
   useEffect(() => {
     fetchAppointments();
-  }, []);
+    const cleanup = setupAutoRefresh();
+
+    return () => {
+      cleanupSignalR();
+      if (cleanup) cleanup();
+    };
+  }, [cleanupSignalR, setupAutoRefresh]);
 
   // Use focus effect to refresh data when screen is focused
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
+      console.log("Screen focused - initializing SignalR");
       fetchAppointments();
-      return () => {};
-    }, [])
+      initializeSignalR();
+      const cleanup = setupAutoRefresh();
+
+      return () => {
+        console.log("Screen unfocused - cleaning up SignalR");
+        cleanupSignalR();
+        if (cleanup) cleanup();
+      };
+    }, [fetchAppointments, initializeSignalR, cleanupSignalR, setupAutoRefresh])
   );
 
-  const fetchAppointments = async () => {
-    setIsLoading(true);
+  const fetchAppointments = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Lấy ngày hiện tại định dạng YYYY-MM-DD theo múi giờ địa phương (+07)
-      const today = new Date();
-      const todayFormatted = today
-        .toLocaleDateString("en-CA", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        })
-        .replace(/\//g, "-"); // Định dạng thành yyyy-mm-dd (ví dụ: 2025-07-04)
+      // Lấy thời gian từ server
+      let serverDate;
+      let todayFormatted;
+
+      try {
+        const systemTimeResponse = await getSystemTime();
+        if (systemTimeResponse && systemTimeResponse.isSuccess) {
+          // Lấy ngày từ chuỗi ISO mà không tạo đối tượng Date để tránh vấn đề múi giờ
+          // Format: 2025-07-05T03:20:13.0525146 -> lấy phần 2025-07-05
+          todayFormatted = systemTimeResponse.value.split("T")[0];
+
+          // Tạo đối tượng Date với phần ngày để hiển thị
+          serverDate = new Date(todayFormatted + "T00:00:00Z");
+
+          setSystemDate(serverDate);
+        } else {
+          // Fallback to current device date if server time fails
+          const today = new Date();
+          // Đảm bảo sử dụng định dạng YYYY-MM-DD của ngày hiện tại
+          todayFormatted =
+            today.getFullYear() +
+            "-" +
+            String(today.getMonth() + 1).padStart(2, "0") +
+            "-" +
+            String(today.getDate()).padStart(2, "0");
+          serverDate = today;
+          setSystemDate(serverDate);
+          console.warn(
+            "Could not get server time, using device time:",
+            todayFormatted
+          );
+        }
+      } catch (error) {
+        // Fallback nếu API lỗi
+        console.error("Error fetching system time, using device time:", error);
+        const today = new Date();
+        // Đảm bảo sử dụng định dạng YYYY-MM-DD của ngày hiện tại
+        todayFormatted =
+          today.getFullYear() +
+          "-" +
+          String(today.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(today.getDate()).padStart(2, "0");
+        serverDate = today;
+        setSystemDate(serverDate);
+        console.warn("Using device date due to error:", todayFormatted);
+      }
 
       // Fetch today's appointments directly from API using the date parameter
       const todayResponse = await getPatientAppointments(null, todayFormatted);
@@ -83,20 +135,35 @@ const ExaminationRecordsScreen = () => {
 
       // Xử lý dữ liệu Today - lấy trực tiếp từ API
       if (todayResponse?.isSuccess && Array.isArray(todayResponse.value)) {
-        const todayAppointments = todayResponse.value.flatMap(
-          (item) => item?.patientAppointments || []
-        );
+        // Tạo mảng tất cả cuộc hẹn từ tất cả bệnh nhân
+        let todayAppointments = [];
+
+        // Lặp qua từng bệnh nhân
+        todayResponse.value.forEach((patient, patientIndex) => {
+          if (Array.isArray(patient.patientAppointments)) {
+            // Thêm fullname vào mỗi cuộc hẹn
+            const patientAppointmentsWithName = patient.patientAppointments.map(
+              (appointment) => ({
+                ...appointment,
+                patientFullName: patient.fullname, // Thêm fullname từ parent object
+              })
+            );
+
+            todayAppointments = [
+              ...todayAppointments,
+              ...patientAppointmentsWithName,
+            ];
+          } else {
+            console.warn(
+              `Patient ${patient.fullname} has no appointments array`
+            );
+          }
+        });
+
         // Log the appointment dates to verify they match today's date
         if (todayAppointments.length > 0) {
-
-          // Verify each appointment date against today's date for debugging
-          const todayString = today
-            .toLocaleDateString("en-CA", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-            })
-            .replace(/\//g, "-");
+          // Verify each appointment date against server date for debugging
+          const todayString = todayFormatted; // Use server date
           todayAppointments.forEach((apt, index) => {
             if (apt.bookingDate) {
               const aptDate = new Date(apt.bookingDate)
@@ -127,9 +194,20 @@ const ExaminationRecordsScreen = () => {
 
       // Xử lý dữ liệu Paid
       if (paidResponse?.isSuccess && Array.isArray(paidResponse.value)) {
-        const paidAppointments = paidResponse.value.flatMap(
-          (item) => item?.patientAppointments || []
-        );
+        let paidAppointments = [];
+
+        paidResponse.value.forEach((patient) => {
+          if (Array.isArray(patient.patientAppointments)) {
+            const appointmentsWithName = patient.patientAppointments.map(
+              (appointment) => ({
+                ...appointment,
+                patientFullName: patient.fullname,
+              })
+            );
+            paidAppointments = [...paidAppointments, ...appointmentsWithName];
+          }
+        });
+
         setAppointments((prev) => ({
           ...prev,
           paid: paidAppointments || [],
@@ -138,9 +216,23 @@ const ExaminationRecordsScreen = () => {
 
       // Xử lý dữ liệu Booked
       if (bookedResponse?.isSuccess && Array.isArray(bookedResponse.value)) {
-        const bookedAppointments = bookedResponse.value.flatMap(
-          (item) => item?.patientAppointments || []
-        );
+        let bookedAppointments = [];
+
+        bookedResponse.value.forEach((patient) => {
+          if (Array.isArray(patient.patientAppointments)) {
+            const appointmentsWithName = patient.patientAppointments.map(
+              (appointment) => ({
+                ...appointment,
+                patientFullName: patient.fullname,
+              })
+            );
+            bookedAppointments = [
+              ...bookedAppointments,
+              ...appointmentsWithName,
+            ];
+          }
+        });
+
         setAppointments((prev) => ({
           ...prev,
           booked: bookedAppointments || [],
@@ -152,9 +244,23 @@ const ExaminationRecordsScreen = () => {
         completedResponse?.isSuccess &&
         Array.isArray(completedResponse.value)
       ) {
-        const completedAppointments = completedResponse.value.flatMap(
-          (item) => item?.patientAppointments || []
-        );
+        let completedAppointments = [];
+
+        completedResponse.value.forEach((patient) => {
+          if (Array.isArray(patient.patientAppointments)) {
+            const appointmentsWithName = patient.patientAppointments.map(
+              (appointment) => ({
+                ...appointment,
+                patientFullName: patient.fullname,
+              })
+            );
+            completedAppointments = [
+              ...completedAppointments,
+              ...appointmentsWithName,
+            ];
+          }
+        });
+
         setAppointments((prev) => ({
           ...prev,
           completed: completedAppointments || [],
@@ -164,52 +270,35 @@ const ExaminationRecordsScreen = () => {
       // Process in-progress appointments (combine all in-progress statuses)
       let allInProgressAppointments = [];
 
-      // Process VitalsDone and VitalSignTesting
-      if (vitalsResponse?.isSuccess && Array.isArray(vitalsResponse.value)) {
-        const vitalsAppointments = vitalsResponse.value.flatMap(
-          (item) => item?.patientAppointments || []
-        );
-        allInProgressAppointments = [
-          ...allInProgressAppointments,
-          ...vitalsAppointments,
-        ];
-      }
+      // Helper function to process patient appointments with fullname
+      const processPatientResponse = (response) => {
+        if (response?.isSuccess && Array.isArray(response.value)) {
+          response.value.forEach((patient) => {
+            if (Array.isArray(patient.patientAppointments)) {
+              const appointmentsWithName = patient.patientAppointments.map(
+                (appointment) => ({
+                  ...appointment,
+                  patientFullName: patient.fullname,
+                })
+              );
+              allInProgressAppointments = [
+                ...allInProgressAppointments,
+                ...appointmentsWithName,
+              ];
+            }
+          });
+        }
+      };
 
-      // Process Waiting
-      if (waitingResponse?.isSuccess && Array.isArray(waitingResponse.value)) {
-        const waitingAppointments = waitingResponse.value.flatMap(
-          (item) => item?.patientAppointments || []
-        );
-        allInProgressAppointments = [
-          ...allInProgressAppointments,
-          ...waitingAppointments,
-        ];
-      }
+      // Process all in-progress statuses
+      processPatientResponse(vitalsResponse);
+      processPatientResponse(vitalSignTestingResponse);
+      processPatientResponse(waitingResponse);
+      processPatientResponse(inCheckupResponse);
+      processPatientResponse(testRequestedResponse);
+      processPatientResponse(testDoneResponse);
+      processPatientResponse(testingResponse);
 
-      // Process InCheckup
-      if (
-        inCheckupResponse?.isSuccess &&
-        Array.isArray(inCheckupResponse.value)
-      ) {
-        const inCheckupAppointments = inCheckupResponse.value.flatMap(
-          (item) => item?.patientAppointments || []
-        );
-        allInProgressAppointments = [
-          ...allInProgressAppointments,
-          ...inCheckupAppointments,
-        ];
-      }
-
-      // Process TestRequested, Testing, TestDone
-      if (testingResponse?.isSuccess && Array.isArray(testingResponse.value)) {
-        const testingAppointments = testingResponse.value.flatMap(
-          (item) => item?.patientAppointments || []
-        );
-        allInProgressAppointments = [
-          ...allInProgressAppointments,
-          ...testingAppointments,
-        ];
-      }
       setAppointments((prev) => ({
         ...prev,
         inProgress: allInProgressAppointments || [],
@@ -240,13 +329,17 @@ const ExaminationRecordsScreen = () => {
         console.error("Error message:", error.message);
       }
     } finally {
-      setIsLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   const onRefresh = () => {
     fetchAppointments();
+
+    // Reinitialize SignalR if connection was lost
+    if (!signalRConnectionRef.current) {
+      initializeSignalR();
+    }
   };
 
   const handleAppointmentPress = (appointment) => {
@@ -271,18 +364,19 @@ const ExaminationRecordsScreen = () => {
         // Nếu đã thanh toán, cho phép truy cập CheckupSteps
         navigation.navigate("CheckupSteps", {
           checkupCode: appointment.code,
-          patientName: appointment.patientName || "Bệnh nhân",
+          patientName:
+            appointment.patientFullName ||
+            appointment.patientName ||
+            "Bệnh nhân",
           bookingDate: appointment.bookingDate,
         });
       }
-      console.log("Today Appointment data:", appointment);
     } else {
       // For other tabs, continue with normal behavior
       navigation.navigate("AppointmentDetail", {
         appointmentCode: appointment.code,
         status: appointment.checkupRecordStatus,
       });
-      console.log("Appointment data:", appointment);
     }
   };
 
@@ -418,6 +512,20 @@ const ExaminationRecordsScreen = () => {
         </View>
         <View style={styles.appointmentDivider} />
         <View style={styles.appointmentDetails}>
+          {/* Hiển thị tên bệnh nhân */}
+          <View style={styles.detailRow}>
+            <Icon name="person" size={20} color="#4299e1" />
+            <Text
+              style={styles.detailText}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {item.patientFullName ||
+                item.patientName ||
+                "Không có tên bệnh nhân"}
+            </Text>
+          </View>
+
           <View style={styles.detailRow}>
             <Icon name="medical" size={20} color="#4299e1" />
             <Text
@@ -438,6 +546,97 @@ const ExaminationRecordsScreen = () => {
       </TouchableOpacity>
     );
   };
+
+  const updateAppointmentStatus = useCallback((statusUpdate) => {
+    if (!statusUpdate || !statusUpdate.appointmentCode) {
+      console.log("Invalid status update received:", statusUpdate);
+      return;
+    }
+
+    console.log("Received status update via SignalR:", statusUpdate);
+
+    // Update appointments in all categories
+    setAppointments((prevAppointments) => {
+      const updateAppointmentsInCategory = (category) => {
+        return prevAppointments[category].map((appointment) => {
+          if (appointment.code === statusUpdate.appointmentCode) {
+            console.log(
+              `Updating appointment ${appointment.code} status to ${statusUpdate.newStatus}`
+            );
+            return {
+              ...appointment,
+              checkupRecordStatus:
+                statusUpdate.newStatus || appointment.checkupRecordStatus,
+              // Add other status fields if needed
+            };
+          }
+          return appointment;
+        });
+      };
+
+      // Create new appointment state with updated statuses
+      const newAppointments = {
+        today: updateAppointmentsInCategory("today"),
+        paid: updateAppointmentsInCategory("paid"),
+        booked: updateAppointmentsInCategory("booked"),
+        completed: updateAppointmentsInCategory("completed"),
+        inProgress: updateAppointmentsInCategory("inProgress"),
+      };
+
+      // If the status changed to a different category, we might need to move the appointment
+      // This should be handled in the next fetch of data
+
+      return newAppointments;
+    });
+  }, []);
+
+  const initializeSignalR = useCallback(async () => {
+    try {
+      console.log("Initializing SignalR connection for appointments");
+      // We're connecting to the general appointment hub
+      const connection = await signalRConnect({ code: "appointments" });
+
+      connection.on("UpdateAppointmentStatus", (statusUpdate) => {
+        console.log("Appointment status updated via SignalR:", statusUpdate);
+        if (statusUpdate) {
+          updateAppointmentStatus(statusUpdate);
+        }
+      });
+
+      signalRConnectionRef.current = connection;
+    } catch (error) {
+      console.error("SignalR connection failed:", error);
+    }
+  }, [updateAppointmentStatus]);
+
+  const cleanupSignalR = useCallback(() => {
+    if (signalRConnectionRef.current) {
+      try {
+        signalRConnectionRef.current.stop();
+        signalRConnectionRef.current = null;
+        console.log("SignalR connection closed");
+      } catch (error) {
+        console.error("Error stopping SignalR connection:", error);
+      }
+    }
+  }, []);
+
+  const setupAutoRefresh = useCallback(() => {
+    if (autoRefreshIntervalRef.current) {
+      clearInterval(autoRefreshIntervalRef.current);
+    }
+    // Refresh data every 30 seconds as fallback if SignalR fails
+    autoRefreshIntervalRef.current = setInterval(() => {
+      fetchAppointments();
+    }, 30000); // 30 seconds
+
+    return () => {
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+        autoRefreshIntervalRef.current = null;
+      }
+    };
+  }, [fetchAppointments]);
 
   return (
     <ScreenContainer
@@ -547,7 +746,6 @@ const ExaminationRecordsScreen = () => {
           </ScrollView>
         </View>
 
-    
         <FlatList
           data={
             activeTab === "today"
@@ -577,13 +775,11 @@ const ExaminationRecordsScreen = () => {
               <Icon name="document-text-outline" size={80} color="#e0e0e0" />
               <Text style={styles.emptyText}>
                 {activeTab === "today"
-                  ? `Không có phiếu khám nào cho hôm nay (${new Date()
-                      .toLocaleDateString("en-CA", {
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                      })
-                      .replace(/\//g, "-")})`
+                  ? `Không có phiếu khám nào cho hôm nay (${
+                      systemDate
+                        ? systemDate.toLocaleDateString()
+                        : "đang tải..."
+                    })`
                   : activeTab === "paid"
                   ? "Không có phiếu khám đã thanh toán"
                   : activeTab === "booked"
@@ -594,16 +790,9 @@ const ExaminationRecordsScreen = () => {
                   ? "Không có phiếu khám nào đang xử lý"
                   : "Bạn chưa có phiếu khám nào"}
               </Text>
-              {activeTab === "today" && (
+              {activeTab === "today" && systemDate && (
                 <Text style={styles.emptySubText}>
-                  Ngày tìm kiếm:{" "}
-                  {new Date()
-                    .toLocaleDateString("en-CA", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                    })
-                    .replace(/\//g, "-")}
+                  Ngày tìm kiếm: {systemDate.toLocaleDateString("vi-VN")}
                 </Text>
               )}
             </View>
@@ -804,6 +993,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginLeft: 4,
+  },
+  dateInfoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e6f7ff",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  dateInfoText: {
+    fontSize: 14,
+    color: "#444",
+    marginLeft: 8,
+    fontWeight: "500",
   },
 });
 

@@ -3,7 +3,6 @@ import api from "./api";
 export const createAppointment = async (appointmentData) => {
   try {
     const response = await api.post("/Appointments", appointmentData);
-    console.log("Creating appointment with data:", response.data);
     return response.data;
   } catch (error) {
     console.error("API Error in createAppointment:", error.message);
@@ -214,4 +213,23 @@ export const getDateInMultipleFormats = () => {
       offsetSign: today.getTimezoneOffset() <= 0 ? "+" : "-",
     },
   };
+};
+
+// Lấy thời gian hệ thống từ server
+export const getSystemTime = async () => {
+  try {
+    const response = await api.get("/WorkingDates/datetime-server");
+    // {
+    //   "value": "2025-07-05T03:10:04.2392176",
+    //   "error": {
+    //     "code": "",
+    //     "message": ""
+    //   },
+    //   "isSuccess": true
+    // }
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching system time:`, error);
+    throw error;
+  }
 };
