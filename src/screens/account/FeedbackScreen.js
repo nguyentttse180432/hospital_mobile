@@ -24,6 +24,8 @@ const FeedbackScreenNew = ({ route, navigation }) => {
     appointmentCode,
     feedbackType = "service",
     isViewMode = false,
+    status, // Save the status from route params
+    patientName, // Save the patient name from route params
   } = route.params;
 
   const [loading, setLoading] = useState(true);
@@ -52,6 +54,8 @@ const FeedbackScreenNew = ({ route, navigation }) => {
   // Load all data
   useEffect(() => {
     console.log("FeedbackScreen loading with params:", route.params);
+    // Log specifically status and patientName
+    console.log("Status:", status, "PatientName:", patientName);
     loadData();
   }, []);
 
@@ -94,16 +98,46 @@ const FeedbackScreenNew = ({ route, navigation }) => {
               // Update service feedback fields
               const fb = feedbackResponse.value;
               setFeedbackFields({
-                staffFriendliness: fb.staffFriendliness || "Neutral",
-                communicationClarity: fb.communicationClarity || "Neutral",
-                questionWillingness: fb.questionWillingness || "Neutral",
-                reasonableWaitTime: fb.reasonableWaitTime || "Neutral",
-                onTimeAppointment: fb.onTimeAppointment || "Neutral",
-                clearProcedure: fb.clearProcedure || "Neutral",
-                guidedThroughProcess: fb.guidedThroughProcess || "Neutral",
-                cleanFacility: fb.cleanFacility || "Neutral",
-                modernEquipment: fb.modernEquipment || "Neutral",
-                overallSatisfaction: fb.overallSatisfaction || "Neutral",
+                staffFriendliness:
+                  fb.staffFriendliness === "VeryBad"
+                    ? "Bad"
+                    : fb.staffFriendliness || "Neutral",
+                communicationClarity:
+                  fb.communicationClarity === "VeryBad"
+                    ? "Bad"
+                    : fb.communicationClarity || "Neutral",
+                questionWillingness:
+                  fb.questionWillingness === "VeryBad"
+                    ? "Bad"
+                    : fb.questionWillingness || "Neutral",
+                reasonableWaitTime:
+                  fb.reasonableWaitTime === "VeryBad"
+                    ? "Bad"
+                    : fb.reasonableWaitTime || "Neutral",
+                onTimeAppointment:
+                  fb.onTimeAppointment === "VeryBad"
+                    ? "Bad"
+                    : fb.onTimeAppointment || "Neutral",
+                clearProcedure:
+                  fb.clearProcedure === "VeryBad"
+                    ? "Bad"
+                    : fb.clearProcedure || "Neutral",
+                guidedThroughProcess:
+                  fb.guidedThroughProcess === "VeryBad"
+                    ? "Bad"
+                    : fb.guidedThroughProcess || "Neutral",
+                cleanFacility:
+                  fb.cleanFacility === "VeryBad"
+                    ? "Bad"
+                    : fb.cleanFacility || "Neutral",
+                modernEquipment:
+                  fb.modernEquipment === "VeryBad"
+                    ? "Bad"
+                    : fb.modernEquipment || "Neutral",
+                overallSatisfaction:
+                  fb.overallSatisfaction === "VeryBad"
+                    ? "Bad"
+                    : fb.overallSatisfaction || "Neutral",
                 recommendToOthers:
                   fb.recommendToOthers !== undefined
                     ? fb.recommendToOthers
@@ -163,11 +197,19 @@ const FeedbackScreenNew = ({ route, navigation }) => {
         {
           text: "OK",
           onPress: () => {
-            navigation.navigate({
-              name: "ProfileMain",
-              params: { feedbackCompleted: true },
-              merge: true,
-            });
+            if (route.params?.fromAppointmentDetail) {
+              navigation.navigate("AppointmentDetail", {
+                appointmentCode: appointmentCode,
+                status: status,
+                patientName: patientName,
+              });
+            } else {
+              navigation.navigate({
+                name: "ProfileMain",
+                params: { feedbackCompleted: true },
+                merge: true,
+              });
+            }
           },
         },
       ]);
@@ -214,7 +256,6 @@ const FeedbackScreenNew = ({ route, navigation }) => {
   // Render a service feedback item with options
   const renderFeedbackItem = (label, field) => {
     const options = [
-      { value: "VeryBad", label: "Rất kém" },
       { value: "Bad", label: "Kém" },
       { value: "Neutral", label: "Bình thường" },
       { value: "Good", label: "Tốt" },
@@ -313,6 +354,8 @@ const FeedbackScreenNew = ({ route, navigation }) => {
               if (route.params?.fromAppointmentDetail) {
                 navigation.navigate("AppointmentDetail", {
                   appointmentCode: appointmentCode,
+                  status: status,
+                  patientName: patientName,
                 });
               } else {
                 navigation.navigate("ProfileMain");
@@ -347,7 +390,7 @@ const FeedbackScreenNew = ({ route, navigation }) => {
                 })
               }
               style={{ marginBottom: 10 }}
-            />
+            />{" "}
             <Button
               title="Quay lại"
               onPress={() => {
@@ -355,6 +398,8 @@ const FeedbackScreenNew = ({ route, navigation }) => {
                 if (route.params?.fromAppointmentDetail) {
                   navigation.navigate("AppointmentDetail", {
                     appointmentCode: appointmentCode,
+                    status: status,
+                    patientName: patientName,
                   });
                 } else {
                   navigation.navigate("ProfileMain");
@@ -389,6 +434,8 @@ const FeedbackScreenNew = ({ route, navigation }) => {
             if (route.params?.fromAppointmentDetail) {
               navigation.navigate("AppointmentDetail", {
                 appointmentCode: appointmentCode,
+                status: status,
+                patientName: patientName,
               });
             } else {
               navigation.navigate("ProfileMain");
@@ -530,6 +577,8 @@ const FeedbackScreenNew = ({ route, navigation }) => {
               if (route.params?.fromAppointmentDetail) {
                 navigation.navigate("AppointmentDetail", {
                   appointmentCode: appointmentCode,
+                  status: status,
+                  patientName: patientName,
                 });
               } else {
                 navigation.navigate("ProfileMain");
@@ -556,7 +605,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#1976d2",
+    backgroundColor: "#4299e1",
     paddingVertical: 15,
     paddingHorizontal: 16,
     paddingTop: 50,
@@ -661,21 +710,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
+    justifyContent: "center",
     alignItems: "center",
-    marginHorizontal: 2,
-    minWidth: 50,
+    marginHorizontal: 3,
+    minWidth: 65,
   },
   selectedOption: {
-    backgroundColor: "#1976d2",
-    borderColor: "#1976d2",
+    backgroundColor: "#4299e1",
+    borderColor: "#4299e1",
   },
   optionText: {
-    fontSize: 12,
+    fontSize: 13,
     textAlign: "center",
+    width: "100%",
   },
   selectedOptionText: {
     color: "#fff",
     fontWeight: "bold",
+    textAlign: "center",
   },
   booleanOptionsContainer: {
     flexDirection: "row",
@@ -688,6 +740,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
+    justifyContent: "center",
     alignItems: "center",
     marginHorizontal: 8,
     backgroundColor: "#f9f9f9",
@@ -700,10 +753,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     color: "#333",
+    width: "100%",
   },
   selectedBooleanOptionText: {
     color: "#fff",
     fontWeight: "bold",
+    textAlign: "center",
   },
   noFeedbackContainer: {
     flex: 1,

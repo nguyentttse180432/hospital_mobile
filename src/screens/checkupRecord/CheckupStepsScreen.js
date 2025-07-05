@@ -164,6 +164,8 @@ const CheckupStepsScreen = () => {
       case "Processing":
       case "Testing":
         return "#FF5722"; // Cam đỏ - đang thực hiện
+      case "TestDone":
+        return "#8bc34a"; // Xanh lá nhạt - đã xét nghiệm xong
       case "Pending":
         return "#9E9E9E"; // Xám - chờ đợi
       case "Checkin":
@@ -187,6 +189,8 @@ const CheckupStepsScreen = () => {
         return "Đang chờ kết quả";
       case "Testing":
         return "Đang tiến hành";
+      case "TestDone":
+        return "Đã xét nghiệm xong";
       case "Processing":
         return "Đang thực hiện";
       case "Pending":
@@ -204,7 +208,9 @@ const CheckupStepsScreen = () => {
         return "time";
       case "Processing":
       case "Testing":
-        return "flask";
+        return "testing";
+      case "TestDone":
+        return "checkmark-done";
       case "ProcessingResult":
         return "document-text";
       case "Pending":
@@ -255,6 +261,8 @@ const CheckupStepsScreen = () => {
                   backgroundColor:
                     status === "Completed" || status === "Finished"
                       ? "#e8f5e9"
+                      : status === "TestDone"
+                      ? "#f1f8e9"
                       : status === "Processing" || status === "Testing"
                       ? "#fbe9e7"
                       : status === "Checkin"

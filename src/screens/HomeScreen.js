@@ -21,6 +21,8 @@ import {
   useRoute,
   useIsFocused,
 } from "@react-navigation/native";
+import { logout } from "../services/authService";
+
 
 const { width } = Dimensions.get("window");
 
@@ -38,6 +40,7 @@ const HomeScreen = (props) => {
   const [services, setServices] = useState([]);
   const [googleAvatar, setGoogleAvatar] = useState(null);
   const [googleUserName, setGoogleUserName] = useState(null);
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -169,21 +172,49 @@ const HomeScreen = (props) => {
   };
 
   const handleLogout = async () => {
+    setShowLogoutAlert(false);
     try {
+      // Call the logout service
+      const result = await logout();
+      
+      // Clear additional items not handled by the logout service
       await AsyncStorage.removeItem("user");
-      await AsyncStorage.removeItem("accessToken");
-      await AsyncStorage.removeItem("refreshToken");
       await AsyncStorage.removeItem("phoneVerified");
       await AsyncStorage.removeItem("googleUserAvatar");
       await AsyncStorage.removeItem("googleUserName");
       await AsyncStorage.removeItem("otpAlreadySent");
 
+      // Navigate to login screen
       navigation.reset({
         index: 0,
         routes: [{ name: "Login" }],
       });
     } catch (error) {
       console.error("Lỗi khi đăng xuất", error);
+      Alert.alert(
+        "Lỗi",
+        "Không thể đăng xuất. Vui lòng thử lại sau."
+      );
+    }
+  };
+
+  const showLogoutConfirmation = () => {
+    if (!phoneVerified) {
+      Alert.alert(
+        "Đăng xuất",
+        "Bạn có chắc chắn muốn đăng xuất?",
+        [
+          {
+            text: "Hủy",
+            style: "cancel"
+          },
+          {
+            text: "Đăng xuất", 
+            onPress: handleLogout,
+            style: "destructive"
+          }
+        ]
+      );
     }
   };
 
@@ -218,13 +249,20 @@ const HomeScreen = (props) => {
       {/* Header with user info */}
       <View style={styles.header}>
         <View style={styles.userInfo}>
-          {googleAvatar ? (
-            <Image source={{ uri: googleAvatar }} style={styles.avatar} />
-          ) : userData && userData.photo ? (
-            <Image source={{ uri: userData.photo }} style={styles.avatar} />
-          ) : (
-            <DefaultAvatar firstName={userData?.name} />
-          )}
+          <TouchableOpacity onPress={showLogoutConfirmation}>
+            {googleAvatar ? (
+              <Image source={{ uri: googleAvatar }} style={styles.avatar} />
+            ) : userData && userData.photo ? (
+              <Image source={{ uri: userData.photo }} style={styles.avatar} />
+            ) : (
+              <DefaultAvatar firstName={userData?.name} />
+            )}
+            {!phoneVerified && (
+              <View style={styles.logoutIndicator}>
+                <Icon name="log-out-outline" size={12} color="#fff" />
+              </View>
+            )}
+          </TouchableOpacity>
           <View style={styles.userDetails}>
             <Text style={styles.greeting}>Xin chào,</Text>
             <Text style={styles.userName}>
@@ -437,6 +475,19 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
   },
+  logoutIndicator: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#ff6b6b",
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#fff",
+  },
   userDetails: {
     marginLeft: 12,
   },
@@ -601,7 +652,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   verifyBanner: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#4299e1",
     marginHorizontal: 16,
     marginTop: 24,
     borderRadius: 12,
@@ -623,7 +674,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   verifyBannerButtonText: {
-    color: "#4CAF50",
+    color: "#4299e1",
     fontWeight: "bold",
   },
 });

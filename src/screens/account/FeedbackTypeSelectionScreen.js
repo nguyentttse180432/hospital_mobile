@@ -4,8 +4,13 @@ import FeedbackTypeSelectionSimple from "./FeedbackTypeSelectionSimple";
 import ScreenContainer from "../../components/common/ScreenContainer";
 
 const FeedbackTypeSelectionScreen = ({ route, navigation }) => {
-  const { appointmentCode, feedbackStatus, fromAppointmentDetail } =
-    route.params;
+  const {
+    appointmentCode,
+    feedbackStatus,
+    fromAppointmentDetail,
+    status,
+    patientName,
+  } = route.params;
   const [modalVisible, setModalVisible] = useState(true);
 
   const handleClose = () => {
@@ -13,6 +18,8 @@ const FeedbackTypeSelectionScreen = ({ route, navigation }) => {
     if (fromAppointmentDetail) {
       navigation.navigate("AppointmentDetail", {
         appointmentCode,
+        status,
+        patientName,
       });
     } else {
       navigation.goBack();
@@ -33,6 +40,8 @@ const FeedbackTypeSelectionScreen = ({ route, navigation }) => {
       feedbackType,
       isViewMode,
       fromAppointmentDetail,
+      status,
+      patientName,
     });
   };
 
