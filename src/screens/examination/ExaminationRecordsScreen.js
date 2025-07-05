@@ -376,6 +376,7 @@ const ExaminationRecordsScreen = () => {
       navigation.navigate("AppointmentDetail", {
         appointmentCode: appointment.code,
         status: appointment.checkupRecordStatus,
+        patientName: appointment.patientFullName || appointment.patientName || "Bệnh nhân",
       });
     }
   };

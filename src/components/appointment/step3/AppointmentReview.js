@@ -186,12 +186,6 @@ const AppointmentReview = ({
                   </Text>
                 </View>
 
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Phòng khám</Text>
-                  <Text style={styles.roomValue}>
-                    {appointmentData.time?.room || "Sẽ thông báo sau"}
-                  </Text>
-                </View>
               </View>
               <View style={styles.totalSection}>
                 <View style={styles.totalRow}>

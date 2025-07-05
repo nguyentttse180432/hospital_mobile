@@ -142,15 +142,6 @@ const FeedbackTypeSelection = ({
               </View>
               <Icon name="chevron-forward" size={24} color="#ccc" />
             </TouchableOpacity>
-
-            <View style={styles.illustrationContainer}>
-              <Icon name="star-half" size={100} color="#f0f0f0" />
-              <Text style={styles.illustrationText}>
-                {isViewingMode
-                  ? "Cảm ơn bạn đã đánh giá dịch vụ của chúng tôi"
-                  : "Phản hồi của bạn giúp chúng tôi cải thiện dịch vụ"}
-              </Text>
-            </View>
           </ScrollView>
         </View>
       </View>

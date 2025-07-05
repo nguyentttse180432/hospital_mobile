@@ -9,26 +9,25 @@ import {
   Animated,
   Easing,
 } from "react-native";
-import { useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { getAppointmentByCode } from "../../services/appointmentService";
 import Button from "../../components/common/Button";
 import ScreenContainer from "../../components/common/ScreenContainer";
 
 const AppointmentDetailScreen = ({ route, navigation }) => {
-  const { appointmentCode, status } = route.params;
+  const { appointmentCode, status, patientName } = route.params;
+
   const [appointment, setAppointment] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const spinValue = useRef(new Animated.Value(0)).current;
 
-  // Hiệu ứng xoay liên tục
   useEffect(() => {
     if (isLoading) {
       Animated.loop(
         Animated.timing(spinValue, {
           toValue: 1,
-          duration: 1500,
+          duration: 1000,
           easing: Easing.linear,
           useNativeDriver: true,
         })
@@ -38,7 +37,6 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
     }
   }, [isLoading, spinValue]);
 
-  // Chuyển đổi giá trị spinValue thành độ xoay
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],
@@ -48,14 +46,10 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
     fetchAppointmentDetails();
   }, []);
 
-  // Effect to refresh appointment details when coming back from feedback screen
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
-      // Refresh appointment data when screen comes into focus
       fetchAppointmentDetails();
     });
-
-    // Cleanup the listener on component unmount
     return unsubscribe;
   }, [navigation]);
 
@@ -63,25 +57,18 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
     try {
       setIsLoading(true);
       const response = await getAppointmentByCode(appointmentCode);
-      // Nếu response có cấu trúc { isSuccess, value, error }
       if (response && response.isSuccess && response.value) {
-        // Sử dụng status từ params nếu có, nếu không thì lấy từ response
         const appointmentData = {
           ...response.value,
-          // Ưu tiên sử dụng status từ params (nếu có)
           checkupRecordStatus: status || response.value.checkupRecordStatus,
         };
         setAppointment(appointmentData);
-        console.log("Appointment details:", response);
       } else {
-        // Nếu response không có cấu trúc như trên, có thể là cấu trúc cũ
         const appointmentData = {
           ...response,
-          // Ưu tiên sử dụng status từ params (nếu có)
           checkupRecordStatus: status || response.checkupRecordStatus,
         };
         setAppointment(appointmentData);
-        console.log("Appointment details (legacy format):", response);
       }
     } catch (error) {
       console.error("Error fetching appointment:", error);
@@ -117,18 +104,18 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
     switch (status) {
       case "Scheduled":
       case "Confirmed":
-        return "#1976d2"; // Xanh dương - đã xác nhận
+        return "#4299e1";
       case "Pending":
-        return "#ff9800"; // Cam - chờ xác nhận
+        return "#f59e0b";
       case "InProgress":
       case "CheckedIn":
-        return "#9c27b0"; // Tím - đang tiến hành
+        return "#7c3aed";
       case "Completed":
-        return "#4caf50"; // Xanh lá - hoàn thành
+        return "#059669";
       case "Cancelled":
-        return "#f44336"; // Đỏ - đã hủy
+        return "#dc2626";
       default:
-        return "#757575"; // Xám - không xác định
+        return "#6b7280";
     }
   };
 
@@ -164,11 +151,11 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
         return "medical";
       case "Scheduled":
       case "Confirmed":
-        return "calendar-outline";
+        return "calendar";
       case "Pending":
-        return "time-outline";
+        return "time";
       default:
-        return "time-outline";
+        return "time";
     }
   };
 
@@ -192,50 +179,73 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  const calculateTotalPrice = () => {
+    let total = appointment?.packagePrice || 0;
+    if (
+      appointment?.additionalServices &&
+      appointment.additionalServices.length > 0
+    ) {
+      appointment.additionalServices.forEach((service) => {
+        total += service.servicePrice || service.price || 0;
+      });
+    }
+    return total;
+  };
+
   if (isLoading) {
     return (
       <ScreenContainer
         title="Chi tiết lịch hẹn"
         headerBackgroundColor="#4299e1"
+        leftComponent={
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icon name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+        }
       >
         <View style={styles.loadingContainer}>
           <Animated.View
-            style={{ transform: [{ rotate: spin }], marginBottom: 15 }}
+            style={[styles.loadingSpinner, { transform: [{ rotate: spin }] }]}
           >
-            <Icon name="sync" size={70} color="#1976d2" />
+            <Icon name="sync" size={48} color="#4299e1" />
           </Animated.View>
-          <Text style={styles.loadingText}>Đang tải...</Text>
+          <Text style={styles.loadingText}>Đang tải thông tin...</Text>
         </View>
       </ScreenContainer>
     );
   }
 
   return (
-    <ScreenContainer title="Chi tiết lịch hẹn" headerBackgroundColor="#4299e1">
+    <ScreenContainer
+      title="Chi tiết lịch hẹn"
+      headerBackgroundColor="#4299e1"
+      leftComponent={
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="chevron-back" size={24} color="#fff" />
+        </TouchableOpacity>
+      }
+    >
       <ScrollView style={styles.scrollView}>
-        {/* Appointment Status */}
         <View style={styles.statusCard}>
           <View
             style={[
               styles.statusIndicator,
               {
                 backgroundColor: getStatusColor(
-                  appointment?.checkupRecordStatus || status || "Scheduled"
+                  appointment?.checkupRecordStatus || status
                 ),
               },
             ]}
           >
             <Icon
               name={getStatusIcon(appointment?.checkupRecordStatus || status)}
-              size={32}
+              size={28}
               color="#fff"
             />
           </View>
           <View style={styles.statusInfo}>
             <Text style={styles.statusTitle}>
-              {getStatusText(
-                appointment?.checkupRecordStatus || status || "Scheduled"
-              )}
+              {getStatusText(appointment?.checkupRecordStatus || status)}
             </Text>
             <Text style={styles.statusDescription}>
               {getStatusDescription(appointment?.checkupRecordStatus || status)}
@@ -243,159 +253,155 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* Appointment Details */}
         <View style={styles.detailCard}>
           <Text style={styles.sectionTitle}>Thông tin lịch hẹn</Text>
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <Icon name="calendar-outline" size={24} color="#1976d2" />
+          <View style={styles.infoSection}>
+            <View style={styles.infoRow}>
+              <Icon
+                name="calendar-outline"
+                size={20}
+                color="#4299e1"
+                style={styles.infoIcon}
+              />
+              <View>
+                <Text style={styles.infoLabel}>Thời gian khám</Text>
+                <Text style={styles.infoValue}>
+                  {formatDate(appointment?.bookingDate)} -{" "}
+                  {formatTime(appointment?.bookingDate)}
+                </Text>
+              </View>
             </View>
-            <View style={styles.detailTextContainer}>
-              <Text style={styles.detailLabel}>Ngày khám</Text>
-              <Text style={styles.detailValue}>
-                {formatDate(appointment?.bookingDate)}
+            <View style={styles.infoRow}>
+              <Icon
+                name="person-outline"
+                size={20}
+                color="#4299e1"
+                style={styles.infoIcon}
+              />
+              <View>
+                <Text style={styles.infoLabel}>Bệnh nhân</Text>
+                <Text style={styles.infoValue}>
+                  {patientName || "Không có thông tin"}
+                </Text>
+                {appointment?.patientPhone && (
+                  <Text style={styles.infoSubValue}>
+                    SĐT: {appointment.patientPhone}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <View style={styles.infoRow}>
+              <Icon
+                name="card-outline"
+                size={20}
+                color="#4299e1"
+                style={styles.infoIcon}
+              />
+              <View>
+                <Text style={styles.infoLabel}>Mã lịch hẹn</Text>
+                <Text style={styles.infoValue}>#{appointmentCode}</Text>
+              </View>
+            </View>
+            {appointment?.patientSymptom && (
+              <View style={styles.infoRow}>
+                <Icon
+                  name="fitness-outline"
+                  size={20}
+                  color="#4299e1"
+                  style={styles.infoIcon}
+                />
+                <View>
+                  <Text style={styles.infoLabel}>Triệu chứng</Text>
+                  <Text style={styles.infoValue}>
+                    {appointment.patientSymptom}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.detailCard}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.sectionTitle}>Dịch vụ</Text>
+          </View>
+
+          <Text style={styles.serviceGroupTitle}>Gói khám</Text>
+          <View style={styles.serviceRow}>
+            <Icon
+              name="medkit-outline"
+              size={20}
+              color="#4299e1"
+              style={styles.serviceIcon}
+            />
+            <View style={styles.serviceNameContainer}>
+              <Text style={[styles.serviceName, styles.packageName]}>
+                {appointment?.packageName || "Không có thông tin"}
               </Text>
+              {appointment?.packageCode && (
+                <Text style={styles.serviceCode}>
+                  Mã: {appointment.packageCode}
+                </Text>
+              )}
             </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <Icon name="time-outline" size={24} color="#1976d2" />
-            </View>
-            <View style={styles.detailTextContainer}>
-              <Text style={styles.detailLabel}>Giờ khám</Text>
-              <Text style={styles.detailValue}>
-                {formatTime(appointment?.bookingDate)}
+            {appointment?.packagePrice && (
+              <Text style={[styles.servicePrice, styles.packagePriceText]}>
+                {appointment.packagePrice.toLocaleString("vi-VN")}
               </Text>
-            </View>
+            )}
           </View>
 
-          <View style={styles.divider} />
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <Icon name="medkit-outline" size={24} color="#1976d2" />
-            </View>
-            <View style={styles.detailTextContainer}>
-              <Text style={styles.detailLabel}>Dịch vụ</Text>
-              <Text style={styles.detailValue}>
-                {appointment?.packageName || "Dịch vụ khám bệnh"}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <Icon name="location-outline" size={24} color="#1976d2" />
-            </View>
-            <View style={styles.detailTextContainer}>
-              <Text style={styles.detailLabel}>Phòng khám</Text>
-              <Text style={styles.detailValue}>
-                {appointment?.room || "Chưa có thông tin"}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconContainer}>
-              <Icon name="card-outline" size={24} color="#1976d2" />
-            </View>
-            <View style={styles.detailTextContainer}>
-              <Text style={styles.detailLabel}>Mã lịch hẹn</Text>
-              <Text style={styles.detailValue}>#{appointmentCode}</Text>
-            </View>
-          </View>
+          {appointment?.additionalServices &&
+            appointment.additionalServices.length > 0 && (
+              <>
+                <View style={styles.serviceDivider} />
+                <Text style={styles.serviceGroupTitle}>Dịch vụ bổ sung</Text>
+                {appointment.additionalServices.map((service, index) => (
+                  <View key={`additional-${index}`}>
+                    <View style={styles.serviceRow}>
+                      <Icon
+                        name="add-circle-outline"
+                        size={20}
+                        color="#4299e1"
+                        style={styles.serviceIcon}
+                      />
+                      <View style={styles.serviceNameContainer}>
+                        <Text style={styles.serviceName}>
+                          {service.serviceName || service.name}
+                        </Text>
+                        {service.serviceCode && (
+                          <Text style={styles.serviceCode}>
+                            Mã: {service.serviceCode.trim()}
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={styles.servicePrice}>
+                        {service.servicePrice
+                          ? `${service.servicePrice.toLocaleString("vi-VN")} `
+                          : service.price
+                          ? `${service.price.toLocaleString("vi-VN")} `
+                          : ""}
+                      </Text>
+                    </View>
+                    {index < appointment.additionalServices.length - 1 && (
+                      <View style={styles.serviceDivider} />
+                    )}
+                  </View>
+                ))}
+              </>
+            )}
 
           {appointment?.packagePrice && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.detailRow}>
-                <View style={styles.detailIconContainer}>
-                  <Icon name="cash-outline" size={24} color="#1976d2" />
-                </View>
-                <View style={styles.detailTextContainer}>
-                  <Text style={styles.detailLabel}>Giá gói khám</Text>
-                  <Text style={styles.detailValue}>
-                    {appointment.packagePrice.toLocaleString("vi-VN")} VNĐ
-                  </Text>
-                </View>
-              </View>
-            </>
-          )}
-
-          {appointment?.targetGender && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.detailRow}>
-                <View style={styles.detailIconContainer}>
-                  <Icon name="person-outline" size={24} color="#1976d2" />
-                </View>
-                <View style={styles.detailTextContainer}>
-                  <Text style={styles.detailLabel}>Đối tượng</Text>
-                  <Text style={styles.detailValue}>
-                    {appointment.targetGender === "Male" ? "Nam" : "Nữ"}
-                    {appointment.targetAge ? ` (${appointment.targetAge})` : ""}
-                  </Text>
-                </View>
-              </View>
-            </>
-          )}
-
-          {appointment?.patientSymptom && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.detailRow}>
-                <View style={styles.detailIconContainer}>
-                  <Icon name="fitness-outline" size={24} color="#1976d2" />
-                </View>
-                <View style={styles.detailTextContainer}>
-                  <Text style={styles.detailLabel}>Triệu chứng</Text>
-                  <Text style={styles.detailValue}>
-                    {appointment.patientSymptom || "Không có"}
-                  </Text>
-                </View>
-              </View>
-            </>
+            <View style={styles.totalPriceContainer}>
+              <Text style={styles.totalPriceLabel}>Tổng tiền</Text>
+              <Text style={styles.totalPriceValue}>
+                {calculateTotalPrice().toLocaleString("vi-VN")} VNĐ
+              </Text>
+            </View>
           )}
         </View>
 
-        {/* Services List */}
-        {appointment?.services?.services &&
-          appointment.services.services.length > 0 && (
-            <View style={styles.detailCard}>
-              <Text style={styles.sectionTitle}>Các dịch vụ đã đặt</Text>
-
-              {appointment.services.services.map((service, index) => (
-                <View key={index}>
-                  <View style={styles.serviceRow}>
-                    <Icon
-                      name="checkmark-circle"
-                      size={20}
-                      color="#4caf50"
-                      style={styles.serviceIcon}
-                    />
-                    <Text style={styles.serviceName}>
-                      {service.name || `Dịch vụ ${index + 1}`}
-                    </Text>
-                  </View>
-                  {index < appointment.services.services.length - 1 && (
-                    <View style={styles.serviceDivider} />
-                  )}
-                </View>
-              ))}
-            </View>
-          )}
-
-        {/* Actions */}
         <View style={styles.actionsContainer}>
-          {/* Chỉ hiển thị nút "Hủy lịch hẹn" cho lịch hẹn chưa hoàn thành */}
           {status !== "Completed" &&
             status !== "Cancelled" &&
             appointment?.checkupRecordStatus !== "Completed" &&
@@ -411,13 +417,11 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
                       {
                         text: "Có, hủy lịch",
                         style: "destructive",
-                        onPress: () => {
-                          // Implement cancel appointment logic
+                        onPress: () =>
                           Alert.alert(
                             "Thông báo",
                             "Tính năng đang được phát triển"
-                          );
-                        },
+                          ),
                       },
                     ]
                   )
@@ -425,8 +429,6 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
                 style={styles.cancelButton}
               />
             )}
-
-          {/* Chỉ hiển thị nút "Đánh giá dịch vụ" cho lịch hẹn đã hoàn thành */}
           {(status === "Completed" ||
             appointment?.checkupRecordStatus === "Completed") && (
             <Button
@@ -439,10 +441,6 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
                 const hasDoctorFeedback =
                   appointment?.feedbackDoctorId !== null;
                 const hasServiceFeedback = appointment?.feedbackId !== null;
-
-                // Always navigate to the feedback type selection screen
-                // This allows the user to choose which type of feedback to give
-                // Using navigate, then the FeedbackTypeSelectionScreen will replace itself with FeedbackScreen
                 navigation.navigate("FeedbackTypeSelection", {
                   appointmentCode: appointmentCode,
                   feedbackStatus: {
@@ -456,21 +454,21 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
               style={styles.feedbackButton}
             />
           )}
-
-          {/* Nút "Tạo lịch hẹn mới" hiển thị ở tất cả các trạng thái */}
           <Button
             title="Tạo lịch hẹn mới"
             onPress={() => navigation.navigate("Đặt lịch")}
             style={[
               styles.newAppointmentButton,
-              // Chỉ thêm marginTop khi có nút khác ở trên
-              ((status !== "Completed" &&
-                status !== "Cancelled" &&
-                appointment?.checkupRecordStatus !== "Completed" &&
-                appointment?.checkupRecordStatus !== "Cancelled") ||
-                status === "Completed" ||
-                appointment?.checkupRecordStatus === "Completed") && {
-                marginTop: 12,
+              {
+                marginTop:
+                  (status !== "Completed" &&
+                    status !== "Cancelled" &&
+                    appointment?.checkupRecordStatus !== "Completed" &&
+                    appointment?.checkupRecordStatus !== "Cancelled") ||
+                  status === "Completed" ||
+                  appointment?.checkupRecordStatus === "Completed"
+                    ? 16
+                    : 0,
               },
             ]}
           />
@@ -481,160 +479,247 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    backgroundColor: "#f5f7fa",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#1976d2",
-    paddingVertical: 15,
-    paddingHorizontal: 16,
-    paddingTop: 50,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  rightPlaceholder: {
-    width: 40,
+    backgroundColor: "#f8fafc",
+    padding: 16,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f5f7fa",
-    padding: 20,
+    backgroundColor: "#f8fafc",
   },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 18,
-    color: "#333",
-    fontWeight: "500",
+  loadingSpinner: {
+    marginBottom: 16,
   },
   loadingText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#333",
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
+    color: "#4299e1",
+    letterSpacing: 0.2,
   },
   statusCard: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    borderRadius: 10,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    flexDirection: "row",
     alignItems: "center",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
   statusIndicator: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 16,
+    marginRight: 12,
   },
   statusInfo: {
     flex: 1,
   },
   statusTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: "600",
+    color: "#1f2937",
     marginBottom: 4,
   },
   statusDescription: {
     fontSize: 14,
-    color: "#666",
+    color: "#6b7280",
+    lineHeight: 20,
   },
   detailCard: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 16,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 20,
     marginBottom: 16,
-    elevation: 2,
+    elevation: 3,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 16,
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1f2937",
+    letterSpacing: 0.2,
   },
-  detailRow: {
+  infoSection: {
+    gap: 16,
+  },
+  infoRow: {
     flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
+    alignItems: "flex-start",
   },
-  detailIconContainer: {
-    width: 40,
-    alignItems: "center",
+  infoIcon: {
+    marginRight: 12,
+    marginTop: 2,
   },
-  detailTextContainer: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: "#666",
+  infoLabel: {
+    fontSize: 13,
+    color: "#6b7280",
+    fontWeight: "500",
     marginBottom: 4,
   },
-  detailValue: {
-    fontSize: 16,
+  infoValue: {
+    fontSize: 15,
     fontWeight: "500",
-    color: "#333",
+    color: "#1f2937",
   },
-  divider: {
-    height: 1,
-    backgroundColor: "#eee",
+  infoSubValue: {
+    fontSize: 13,
+    color: "#6b7280",
+    marginTop: 4,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  serviceCount: {
+    backgroundColor: "#dbeafe",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  serviceCountText: {
+    fontSize: 12,
+    color: "#4299e1",
+    fontWeight: "500",
+  },
+  packageContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+    borderRadius: 8,
+    padding: 12,
+  },
+  packageIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#ecfdf5",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  packageInfo: {
+    flex: 1,
+  },
+  packageName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1f2937",
+    marginBottom: 6,
+  },
+  packageMeta: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  packageCode: {
+    fontSize: 13,
+    color: "#6b7280",
+  },
+  packagePrice: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#4299e1",
+  },
+  packagePriceText: {
+    color: "#4299e1",
+    fontWeight: "700",
+  },
+  serviceGroupTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 12,
   },
   serviceRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   serviceIcon: {
-    marginRight: 10,
+    marginRight: 12,
+  },
+  serviceNameContainer: {
+    flex: 1,
   },
   serviceName: {
-    flex: 1,
     fontSize: 14,
-    color: "#333",
+    fontWeight: "500",
+    color: "#1f2937",
+  },
+  packageName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1f2937",
+  },
+  serviceCode: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 4,
+  },
+  servicePrice: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#4299e1",
   },
   serviceDivider: {
     height: 1,
-    backgroundColor: "#eee",
-    marginLeft: 30,
+    backgroundColor: "#e5e7eb",
+    marginVertical: 8,
+  },
+  totalPriceContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+    marginTop: 16,
+  },
+  totalPriceLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1f2937",
+  },
+  totalPriceValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#4299e1",
   },
   actionsContainer: {
-    marginVertical: 20,
+    marginVertical: 24,
+    gap: 12,
   },
   cancelButton: {
-    backgroundColor: "#f44336",
+    backgroundColor: "#dc2626",
+    borderRadius: 8,
+    paddingVertical: 14,
   },
   feedbackButton: {
-    backgroundColor: "#4caf50",
-    marginBottom: 12,
+    backgroundColor: "#059669",
+    borderRadius: 8,
+    paddingVertical: 14,
   },
   newAppointmentButton: {
-    backgroundColor: "#1976d2",
+    backgroundColor: "#2563eb",
+    borderRadius: 8,
+    paddingVertical: 14,
   },
 });
 

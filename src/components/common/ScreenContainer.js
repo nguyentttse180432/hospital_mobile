@@ -16,6 +16,7 @@ const ScreenContainer = ({
   header,
   title,
   headerBackgroundColor = "#4299e1",
+  leftComponent,
 }) => {
   const Container = scrollable ? ScrollView : View;
 
@@ -36,7 +37,17 @@ const ScreenContainer = ({
           { backgroundColor: headerBackgroundColor },
         ]}
       >
-        <Text style={styles.headerTitle}>{title}</Text>
+        {leftComponent && (
+          <View style={styles.headerLeftContainer}>{leftComponent}</View>
+        )}
+        <Text
+          style={[
+            styles.headerTitle,
+            leftComponent ? styles.headerTitleWithLeft : null,
+          ]}
+        >
+          {title}
+        </Text>
       </View>
     );
   };
@@ -97,14 +108,27 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#FFFFFF",
     textAlign: "center",
+  },
+  headerTitleWithLeft: {
+    marginLeft: -40, // Adjust this value to properly center the title
+  },
+  headerLeftContainer: {
+    position: "absolute",
+    top: 52,
+    left: 30,
+    zIndex: 10,
+    height: "100%",
+    justifyContent: "center",
   },
 });
 
