@@ -6,6 +6,7 @@ import FeedbackScreen from "../screens/account/FeedbackScreen";
 import FeedbackTypeSelectionScreen from "../screens/account/FeedbackTypeSelectionScreen";
 import TodayCheckupScreen from "../screens/checkupRecord/TodayCheckupScreen";
 import CheckupStepsScreen from "../screens/checkupRecord/CheckupStepsScreen";
+import DoneCheckup from "../screens/checkupRecord/DoneCheckup";
 
 const Stack = createStackNavigator();
 
@@ -32,6 +33,7 @@ const ExaminationNavigator = () => {
         name="FeedbackTypeSelection"
         component={FeedbackTypeSelectionScreen}
       />
+      <Stack.Screen name="DoneCheckup" component={DoneCheckup} />
     </Stack.Navigator>
   );
 };

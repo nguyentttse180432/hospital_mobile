@@ -59,6 +59,9 @@ const CheckupStepsScreen = () => {
           return 0;
         });
         setServices(sortedServices);
+        
+        // Check if all services are completed
+        checkAllServicesCompleted(sortedServices);
       } else {
         console.warn("Failed to fetch services or empty response", response);
       }
@@ -68,7 +71,7 @@ const CheckupStepsScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, [checkupCode]);
+  }, [checkupCode, checkAllServicesCompleted]);
 
   const initializeSignalR = useCallback(async () => {
     try {
@@ -97,9 +100,27 @@ const CheckupStepsScreen = () => {
     }
   }, []);
 
+  const checkAllServicesCompleted = useCallback((services) => {
+    if (!services || services.length === 0) return false;
+    
+    const allCompleted = services.every(service => {
+      const status = getServiceStatus(service);
+      return status === "Completed" || status === "Finished";
+    });
+    
+    if (allCompleted) {
+      // Navigate to done screen after a short delay
+      setTimeout(() => {
+        navigation.navigate("DoneCheckup", { checkupCode, patientName });
+      }, 1000);
+    }
+    
+    return allCompleted;
+  }, [navigation, checkupCode, patientName]);
+
   const updateServiceStatus = useCallback((statusUpdate) => {
-    setServices((prevServices) =>
-      prevServices.map((service) => {
+    setServices((prevServices) => {
+      const updatedServices = prevServices.map((service) => {
         const serviceCodeMatches =
           service.serviceCode &&
           statusUpdate.serviceCode &&
@@ -120,9 +141,14 @@ const CheckupStepsScreen = () => {
           };
         }
         return service;
-      })
-    );
-  }, []);
+      });
+      
+      // Check if all services are now completed
+      checkAllServicesCompleted(updatedServices);
+      
+      return updatedServices;
+    });
+  }, [checkAllServicesCompleted]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -208,7 +234,7 @@ const CheckupStepsScreen = () => {
         return "time";
       case "Processing":
       case "Testing":
-        return "testing";
+        return "medkit-outline";
       case "TestDone":
         return "checkmark-done";
       case "ProcessingResult":
