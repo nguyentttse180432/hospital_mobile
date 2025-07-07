@@ -1,4 +1,4 @@
-package com.hospital.app
+package com.hsms.app
 
 import android.app.Application
 import android.content.res.Configuration
