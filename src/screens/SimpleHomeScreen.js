@@ -56,7 +56,7 @@ const SimpleHomeScreen = ({ navigation }) => {
           Xin chào, <Text style={styles.usernameText}>{username}</Text>!
         </Text>
         <Text style={styles.messageText}>
-          Bạn đã đăng nhập thành công vào ứng dụng bệnh viện đơn giản hóa.
+          Bạn đã đăng nhập thành công vào ứng dụng bệnh viện.
         </Text>
       </View>
 

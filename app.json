@@ -6,21 +6,21 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "com.hospital.app",
+    "scheme": "com.hsms.app",
     "splash": {
       "image": "./src/assets/hospital.png",
       "resizeMode": "contain"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hospital.app"
+      "bundleIdentifier": "com.hsms.app"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.hospital.app"
+      "package": "com.hsms.app"
     },
     "web": {},
     "extra": {
