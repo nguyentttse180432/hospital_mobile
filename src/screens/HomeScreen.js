@@ -23,7 +23,6 @@ import {
 } from "@react-navigation/native";
 import { logout } from "../services/authService";
 
-
 const { width } = Dimensions.get("window");
 
 const HomeScreen = (props) => {
@@ -176,7 +175,7 @@ const HomeScreen = (props) => {
     try {
       // Call the logout service
       const result = await logout();
-      
+
       // Clear additional items not handled by the logout service
       await AsyncStorage.removeItem("user");
       await AsyncStorage.removeItem("phoneVerified");
@@ -191,30 +190,23 @@ const HomeScreen = (props) => {
       });
     } catch (error) {
       console.error("Lỗi khi đăng xuất", error);
-      Alert.alert(
-        "Lỗi",
-        "Không thể đăng xuất. Vui lòng thử lại sau."
-      );
+      Alert.alert("Lỗi", "Không thể đăng xuất. Vui lòng thử lại sau.");
     }
   };
 
   const showLogoutConfirmation = () => {
     if (!phoneVerified) {
-      Alert.alert(
-        "Đăng xuất",
-        "Bạn có chắc chắn muốn đăng xuất?",
-        [
-          {
-            text: "Hủy",
-            style: "cancel"
-          },
-          {
-            text: "Đăng xuất", 
-            onPress: handleLogout,
-            style: "destructive"
-          }
-        ]
-      );
+      Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Đăng xuất",
+          onPress: handleLogout,
+          style: "destructive",
+        },
+      ]);
     }
   };
 

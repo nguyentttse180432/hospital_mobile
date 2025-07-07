@@ -59,7 +59,7 @@ const CheckupStepsScreen = () => {
           return 0;
         });
         setServices(sortedServices);
-        
+
         // Check if all services are completed
         checkAllServicesCompleted(sortedServices);
       } else {
@@ -100,55 +100,61 @@ const CheckupStepsScreen = () => {
     }
   }, []);
 
-  const checkAllServicesCompleted = useCallback((services) => {
-    if (!services || services.length === 0) return false;
-    
-    const allCompleted = services.every(service => {
-      const status = getServiceStatus(service);
-      return status === "Completed" || status === "Finished";
-    });
-    
-    if (allCompleted) {
-      // Navigate to done screen after a short delay
-      setTimeout(() => {
-        navigation.navigate("DoneCheckup", { checkupCode, patientName });
-      }, 1000);
-    }
-    
-    return allCompleted;
-  }, [navigation, checkupCode, patientName]);
+  const checkAllServicesCompleted = useCallback(
+    (services) => {
+      if (!services || services.length === 0) return false;
 
-  const updateServiceStatus = useCallback((statusUpdate) => {
-    setServices((prevServices) => {
-      const updatedServices = prevServices.map((service) => {
-        const serviceCodeMatches =
-          service.serviceCode &&
-          statusUpdate.serviceCode &&
-          service.serviceCode.trim() === statusUpdate.serviceCode.trim();
-        const testRecordMatches =
-          service.testRecordCode &&
-          statusUpdate.testRecordCode &&
-          service.testRecordCode === statusUpdate.testRecordCode;
-        if (serviceCodeMatches || testRecordMatches) {
-          return {
-            ...service,
-            vitalSignStatus:
-              statusUpdate.vitalSignStatus ?? service.vitalSignStatus,
-            testRecordStatus:
-              statusUpdate.testRecordStatus ?? service.testRecordStatus,
-            checkupRecordStatus:
-              statusUpdate.checkupRecordStatus ?? service.checkupRecordStatus,
-          };
-        }
-        return service;
+      const allCompleted = services.every((service) => {
+        const status = getServiceStatus(service);
+        return status === "Completed" || status === "Finished";
       });
-      
-      // Check if all services are now completed
-      checkAllServicesCompleted(updatedServices);
-      
-      return updatedServices;
-    });
-  }, [checkAllServicesCompleted]);
+
+      if (allCompleted) {
+        // Navigate to done screen after a short delay
+        setTimeout(() => {
+          navigation.navigate("DoneCheckup", { checkupCode, patientName });
+        }, 1000);
+      }
+
+      return allCompleted;
+    },
+    [navigation, checkupCode, patientName]
+  );
+
+  const updateServiceStatus = useCallback(
+    (statusUpdate) => {
+      setServices((prevServices) => {
+        const updatedServices = prevServices.map((service) => {
+          const serviceCodeMatches =
+            service.serviceCode &&
+            statusUpdate.serviceCode &&
+            service.serviceCode.trim() === statusUpdate.serviceCode.trim();
+          const testRecordMatches =
+            service.testRecordCode &&
+            statusUpdate.testRecordCode &&
+            service.testRecordCode === statusUpdate.testRecordCode;
+          if (serviceCodeMatches || testRecordMatches) {
+            return {
+              ...service,
+              vitalSignStatus:
+                statusUpdate.vitalSignStatus ?? service.vitalSignStatus,
+              testRecordStatus:
+                statusUpdate.testRecordStatus ?? service.testRecordStatus,
+              checkupRecordStatus:
+                statusUpdate.checkupRecordStatus ?? service.checkupRecordStatus,
+            };
+          }
+          return service;
+        });
+
+        // Check if all services are now completed
+        checkAllServicesCompleted(updatedServices);
+
+        return updatedServices;
+      });
+    },
+    [checkAllServicesCompleted]
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
