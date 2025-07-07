@@ -18,7 +18,7 @@ const SimpleLoginScreen = ({ navigation }) => {
   const handleLogin = async () => {
     // Simple validation
     if (!username || !password) {
-      Alert.alert("Error", "Please enter both username and password");
+      Alert.alert("Lỗi", "Vui lòng nhập cả tên đăng nhập và mật khẩu");
       return;
     }
 
@@ -30,7 +30,7 @@ const SimpleLoginScreen = ({ navigation }) => {
       // Navigate to the simplified home screen
       navigation.replace("SimpleHome");
     } catch (error) {
-      Alert.alert("Error", "An error occurred during login");
+      Alert.alert("Lỗi", "Đã xảy ra lỗi trong quá trình đăng nhập");
       console.error("Login error:", error);
     }
   };
@@ -43,33 +43,33 @@ const SimpleLoginScreen = ({ navigation }) => {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>Hospital App</Text>
+        <Text style={styles.title}>Ứng Dụng Bệnh Viện</Text>
       </View>
 
       <View style={styles.formContainer}>
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Username</Text>
+          <Text style={styles.label}>Tên đăng nhập</Text>
           <TextInput
             style={styles.input}
             value={username}
             onChangeText={setUsername}
-            placeholder="Enter your username"
+            placeholder="Nhập tên đăng nhập của bạn"
           />
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Password</Text>
+          <Text style={styles.label}>Mật khẩu</Text>
           <TextInput
             style={styles.input}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            placeholder="Enter your password"
+            placeholder="Nhập mật khẩu của bạn"
           />
         </View>
 
         <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Login</Text>
+          <Text style={styles.loginButtonText}>Đăng Nhập</Text>
         </TouchableOpacity>
       </View>
     </View>

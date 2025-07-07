@@ -7,6 +7,7 @@ import {
   Image,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import hospitalLogo from "../assets/hospital.png"; // Adjust the path as necessary
 
 const SimpleHomeScreen = ({ navigation }) => {
   const [username, setUsername] = useState("");
@@ -43,24 +44,24 @@ const SimpleHomeScreen = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Image
-          source={require("../../assets/hospital.png")}
+          source={hospitalLogo}
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>Hospital App</Text>
+        <Text style={styles.title}>Ứng Dụng Bệnh Viện</Text>
       </View>
 
       <View style={styles.welcomeContainer}>
         <Text style={styles.welcomeText}>
-          Welcome, <Text style={styles.usernameText}>{username}</Text>!
+          Xin chào, <Text style={styles.usernameText}>{username}</Text>!
         </Text>
         <Text style={styles.messageText}>
-          You have successfully logged in to the simplified hospital app.
+          Bạn đã đăng nhập thành công vào ứng dụng bệnh viện đơn giản hóa.
         </Text>
       </View>
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Logout</Text>
+        <Text style={styles.logoutButtonText}>Đăng Xuất</Text>
       </TouchableOpacity>
     </View>
   );
