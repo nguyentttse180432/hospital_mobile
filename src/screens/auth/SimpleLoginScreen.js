@@ -26,7 +26,7 @@ const SimpleLoginScreen = ({ navigation }) => {
       // In this simplified version, we'll just store the username
       // and navigate to the home screen without actual authentication
       await AsyncStorage.setItem("username", username);
-      
+
       // Navigate to the simplified home screen
       navigation.replace("SimpleHome");
     } catch (error) {
@@ -38,11 +38,7 @@ const SimpleLoginScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        <Image
-          source={hospitalLogo}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        <Image source={hospitalLogo} style={styles.logo} resizeMode="contain" />
         <Text style={styles.title}>Ứng Dụng Bệnh Viện</Text>
       </View>
 

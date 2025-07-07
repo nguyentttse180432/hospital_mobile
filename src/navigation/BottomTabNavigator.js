@@ -2,7 +2,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Icon from "react-native-vector-icons/Ionicons";
 
 // Screens
-import HomeScreen from "../screens/HomeScreen";
+import HomeScreen from "../screens/home/HomeScreen";
 import BookAppointmentScreen from "../screens/appointment/AppointmentBookingScreen";
 import ProfileNavigator from "./ProfileNavigator";
 import PatientRecordsScreen from "../screens/patientProfile/PatientRecordsScreen";

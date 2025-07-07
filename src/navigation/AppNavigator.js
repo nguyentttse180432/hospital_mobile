@@ -8,8 +8,10 @@ import EnterOtpScreen from "../screens/auth/EnterOtpScreen";
 import CreateProfileScreen from "../screens/patientProfile/CreateProfileScreen";
 import LinkProfileScreen from "../screens/patientProfile/LinkProfileScreen";
 import BottomTabNavigator from "./BottomTabNavigator";
-import HomeScreen from "../screens/HomeScreen";
+import HomeScreen from "../screens/home/HomeScreen";
 import PatientScreen from "../screens/account/ProfileScreen";
+import AllPackagesScreen from "../screens/home/AllPackagesScreen";
+import AllServicesScreen from "../screens/home/AllServicesScreen";
 
 const Stack = createStackNavigator();
 
@@ -60,6 +62,16 @@ const AppNavigator = () => {
         <Stack.Screen
           name="Main"
           component={BottomTabNavigator}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AllPackagesScreen"
+          component={AllPackagesScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AllServicesScreen"
+          component={AllServicesScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
