@@ -59,7 +59,7 @@ const CheckupStepsScreen = () => {
           return 0;
         });
         setServices(sortedServices);
-        
+
         // Check if all services are completed
         checkAllServicesCompleted(sortedServices);
       } else {
@@ -100,55 +100,61 @@ const CheckupStepsScreen = () => {
     }
   }, []);
 
-  const checkAllServicesCompleted = useCallback((services) => {
-    if (!services || services.length === 0) return false;
-    
-    const allCompleted = services.every(service => {
-      const status = getServiceStatus(service);
-      return status === "Completed" || status === "Finished";
-    });
-    
-    if (allCompleted) {
-      // Navigate to done screen after a short delay
-      setTimeout(() => {
-        navigation.navigate("DoneCheckup", { checkupCode, patientName });
-      }, 1000);
-    }
-    
-    return allCompleted;
-  }, [navigation, checkupCode, patientName]);
+  const checkAllServicesCompleted = useCallback(
+    (services) => {
+      if (!services || services.length === 0) return false;
 
-  const updateServiceStatus = useCallback((statusUpdate) => {
-    setServices((prevServices) => {
-      const updatedServices = prevServices.map((service) => {
-        const serviceCodeMatches =
-          service.serviceCode &&
-          statusUpdate.serviceCode &&
-          service.serviceCode.trim() === statusUpdate.serviceCode.trim();
-        const testRecordMatches =
-          service.testRecordCode &&
-          statusUpdate.testRecordCode &&
-          service.testRecordCode === statusUpdate.testRecordCode;
-        if (serviceCodeMatches || testRecordMatches) {
-          return {
-            ...service,
-            vitalSignStatus:
-              statusUpdate.vitalSignStatus ?? service.vitalSignStatus,
-            testRecordStatus:
-              statusUpdate.testRecordStatus ?? service.testRecordStatus,
-            checkupRecordStatus:
-              statusUpdate.checkupRecordStatus ?? service.checkupRecordStatus,
-          };
-        }
-        return service;
+      const allCompleted = services.every((service) => {
+        const status = getServiceStatus(service);
+        return status === "Completed" || status === "Finished";
       });
-      
-      // Check if all services are now completed
-      checkAllServicesCompleted(updatedServices);
-      
-      return updatedServices;
-    });
-  }, [checkAllServicesCompleted]);
+
+      if (allCompleted) {
+        // Navigate to done screen after a short delay
+        setTimeout(() => {
+          navigation.navigate("DoneCheckup", { checkupCode, patientName });
+        }, 1000);
+      }
+
+      return allCompleted;
+    },
+    [navigation, checkupCode, patientName]
+  );
+
+  const updateServiceStatus = useCallback(
+    (statusUpdate) => {
+      setServices((prevServices) => {
+        const updatedServices = prevServices.map((service) => {
+          const serviceCodeMatches =
+            service.serviceCode &&
+            statusUpdate.serviceCode &&
+            service.serviceCode.trim() === statusUpdate.serviceCode.trim();
+          const testRecordMatches =
+            service.testRecordCode &&
+            statusUpdate.testRecordCode &&
+            service.testRecordCode === statusUpdate.testRecordCode;
+          if (serviceCodeMatches || testRecordMatches) {
+            return {
+              ...service,
+              vitalSignStatus:
+                statusUpdate.vitalSignStatus ?? service.vitalSignStatus,
+              testRecordStatus:
+                statusUpdate.testRecordStatus ?? service.testRecordStatus,
+              checkupRecordStatus:
+                statusUpdate.checkupRecordStatus ?? service.checkupRecordStatus,
+            };
+          }
+          return service;
+        });
+
+        // Check if all services are now completed
+        checkAllServicesCompleted(updatedServices);
+
+        return updatedServices;
+      });
+    },
+    [checkAllServicesCompleted]
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -250,68 +256,94 @@ const CheckupStepsScreen = () => {
     return date.toLocaleDateString("vi-VN");
   };
 
+  const handleServicePress = (item) => {
+    const status = getServiceStatus(item);
+    // Only allow viewing results if service is completed/finished
+    if (status === "Completed" || status === "Finished") {
+      navigation.navigate("CheckupResultDetail", {
+        serviceId: item.id,
+        serviceName: item.serviceName,
+        serviceCode: item.serviceCode,
+      });
+    }
+  };
+
   const renderServiceItem = ({ item, index }) => {
     const status = getServiceStatus(item);
     const statusColor = getStatusColor(status);
     const statusText = getStatusText(status);
     const statusIcon = getStatusIcon(status);
+    const canViewResults = status === "Completed" || status === "Finished";
 
     return (
-      <Card
-        key={item.id}
-        style={[
-          styles.serviceCard,
-          { borderLeftWidth: 4, borderLeftColor: statusColor },
-        ]}
+      <TouchableOpacity
+        onPress={() => handleServicePress(item)}
+        disabled={!canViewResults}
       >
-        <View style={styles.serviceContent}>
-          <View
-            style={[styles.serviceNumber, { backgroundColor: statusColor }]}
-          >
-            <Text style={styles.serviceNumberText}>{index + 1}</Text>
-          </View>
-          <View style={styles.serviceInfo}>
-            <Text style={styles.serviceName}>{item.serviceName}</Text>
-            {item.roomNumber && (
-              <View style={styles.roomInfoContainer}>
-                <Text style={styles.roomLabel}>Phòng:</Text>
-                <Text style={styles.roomNumber}>{item.roomNumber}</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.statusContainer}>
+        <Card
+          key={item.id}
+          style={[
+            styles.serviceCard,
+            { borderLeftWidth: 4, borderLeftColor: statusColor },
+          ]}
+        >
+          <View style={styles.serviceContent}>
             <View
-              style={[
-                styles.statusBadge,
-                {
-                  backgroundColor:
-                    status === "Completed" || status === "Finished"
-                      ? "#e8f5e9"
-                      : status === "TestDone"
-                      ? "#f1f8e9"
-                      : status === "Processing" || status === "Testing"
-                      ? "#fbe9e7"
-                      : status === "Checkin"
-                      ? "#e3f2fd"
-                      : status === "ProcessingResult"
-                      ? "#fff3e0"
-                      : "#f5f5f5",
-                },
-              ]}
+              style={[styles.serviceNumber, { backgroundColor: statusColor }]}
             >
-              <Icon
-                name={statusIcon}
-                size={16}
-                color={statusColor}
-                style={styles.statusIcon}
-              />
-              <Text style={[styles.statusText, { color: statusColor }]}>
-                {statusText}
-              </Text>
+              <Text style={styles.serviceNumberText}>{index + 1}</Text>
+            </View>
+            <View style={styles.serviceInfo}>
+              <Text style={styles.serviceName}>{item.serviceName}</Text>
+              {item.roomNumber && (
+                <View style={styles.roomInfoContainer}>
+                  <Text style={styles.roomLabel}>Phòng:</Text>
+                  <Text style={styles.roomNumber}>{item.roomNumber}</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.statusContainer}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor:
+                      status === "Completed" || status === "Finished"
+                        ? "#e8f5e9"
+                        : status === "TestDone"
+                        ? "#f1f8e9"
+                        : status === "Processing" || status === "Testing"
+                        ? "#fbe9e7"
+                        : status === "Checkin"
+                        ? "#e3f2fd"
+                        : status === "ProcessingResult"
+                        ? "#fff3e0"
+                        : "#f5f5f5",
+                  },
+                ]}
+              >
+                <Icon
+                  name={statusIcon}
+                  size={16}
+                  color={statusColor}
+                  style={styles.statusIcon}
+                />
+                <Text style={[styles.statusText, { color: statusColor }]}>
+                  {statusText}
+                </Text>
+              </View>
+              {canViewResults && (
+                <Icon
+                  name="chevron-forward"
+                  size={16}
+                  color={statusColor}
+                  style={styles.viewResultIcon}
+                />
+              )}
             </View>
           </View>
-        </View>
-      </Card>
+        </Card>
+      </TouchableOpacity>
     );
   };
 
@@ -522,6 +554,9 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 13,
     fontWeight: "500",
+  },
+  viewResultIcon: {
+    marginTop: 4,
   },
   emptyContainer: {
     flex: 1,

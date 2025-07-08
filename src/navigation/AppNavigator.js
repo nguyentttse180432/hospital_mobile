@@ -12,6 +12,9 @@ import HomeScreen from "../screens/home/HomeScreen";
 import PatientScreen from "../screens/account/ProfileScreen";
 import AllPackagesScreen from "../screens/home/AllPackagesScreen";
 import AllServicesScreen from "../screens/home/AllServicesScreen";
+import CheckupResultsScreen from "../screens/checkupRecord/CheckupResultsScreen";
+import CheckupResultDetailScreen from "../screens/checkupRecord/CheckupResultDetailScreen";
+import ImageViewerScreen from "../screens/checkupRecord/ImageViewerScreen";
 
 const Stack = createStackNavigator();
 
@@ -72,6 +75,21 @@ const AppNavigator = () => {
         <Stack.Screen
           name="AllServicesScreen"
           component={AllServicesScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="CheckupResults"
+          component={CheckupResultsScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="CheckupResultDetail"
+          component={CheckupResultDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ImageViewer"
+          component={ImageViewerScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

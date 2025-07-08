@@ -24,6 +24,18 @@ const DoneCheckup = () => {
     });
   };
 
+  const handleViewResults = () => {
+    if (checkupCode) {
+      navigation.navigate("CheckupResults", {
+        checkupCode,
+        patientName,
+      });
+    } else {
+      // If no checkupCode provided, navigate to a general results screen
+      navigation.navigate("CheckupResults");
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#ffffff" barStyle="dark-content" />
@@ -39,12 +51,17 @@ const DoneCheckup = () => {
           resizeMode="contain"
         />
 
-        <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate("CheckupResult")}>
+        <TouchableOpacity style={styles.homeButton} onPress={handleViewResults}>
           <Text style={styles.homeButtonText}>Xem kết quả khám</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.homeButton} onPress={handleGoHome}>
-          <Text style={styles.homeButtonText}>Về trang chủ</Text>
+        <TouchableOpacity
+          style={[styles.homeButton, styles.secondaryButton]}
+          onPress={handleGoHome}
+        >
+          <Text style={[styles.homeButtonText, styles.secondaryButtonText]}>
+            Về trang chủ
+          </Text>
         </TouchableOpacity>
 
         {checkupCode && (
@@ -103,11 +120,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    marginBottom: 15,
+  },
+  secondaryButton: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: "#4CAF50",
   },
   homeButtonText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "600",
+  },
+  secondaryButtonText: {
+    color: "#4CAF50",
   },
   checkupInfo: {
     marginTop: 30,

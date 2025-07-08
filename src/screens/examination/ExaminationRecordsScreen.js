@@ -183,7 +183,6 @@ const ExaminationRecordsScreen = () => {
             }
           });
         } else {
-          console.log("No appointments found for today");
         }
 
         setAppointments((prev) => ({

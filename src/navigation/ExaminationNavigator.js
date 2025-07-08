@@ -7,6 +7,9 @@ import FeedbackTypeSelectionScreen from "../screens/account/FeedbackTypeSelectio
 import TodayCheckupScreen from "../screens/checkupRecord/TodayCheckupScreen";
 import CheckupStepsScreen from "../screens/checkupRecord/CheckupStepsScreen";
 import DoneCheckup from "../screens/checkupRecord/DoneCheckup";
+import CheckupResultsScreen from "../screens/checkupRecord/CheckupResultsScreen";
+import CheckupResultDetailScreen from "../screens/checkupRecord/CheckupResultDetailScreen";
+import ImageViewerScreen from "../screens/checkupRecord/ImageViewerScreen";
 
 const Stack = createStackNavigator();
 
@@ -34,6 +37,12 @@ const ExaminationNavigator = () => {
         component={FeedbackTypeSelectionScreen}
       />
       <Stack.Screen name="DoneCheckup" component={DoneCheckup} />
+      <Stack.Screen name="CheckupResults" component={CheckupResultsScreen} />
+      <Stack.Screen
+        name="CheckupResultDetail"
+        component={CheckupResultDetailScreen}
+      />
+      <Stack.Screen name="ImageViewer" component={ImageViewerScreen} />
     </Stack.Navigator>
   );
 };
