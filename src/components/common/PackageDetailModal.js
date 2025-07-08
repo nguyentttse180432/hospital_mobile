@@ -29,6 +29,8 @@ const PackageDetailModal = ({
   isTransitioning,
   canSwipe,
   panResponder,
+  showBookButton = false,
+  bookButtonText = "Đặt lịch gói này",
 }) => {
   const scrollViewRef = useRef(null);
 
@@ -203,6 +205,23 @@ const PackageDetailModal = ({
               </TouchableOpacity>
             </View>
           )}
+
+          {/* Book Package Button - Only shown when showBookButton is true */}
+          {showBookButton && packageDetails && (
+            <TouchableOpacity
+              style={styles.bookPackageButton}
+              onPress={() => onBookPackage(packageDetails.id)}
+              disabled={isTransitioning}
+            >
+              <Text style={styles.bookPackageButtonText}>{bookButtonText}</Text>
+              <Icon
+                name="calendar-outline"
+                size={20}
+                color="#fff"
+                style={styles.bookPackageButtonIcon}
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </Modal>
@@ -342,6 +361,26 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+  },
+  bookPackageButton: {
+    backgroundColor: "#0071CE",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 14,
+    borderRadius: 8,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 3,
+  },
+  bookPackageButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    marginRight: 8,
+  },
+  bookPackageButtonIcon: {
+    marginLeft: 4,
   },
 });
 

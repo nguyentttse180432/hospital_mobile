@@ -356,6 +356,7 @@ const HomeScreen = (props) => {
         isTransitioning={packageModal.isTransitioning}
         canSwipe={packageModal.canSwipe}
         panResponder={packageModal.panResponder}
+        showBookButton={false}
       />
     </View>
   );

@@ -6,25 +6,27 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Modal,
-  ScrollView,
   TextInput,
 } from "react-native";
 import { getMedicalPackages } from "../../../services/medicalPackageService";
 import Icon from "react-native-vector-icons/Ionicons";
+import PackageDetailModal from "../../common/PackageDetailModal";
+import { usePackageModal } from "../../../hooks/usePackageModal";
 
 const MedicalPackageSelection = ({
   currentPackage,
   setCurrentPackage,
   setStep,
   selectedProfile,
-}) => {  const [packages, setPackages] = useState([]);
+}) => {
+  const [packages, setPackages] = useState([]);
   const [filteredPackages, setFilteredPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedPackageDetails, setSelectedPackageDetails] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Use our custom hook for package modal
+  const packageModal = usePackageModal(filteredPackages);
 
   // Tính tuổi từ ngày sinh
   const calculateAge = (dobString) => {
@@ -78,7 +80,7 @@ const MedicalPackageSelection = ({
 
       // Call API with gender and age parameters
       const data = await getMedicalPackages(gender, age);
-      
+
       setPackages(data.value);
       setFilteredPackages(data.value);
       setError(null);
@@ -92,10 +94,11 @@ const MedicalPackageSelection = ({
   const handleSelectPackage = (pkg) => {
     setCurrentPackage(pkg);
     setStep(2); // Return to main appointment selection screen instead of going directly to date selection
-  };  const showPackageDetails = (pkg, e) => {
-    e.stopPropagation();
-    setSelectedPackageDetails(pkg);
-    setModalVisible(true);
+  };
+
+  const showPackageDetails = (pkg, e) => {
+    if (e) e.stopPropagation();
+    packageModal.showPackageDetails(pkg);
   };
 
   const handleSearch = (text) => {
@@ -105,30 +108,34 @@ const MedicalPackageSelection = ({
       setFilteredPackages(packages);
       return;
     }
-    
+
     const searchTerms = text.toLowerCase().trim().split(/\s+/);
-    
+
     // Filter packages based on search terms
-    const results = packages.filter(pkg => {
-      const nameMatch = pkg.name && searchTerms.some(term => 
-        pkg.name.toLowerCase().includes(term)
-      );
-      
-      const descriptionMatch = pkg.description && searchTerms.some(term => 
-        pkg.description.toLowerCase().includes(term)
-      );
-      
-      const typeMatch = pkg.type && searchTerms.some(term => 
-        pkg.type.toLowerCase().includes(term)
-      );
-      
-      const targetGroupMatch = pkg.targetGroup && searchTerms.some(term => 
-        pkg.targetGroup.toLowerCase().includes(term)
-      );
-      
+    const results = packages.filter((pkg) => {
+      const nameMatch =
+        pkg.name &&
+        searchTerms.some((term) => pkg.name.toLowerCase().includes(term));
+
+      const descriptionMatch =
+        pkg.description &&
+        searchTerms.some((term) =>
+          pkg.description.toLowerCase().includes(term)
+        );
+
+      const typeMatch =
+        pkg.type &&
+        searchTerms.some((term) => pkg.type.toLowerCase().includes(term));
+
+      const targetGroupMatch =
+        pkg.targetGroup &&
+        searchTerms.some((term) =>
+          pkg.targetGroup.toLowerCase().includes(term)
+        );
+
       return nameMatch || descriptionMatch || typeMatch || targetGroupMatch;
     });
-    
+
     setFilteredPackages(results);
   };
   const renderPackageItem = ({ item }) => (
@@ -148,7 +155,7 @@ const MedicalPackageSelection = ({
         <View style={styles.headerRow}>
           <Text style={styles.packageName}>{item.name}</Text>
           <Text style={styles.packagePrice}>
-            {item.price.toLocaleString("vi-VN")} 
+            {item.price.toLocaleString("vi-VN")}
           </Text>
         </View>
         <Text style={styles.packageDescription} numberOfLines={2}>
@@ -187,15 +194,14 @@ const MedicalPackageSelection = ({
         </TouchableOpacity>
       </View>
     );
-  }  return (
+  }
+  return (
     <View style={styles.container}>
-      
       {selectedProfile && (
         <View style={styles.filterInfo}>
           <Text style={styles.filterInfoText}>
-            Những gói khám phù hợp với{" "}
-            {selectedProfile.fullName.toUpperCase()} (
-            {selectedProfile.gender === "Male" ? "Nam" : "Nữ"}{" "}
+            Những gói khám phù hợp với {selectedProfile.fullName.toUpperCase()}{" "}
+            ({selectedProfile.gender === "Male" ? "Nam" : "Nữ"}{" "}
             {calculateAge(selectedProfile.dob)} tuổi)
           </Text>
         </View>
@@ -213,7 +219,7 @@ const MedicalPackageSelection = ({
           returnKeyType="search"
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.clearButton}
             onPress={() => handleSearch("")}
           >
@@ -227,17 +233,17 @@ const MedicalPackageSelection = ({
         renderItem={renderPackageItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.packagesList}
-        showsVerticalScrollIndicator={false}        
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Icon name="alert-circle-outline" size={40} color="#666" />
             <Text style={styles.emptyText}>
-              {searchQuery.length > 0 
+              {searchQuery.length > 0
                 ? `Không tìm thấy gói khám phù hợp với từ khóa "${searchQuery}"`
                 : "Không tìm thấy gói khám phù hợp"}
             </Text>
             {searchQuery.length > 0 && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.clearSearchButton}
                 onPress={() => handleSearch("")}
               >
@@ -248,131 +254,34 @@ const MedicalPackageSelection = ({
         }
       />
 
-      {/* Modal hiển thị chi tiết gói khám */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chi tiết gói khám</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Icon name="close" size={24} color="#333" />
-              </TouchableOpacity>
-            </View>
-
-            {selectedPackageDetails && (
-              <ScrollView style={styles.modalBody}>
-                <Text style={styles.detailTitle}>
-                  {selectedPackageDetails.name}
-                </Text>
-                <Text style={styles.detailPrice}>
-                  {selectedPackageDetails.price.toLocaleString("vi-VN")} VNĐ
-                </Text>
-
-                <Text style={styles.detailSectionTitle}>Mô tả:</Text>
-                <Text style={styles.detailDescription}>
-                  {selectedPackageDetails.description}
-                </Text>
-                <Text style={styles.detailSectionTitle}>
-                  Các xét nghiệm bao gồm:
-                </Text>
-                {selectedPackageDetails.details &&
-                selectedPackageDetails.details.testCategories &&
-                selectedPackageDetails.details.testCategories.length > 0 ? (
-                  <View style={styles.testCategoriesContainer}>
-                    {selectedPackageDetails.details.testCategories.map(
-                      (category, index) => (
-                        <View key={index} style={styles.categorySection}>
-                          {category.name && (
-                            <Text style={styles.categoryName}>
-                              {category.name}
-                            </Text>
-                          )}
-
-                          {category.tests && category.tests.length > 0 ? (
-                            category.tests.map((test, testIndex) => (
-                              <View key={testIndex} style={styles.serviceItem}>
-                                <Icon
-                                  name="checkmark-circle"
-                                  size={16}
-                                  color="#0071CE"
-                                />
-                                <Text style={styles.serviceText}>
-                                  {test.name}
-                                </Text>
-                              </View>
-                            ))
-                          ) : (
-                            <View style={styles.serviceItem}>
-                              <Icon
-                                name="information-circle-outline"
-                                size={16}
-                                color="#0071CE"
-                              />
-                              <Text style={styles.serviceText}>
-                                Danh sách xét nghiệm đang được cập nhật
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      )
-                    )}
-                  </View>
-                ) : selectedPackageDetails.type ? (
-                  <View style={styles.typeContainer}>
-                    <View style={styles.serviceItem}>
-                      <Icon name="medical" size={16} color="#0071CE" />
-                      <Text style={styles.serviceText}>
-                        Loại gói: {selectedPackageDetails.type}
-                      </Text>
-                    </View>
-                    {selectedPackageDetails.targetGroup && (
-                      <View style={styles.serviceItem}>
-                        <Icon name="people" size={16} color="#0071CE" />
-                        <Text style={styles.serviceText}>
-                          Đối tượng: {selectedPackageDetails.targetGroup}
-                        </Text>
-                      </View>
-                    )}
-                    <View style={styles.serviceItem}>
-                      <Icon
-                        name="information-circle"
-                        size={16}
-                        color="#0071CE"
-                      />
-                      <Text style={styles.serviceText}>
-                        Chi tiết xét nghiệm sẽ được cung cấp tại bệnh viện
-                      </Text>
-                    </View>
-                  </View>
-                ) : (
-                  <Text style={styles.noServiceText}>
-                    Không có thông tin về các xét nghiệm
-                  </Text>
-                )}
-
-                <TouchableOpacity
-                  style={styles.selectButton}
-                  onPress={() => {
-                    setCurrentPackage(selectedPackageDetails);
-                    setModalVisible(false);
-                    setStep(2);
-                  }}
-                >
-                  <Text style={styles.selectButtonText}>Chọn gói này</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </Modal>
+      {/* Use our reusable Package Detail Modal with swipe functionality */}
+      <PackageDetailModal
+        visible={packageModal.modalVisible}
+        onClose={packageModal.closeModal}
+        packageDetails={packageModal.selectedPackageDetails}
+        packages={filteredPackages}
+        currentIndex={packageModal.currentPackageIndex}
+        onNavigate={packageModal.handleNavigatePackage}
+        onBookPackage={(packageId) => {
+          const selectedPkg = filteredPackages.find(
+            (pkg) => pkg.id === packageId
+          );
+          if (selectedPkg) {
+            setCurrentPackage(selectedPkg);
+            packageModal.closeModal();
+            setStep(2);
+          }
+        }}
+        swipeDistance={packageModal.swipeDistance}
+        fadeAnim={packageModal.fadeModalAnim}
+        scaleAnim={packageModal.scaleAnim}
+        indicatorAnim={packageModal.indicatorAnim}
+        isTransitioning={packageModal.isTransitioning}
+        canSwipe={packageModal.canSwipe}
+        panResponder={packageModal.panResponder}
+        showBookButton={true}
+        bookButtonText="Chọn gói này"
+      />
     </View>
   );
 };
@@ -399,7 +308,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginBottom: 16,
-  },  filterInfoText: {
+  },
+  filterInfoText: {
     color: "#0071CE",
     fontSize: 13,
   },
@@ -549,7 +459,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 40,
-  },  emptyText: {
+  },
+  emptyText: {
     color: "#666",
     fontSize: 16,
     marginTop: 12,
@@ -566,113 +477,6 @@ const styles = StyleSheet.create({
     color: "#0071CE",
     fontSize: 14,
     fontWeight: "500",
-  },
-  // Modal styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "90%",
-    maxHeight: "80%",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  closeButton: {
-    padding: 4,
-  },
-  modalBody: {
-    padding: 16,
-  },
-  detailTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 6,
-  },
-  detailPrice: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#0071CE",
-    marginBottom: 16,
-  },
-  detailSectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#444",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  detailDescription: {
-    fontSize: 14,
-    color: "#666",
-    lineHeight: 20,
-  },
-  serviceItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  serviceText: {
-    fontSize: 14,
-    color: "#555",
-    marginLeft: 8,
-  },
-  noServiceText: {
-    fontSize: 14,
-    color: "#888",
-    fontStyle: "italic",
-  },
-  testCategoriesContainer: {
-    marginBottom: 16,
-  },
-  categorySection: {
-    marginBottom: 12,
-  },
-  categoryName: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#444",
-    marginBottom: 6,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  typeContainer: {
-    backgroundColor: "#f8f9fa",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  selectButton: {
-    backgroundColor: "#0071CE",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 24,
-    marginBottom: 10,
-  },
-  selectButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
   },
 });
 

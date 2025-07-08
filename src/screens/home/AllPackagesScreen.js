@@ -229,6 +229,8 @@ const AllPackagesScreen = () => {
         isTransitioning={packageModal.isTransitioning}
         canSwipe={packageModal.canSwipe}
         panResponder={packageModal.panResponder}
+        showBookButton={true}
+        bookButtonText="Đặt lịch gói này"
       />
     </View>
   );

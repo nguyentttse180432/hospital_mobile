@@ -3,8 +3,7 @@ import api from "./api";
 // Lấy danh sách ngày làm việc trong tháng hiện tại
 export const getCurrentMonthDate = async () => {
   try {
-    const response = await api.get(`/WorkingDates/months`);
-    console.log("Fetched working dates:", response.data);
+    const response = await api.get(`/WorkingDates`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching working dates:`, error);
@@ -82,4 +81,4 @@ export const getSystemTime = async () => {
     console.error(`Error fetching system time:`, error);
     throw error;
   }
-}
+};

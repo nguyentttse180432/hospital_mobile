@@ -39,6 +39,10 @@ const DoneCheckup = () => {
           resizeMode="contain"
         />
 
+        <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate("CheckupResult")}>
+          <Text style={styles.homeButtonText}>Xem kết quả khám</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.homeButton} onPress={handleGoHome}>
           <Text style={styles.homeButtonText}>Về trang chủ</Text>
         </TouchableOpacity>
