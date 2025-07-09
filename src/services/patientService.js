@@ -157,46 +157,11 @@ export const addPatient = async (patientData) => {
   }
 };
 
-// Tạo hồ sơ bệnh nhân mới (Simplified version for auth flow)
+// Tạo hồ sơ bệnh nhân mới (Updated to match API format)
 export const createPatientProfile = async (profileData) => {
   try {
-    // Extract first name and last name from the full name
-    // For Vietnamese names, the family name is the first word, the given name is the last word
-    // and any words in between are the middle name
-    const nameParts = profileData.name?.trim().split(" ") || [];
-
-    let firstName = "";
-    let lastName = "";
-
-    if (nameParts.length === 1) {
-      // If there's only one word, treat it as firstName
-      firstName = nameParts[0];
-    } else if (nameParts.length >= 2) {
-      // In Vietnamese names, the given name is usually the last part
-      firstName = nameParts[nameParts.length - 1];
-      // The family name and middle name together form the lastName
-      lastName = nameParts.slice(0, nameParts.length - 1).join(" ");
-    }
-
-    // Convert the input format to match API requirements
-    const formattedData = {
-      firstName: firstName,
-      lastName: lastName,
-      gender: profileData.gender === "Nam" ? "Male" : "Female",
-      dateOfBirth: profileData.dateOfBirth,
-      identityNumber: profileData.idCard,
-      phoneNumber: profileData.phoneNumber,
-      email: profileData.email || "",
-      address: {
-        street: profileData.address,
-        ward: "",
-        district: "",
-        province: "",
-      },
-      isPrimary: profileData.isPrimary,
-    };
-
-    const response = await api.post("/Patients", formattedData);
+    // The profileData is already in the correct format from CreateProfileScreen
+    const response = await api.post("/Patients", profileData);
 
     return {
       isSuccess: response.data?.isSuccess || false,

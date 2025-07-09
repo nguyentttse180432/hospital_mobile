@@ -860,12 +860,6 @@ const CreateProfileScreen = ({ route, navigation }) => {
     try {
       setLoading(true);
 
-      // Compile the full address - filter out empty values to avoid extra commas
-      const addressParts = [streetAddress, ward, district, province].filter(
-        (part) => part
-      );
-      const fullAddress = addressParts.join(", ");
-
       // Convert DD/MM/YYYY to ISO date format
       let formattedDate = dateOfBirth;
       if (dateOfBirth && dateOfBirth.includes("/")) {
@@ -876,18 +870,39 @@ const CreateProfileScreen = ({ route, navigation }) => {
         formattedDate = dateObj.toISOString();
       }
 
+      // Parse Vietnamese name: last word is lastName (given name), rest is firstName (family name + middle name)
+      const nameParts = name?.trim().split(" ") || [];
+      let firstName = "";
+      let lastName = "";
+
+      if (nameParts.length === 1) {
+        // If there's only one word, treat it as firstName
+        firstName = nameParts[0];
+      } else if (nameParts.length >= 2) {
+        // Last word is the given name (lastName), rest is family name + middle name (firstName)
+        lastName = nameParts[nameParts.length - 1];
+        firstName = nameParts.slice(0, nameParts.length - 1).join(" ");
+      }
+
       const profileData = {
-        name,
-        gender,
+        firstName: firstName,
+        lastName: lastName,
+        gender: gender === "Nam" ? "Male" : "Female",
         dateOfBirth: formattedDate,
-        idCard,
-        phoneNumber,
-        email,
-        ethnicity,
-        occupation,
-        insuranceNumber,
-        address: fullAddress,
-        isPrimary,
+        identityNumber: idCard,
+        phoneNumber: phoneNumber,
+        email: email || "",
+        address: {
+          street: streetAddress || "",
+          ward: ward || "",
+          district: district || "",
+          province: province || "",
+          street_2: "",
+          ward_2: "",
+          district_2: "",
+          province_2: "",
+        },
+        isPrimary: isPrimary,
       };
 
       const response = await createPatientProfile(profileData);
