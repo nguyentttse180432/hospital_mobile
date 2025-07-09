@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,11 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  SafeAreaView,
   Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Card from "../../components/common/Card";
+import ScreenContainer from "../../components/common/ScreenContainer";
 import { getCheckupRecordsByDateAndStatus } from "../../services/checkupRecordService";
 
 const TodayCheckupScreen = () => {
@@ -124,7 +124,7 @@ const TodayCheckupScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenContainer>
       {todayCheckups.length === 0 && !loading ? (
         <View style={styles.container}>
           <View style={styles.headerTitleContainer}>
@@ -177,20 +177,15 @@ const TodayCheckupScreen = () => {
           }
         />
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-    paddingTop: 25, // Adjust for status bar height
-    paddingBottom: 20, // Adjust for bottom safe area
-  },
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: "#f5f5f5",
   },
   header: {
     padding: 16,

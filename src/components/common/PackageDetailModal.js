@@ -14,6 +14,30 @@ import Icon from "react-native-vector-icons/Ionicons";
 
 const { width } = Dimensions.get("window");
 
+// Function to translate category names to Vietnamese
+const translateCategoryName = (name) => {
+  const translations = {
+    Ophthalmology: "Nhãn khoa",
+    Testing: "Xét nghiệm",
+    ImagingDiagnostics: "Chẩn đoán hình ảnh",
+    GeneralCheckup: "Khám tổng quát",
+    Cardiology: "Tim mạch",
+    Gastroenterology: "Tiêu hóa",
+    Neurology: "Thần kinh",
+    Dermatology: "Da liễu",
+    ENT: "Tai Mũi Họng",
+    Orthopedics: "Cơ xương khớp",
+    Endocrinology: "Nội tiết",
+    Urology: "Tiết niệu",
+    Gynecology: "Phụ khoa",
+    Pediatrics: "Nhi khoa",
+    Oncology: "Ung bướu",
+    Psychology: "Tâm lý",
+  };
+
+  return translations[name] || name; // Return the translated name or original if no translation exists
+};
+
 const PackageDetailModal = ({
   visible,
   onClose,
@@ -69,10 +93,10 @@ const PackageDetailModal = ({
               <Text style={styles.detailPrice}>
                 {packageDetails.price.toLocaleString("vi-VN")} VNĐ
               </Text>
-              <Text style={styles.detailSectionTitle}>Mô tả:</Text>
-              <Text style={styles.detailDescription}>
-                {packageDetails.description}
-              </Text>
+                <Text style={styles.detailDescription}>
+                  <Text style={styles.detailSectionInline}>Mô tả: </Text>
+                  {packageDetails.description}
+                </Text>
               <Text style={styles.detailSectionTitle}>
                 Các xét nghiệm bao gồm:
               </Text>
@@ -85,7 +109,7 @@ const PackageDetailModal = ({
                       <View key={index} style={styles.categorySection}>
                         {category.name && (
                           <Text style={styles.categoryName}>
-                            {category.name}
+                            {translateCategoryName(category.name)}
                           </Text>
                         )}
 
@@ -258,6 +282,10 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
+  detailDescriptionContainer: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
   modalBody: {
     padding: 16,
     paddingBottom: 24,
@@ -280,7 +308,12 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
+  detailSectionInline: {
+    fontWeight: "600",
+    color: "#444",
+  },
   detailDescription: {
+    marginTop: 4,
     fontSize: 14,
     color: "#666",
     lineHeight: 20,
@@ -314,7 +347,6 @@ const styles = StyleSheet.create({
     color: "#444",
     marginBottom: 6,
     paddingBottom: 4,
-    borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
   typeContainer: {

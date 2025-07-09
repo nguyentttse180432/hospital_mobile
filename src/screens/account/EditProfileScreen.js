@@ -13,6 +13,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/Ionicons";
 import Button from "../../components/common/Button";
+import ScreenContainer from "../../components/common/ScreenContainer";
 
 const EditProfileScreen = ({ navigation }) => {
   const [userProfile, setUserProfile] = useState({
@@ -101,165 +102,170 @@ const EditProfileScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chỉnh sửa hồ sơ</Text>
-        <View style={styles.rightPlaceholder} />
-      </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
+    <ScreenContainer>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.avatarContainer}>
-          <Icon name="person-circle" size={100} color="#1976d2" />
-          <TouchableOpacity style={styles.changePhotoButton}>
-            <Text style={styles.changePhotoText}>Thay đổi ảnh</Text>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Chỉnh sửa hồ sơ</Text>
+          <View style={styles.rightPlaceholder} />
         </View>
 
-        <View style={styles.formSection}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Họ và tên</Text>
-            <TextInput
-              style={styles.textInput}
-              value={userProfile.fullName}
-              onChangeText={(text) =>
-                setUserProfile({ ...userProfile, fullName: text })
-              }
-              placeholder="Nhập họ và tên"
-            />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.contentContainer}
+        >
+          <View style={styles.avatarContainer}>
+            <Icon name="person-circle" size={100} color="#1976d2" />
+            <TouchableOpacity style={styles.changePhotoButton}>
+              <Text style={styles.changePhotoText}>Thay đổi ảnh</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Số điện thoại</Text>
-            <TextInput
-              style={styles.textInput}
-              value={userProfile.phone}
-              onChangeText={(text) =>
-                setUserProfile({ ...userProfile, phone: text })
-              }
-              placeholder="Nhập số điện thoại"
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.textInput}
-              value={userProfile.email}
-              onChangeText={(text) =>
-                setUserProfile({ ...userProfile, email: text })
-              }
-              placeholder="Nhập email"
-              keyboardType="email-address"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Địa chỉ</Text>
-            <TextInput
-              style={styles.textInput}
-              value={userProfile.address}
-              onChangeText={(text) =>
-                setUserProfile({ ...userProfile, address: text })
-              }
-              placeholder="Nhập địa chỉ"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Ngày sinh</Text>
-            <TextInput
-              style={styles.textInput}
-              value={userProfile.dateOfBirth}
-              onChangeText={(text) =>
-                setUserProfile({ ...userProfile, dateOfBirth: text })
-              }
-              placeholder="Nhập ngày sinh (dd/mm/yyyy)"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Giới tính</Text>
-            <View style={styles.genderOptions}>
-              <TouchableOpacity
-                style={[
-                  styles.genderOption,
-                  userProfile.gender === "Nam" && styles.genderOptionSelected,
-                ]}
-                onPress={() =>
-                  setUserProfile({ ...userProfile, gender: "Nam" })
+          <View style={styles.formSection}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Họ và tên</Text>
+              <TextInput
+                style={styles.textInput}
+                value={userProfile.fullName}
+                onChangeText={(text) =>
+                  setUserProfile({ ...userProfile, fullName: text })
                 }
-              >
-                <Text
-                  style={[
-                    styles.genderOptionText,
-                    userProfile.gender === "Nam" &&
-                      styles.genderOptionTextSelected,
-                  ]}
-                >
-                  Nam
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.genderOption,
-                  userProfile.gender === "Nữ" && styles.genderOptionSelected,
-                ]}
-                onPress={() => setUserProfile({ ...userProfile, gender: "Nữ" })}
-              >
-                <Text
-                  style={[
-                    styles.genderOptionText,
-                    userProfile.gender === "Nữ" &&
-                      styles.genderOptionTextSelected,
-                  ]}
-                >
-                  Nữ
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.genderOption,
-                  userProfile.gender === "Khác" && styles.genderOptionSelected,
-                ]}
-                onPress={() =>
-                  setUserProfile({ ...userProfile, gender: "Khác" })
+                placeholder="Nhập họ và tên"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Số điện thoại</Text>
+              <TextInput
+                style={styles.textInput}
+                value={userProfile.phone}
+                onChangeText={(text) =>
+                  setUserProfile({ ...userProfile, phone: text })
                 }
-              >
-                <Text
+                placeholder="Nhập số điện thoại"
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput
+                style={styles.textInput}
+                value={userProfile.email}
+                onChangeText={(text) =>
+                  setUserProfile({ ...userProfile, email: text })
+                }
+                placeholder="Nhập email"
+                keyboardType="email-address"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Địa chỉ</Text>
+              <TextInput
+                style={styles.textInput}
+                value={userProfile.address}
+                onChangeText={(text) =>
+                  setUserProfile({ ...userProfile, address: text })
+                }
+                placeholder="Nhập địa chỉ"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Ngày sinh</Text>
+              <TextInput
+                style={styles.textInput}
+                value={userProfile.dateOfBirth}
+                onChangeText={(text) =>
+                  setUserProfile({ ...userProfile, dateOfBirth: text })
+                }
+                placeholder="Nhập ngày sinh (dd/mm/yyyy)"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Giới tính</Text>
+              <View style={styles.genderOptions}>
+                <TouchableOpacity
                   style={[
-                    styles.genderOptionText,
+                    styles.genderOption,
+                    userProfile.gender === "Nam" && styles.genderOptionSelected,
+                  ]}
+                  onPress={() =>
+                    setUserProfile({ ...userProfile, gender: "Nam" })
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.genderOptionText,
+                      userProfile.gender === "Nam" &&
+                        styles.genderOptionTextSelected,
+                    ]}
+                  >
+                    Nam
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.genderOption,
+                    userProfile.gender === "Nữ" && styles.genderOptionSelected,
+                  ]}
+                  onPress={() =>
+                    setUserProfile({ ...userProfile, gender: "Nữ" })
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.genderOptionText,
+                      userProfile.gender === "Nữ" &&
+                        styles.genderOptionTextSelected,
+                    ]}
+                  >
+                    Nữ
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.genderOption,
                     userProfile.gender === "Khác" &&
-                      styles.genderOptionTextSelected,
+                      styles.genderOptionSelected,
                   ]}
+                  onPress={() =>
+                    setUserProfile({ ...userProfile, gender: "Khác" })
+                  }
                 >
-                  Khác
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[
+                      styles.genderOptionText,
+                      userProfile.gender === "Khác" &&
+                        styles.genderOptionTextSelected,
+                    ]}
+                  >
+                    Khác
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
 
-        <Button
-          title={isSubmitting ? "Đang cập nhật..." : "Cập nhật thông tin"}
-          onPress={handleUpdateProfile}
-          disabled={isSubmitting}
-          style={styles.updateButton}
-        />
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <Button
+            title={isSubmitting ? "Đang cập nhật..." : "Cập nhật thông tin"}
+            onPress={handleUpdateProfile}
+            disabled={isSubmitting}
+            style={styles.updateButton}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenContainer>
   );
 };
 
@@ -275,7 +281,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#1976d2",
     paddingVertical: 15,
     paddingHorizontal: 16,
-    paddingTop: 50,
   },
   backButton: {
     padding: 8,

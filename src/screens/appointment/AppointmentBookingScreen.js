@@ -1,12 +1,7 @@
 import { useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Alert,
-  SafeAreaView,
-  ActivityIndicator,
-} from "react-native";
+import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import Header from "../../components/common/Header";
+import ScreenContainer from "../../components/common/ScreenContainer";
 import { timeSlots } from "../../data/appointmentData";
 import {
   createAppointment,
@@ -346,101 +341,109 @@ const AppointmentScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Header
-        title={getHeaderTitle()}
-        onBack={handleBack}
-        progressIcons={["person", "medical", "clipboard", "wallet", "document"]}
-        activeStep={getActiveStep()}
-      />
-      <View style={styles.content}>
-        {step === 1 && (
-          <ProfileSelection
-            selectedProfile={selectedProfile}
-            setSelectedProfile={setSelectedProfile}
-            newProfile={newProfile}
-            setNewProfile={setNewProfile}
-            canProceed={canProceed}
-            handleNext={handleNext}
-          />
-        )}
-        {step === 2 && (
-          <AppointmentSelection
-            currentPackage={currentPackage}
-            selectedServices={selectedServices}
-            currentDate={currentDate}
-            currentTime={currentTime}
-            setStep={setStep}
-            canProceed={canProceed}
-          />
-        )}
-        {step === 2.1 && (
-          <MedicalPackageSelection
-            currentPackage={currentPackage}
-            setCurrentPackage={setCurrentPackage}
-            setStep={setStep}
-            selectedProfile={selectedProfile}
-          />
-        )}
-        {step === 2.2 && (
-          <ServiceSelection
-            selectedServices={selectedServices}
-            setSelectedServices={setSelectedServices}
-            setStep={setStep}
-            currentPackage={currentPackage}
-          />
-        )}
-        {step === 2.3 && (
-          <DateSelection
-            currentDate={currentDate}
-            setCurrentDate={setCurrentDate}
-            setCurrentTime={setCurrentTime}
-            setStep={setStep}
-          />
-        )}
-        {step === 2.4 && (
-          <TimeSelection
-            currentDate={currentDate}
-            currentTime={currentTime}
-            setCurrentTime={setCurrentTime}
-            setStep={setStep}
-            timeSlots={timeSlots}
-          />
-        )}
-        {step === 3 && (
-          <AppointmentReview
-            appointment={appointment}
-            currentPackage={currentPackage}
-            selectedServices={selectedServices}
-            currentDate={currentDate}
-            currentTime={currentTime}
-            handleNext={handleNext}
-            selectedProfile={selectedProfile}
-          />
-        )}
-        {step === 4 && (
-          <PaymentScreen
-            appointment={appointment}
-            paymentMethod={paymentMethod}
-            setPaymentMethod={setPaymentMethod}
-            handleNext={handleNext}
-            handleBack={handleBack}
-            canProceed={canProceed}
-            totalAmount={calculateTotalAmount()}
-            isSubmitting={isSubmitting}
-          />
-        )}
-        {step === 5 && (
-          <AppointmentConfirmation
-            appointment={appointment}
-            patientProfile={selectedProfile}
-            navigation={navigation}
-            resetAppointment={resetAppointment}
-            appointmentCode={appointmentCode}
-          />
-        )}
+    <ScreenContainer hasBottomTabs={true}>
+      <View style={styles.container}>
+        <Header
+          title={getHeaderTitle()}
+          onBack={handleBack}
+          progressIcons={[
+            "person",
+            "medical",
+            "clipboard",
+            "wallet",
+            "document",
+          ]}
+          activeStep={getActiveStep()}
+        />
+        <View style={styles.content}>
+          {step === 1 && (
+            <ProfileSelection
+              selectedProfile={selectedProfile}
+              setSelectedProfile={setSelectedProfile}
+              newProfile={newProfile}
+              setNewProfile={setNewProfile}
+              canProceed={canProceed}
+              handleNext={handleNext}
+            />
+          )}
+          {step === 2 && (
+            <AppointmentSelection
+              currentPackage={currentPackage}
+              selectedServices={selectedServices}
+              currentDate={currentDate}
+              currentTime={currentTime}
+              setStep={setStep}
+              canProceed={canProceed}
+            />
+          )}
+          {step === 2.1 && (
+            <MedicalPackageSelection
+              currentPackage={currentPackage}
+              setCurrentPackage={setCurrentPackage}
+              setStep={setStep}
+              selectedProfile={selectedProfile}
+            />
+          )}
+          {step === 2.2 && (
+            <ServiceSelection
+              selectedServices={selectedServices}
+              setSelectedServices={setSelectedServices}
+              setStep={setStep}
+              currentPackage={currentPackage}
+            />
+          )}
+          {step === 2.3 && (
+            <DateSelection
+              currentDate={currentDate}
+              setCurrentDate={setCurrentDate}
+              setCurrentTime={setCurrentTime}
+              setStep={setStep}
+            />
+          )}
+          {step === 2.4 && (
+            <TimeSelection
+              currentDate={currentDate}
+              currentTime={currentTime}
+              setCurrentTime={setCurrentTime}
+              setStep={setStep}
+              timeSlots={timeSlots}
+            />
+          )}
+          {step === 3 && (
+            <AppointmentReview
+              appointment={appointment}
+              currentPackage={currentPackage}
+              selectedServices={selectedServices}
+              currentDate={currentDate}
+              currentTime={currentTime}
+              handleNext={handleNext}
+              selectedProfile={selectedProfile}
+            />
+          )}
+          {step === 4 && (
+            <PaymentScreen
+              appointment={appointment}
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+              handleNext={handleNext}
+              handleBack={handleBack}
+              canProceed={canProceed}
+              totalAmount={calculateTotalAmount()}
+              isSubmitting={isSubmitting}
+            />
+          )}
+          {step === 5 && (
+            <AppointmentConfirmation
+              appointment={appointment}
+              patientProfile={selectedProfile}
+              navigation={navigation}
+              resetAppointment={resetAppointment}
+              appointmentCode={appointmentCode}
+            />
+          )}
+        </View>
       </View>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 };
 

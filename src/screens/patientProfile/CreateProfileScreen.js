@@ -1298,10 +1298,12 @@ const CreateProfileScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginBottom: 20, // Thêm margin bottom
   },
   screenContainer: {
     padding: 0, // Loại bỏ padding mặc định
     paddingTop: 0, // Đặc biệt loại bỏ padding phía trên
+    marginBottom: 20, // Thêm margin bottom
   },
   message: {
     textAlign: "center",

@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
+  Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getMedicalPackages } from "../../../services/medicalPackageService";
 import Icon from "react-native-vector-icons/Ionicons";
 import PackageDetailModal from "../../common/PackageDetailModal";
@@ -24,6 +26,9 @@ const MedicalPackageSelection = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Get safe area insets to handle bottom tab bar
+  const insets = useSafeAreaInsets();
 
   // Use our custom hook for package modal
   const packageModal = usePackageModal(filteredPackages);

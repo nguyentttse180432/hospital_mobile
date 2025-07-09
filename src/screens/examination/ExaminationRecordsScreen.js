@@ -375,7 +375,8 @@ const ExaminationRecordsScreen = () => {
       navigation.navigate("AppointmentDetail", {
         appointmentCode: appointment.code,
         status: appointment.checkupRecordStatus,
-        patientName: appointment.patientFullName || appointment.patientName || "Bệnh nhân",
+        patientName:
+          appointment.patientFullName || appointment.patientName || "Bệnh nhân",
       });
     }
   };
@@ -810,6 +811,7 @@ const styles = StyleSheet.create({
     width: "100%",
     padding: 0,
     margin: 0,
+    marginBottom: 20, // Thêm margin bottom
   },
   tabContainer: {
     backgroundColor: "#fff",

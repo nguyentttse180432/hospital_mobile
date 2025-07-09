@@ -525,9 +525,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f7fa",
+    marginBottom: 20, // Thêm margin bottom
   },
   scrollView: {
     flex: 1,
+    marginBottom: 10, // Thêm margin bottom
   },
   profileCard: {
     backgroundColor: "#fff",

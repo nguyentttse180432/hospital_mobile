@@ -8,6 +8,8 @@ import {
   StatusBar,
   Text,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getBottomTabSafeStyle } from "../../utils/safeAreaHelper";
 
 const ScreenContainer = ({
   children,
@@ -17,8 +19,10 @@ const ScreenContainer = ({
   title,
   headerBackgroundColor = "#4299e1",
   leftComponent,
+  hasBottomTabs = false, // Add prop to indicate if screen has bottom tabs
 }) => {
   const Container = scrollable ? ScrollView : View;
+  const insets = useSafeAreaInsets();
 
   // Get actual status bar height
   const STATUS_BAR_HEIGHT =
@@ -26,6 +30,9 @@ const ScreenContainer = ({
 
   // Only apply status bar padding if not explicitly set to 0 in style
   const topPadding = style && style.paddingTop === 0 ? 0 : STATUS_BAR_HEIGHT;
+
+  // Get bottom tab safe area style if needed
+  const bottomTabStyle = hasBottomTabs ? getBottomTabSafeStyle(insets) : {};
 
   const renderStandardHeader = () => {
     if (!title) return null;
@@ -76,8 +83,11 @@ const ScreenContainer = ({
             {
               paddingTop: header || title ? 0 : topPadding,
             },
+            bottomTabStyle, // Apply bottom tab safe area style
           ]}
-          contentContainerStyle={scrollable && styles.scrollContent}
+          contentContainerStyle={
+            scrollable && [styles.scrollContent, bottomTabStyle]
+          }
           keyboardShouldPersistTaps="handled"
         >
           {children}

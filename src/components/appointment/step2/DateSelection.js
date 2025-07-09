@@ -453,6 +453,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 16,
     paddingHorizontal: 16,
+    paddingBottom: 20,
     backgroundColor: "#f5f5f5",
   },
   stepTitle: {
@@ -464,30 +465,30 @@ const styles = StyleSheet.create({
   },
   calendar: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 16,
-    elevation: 4,
+    elevation: 3,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   monthNavigation: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 8,
+    marginBottom: 12,
+    paddingBottom: 6,
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
   },
   navButton: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 20,
+    borderRadius: 16,
     backgroundColor: "#f5f5f5",
   },
   navButtonIcon: {
@@ -497,7 +498,7 @@ const styles = StyleSheet.create({
     color: "#ccc",
   },
   month: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     color: "#1976d2",
   },
@@ -505,9 +506,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#e3f2fd",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 16,
+    padding: 8,
+    borderRadius: 6,
+    marginBottom: 12,
   },
   noticeText: {
     fontSize: 12,
@@ -517,37 +518,36 @@ const styles = StyleSheet.create({
   },
   weekDays: {
     flexDirection: "row",
-    justifyContent: "flex-start",
-    marginBottom: 12,
-    paddingHorizontal: 2,
+    justifyContent: "space-between",
+    marginBottom: 8,
+    paddingHorizontal: 0,
   },
   weekDayContainer: {
-    width: 40,
+    width: "13.8%", // Match with day cells
     alignItems: "center",
-    margin: 2, // Match the exact margin of day cells
   },
   weekDay: {
     textAlign: "center",
-    fontSize: 14,
+    fontSize: 13, // Slightly larger
     fontWeight: "600",
     color: "#666",
   },
   calendarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "flex-start",
+    // justifyContent: "space-between",
   },
   day: {
-    width: 40,
-    height: 40,
-    margin: 2,
-    borderRadius: 20,
+    width: "13.8%", // Slightly smaller to fit better and remove gaps
+    aspectRatio: 1,
+    marginBottom: 4,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f9f9f9",
   },
   dayText: {
-    fontSize: 14,
+    fontSize: 14, // Increased from 12 to 14
     fontWeight: "600",
     color: "#333",
   },
@@ -559,6 +559,7 @@ const styles = StyleSheet.create({
   todayDayText: {
     color: "#1976d2",
     fontWeight: "700",
+    fontSize: 14, // Match the increased size
   },
   selectedDay: {
     backgroundColor: "#1976d2",
@@ -566,6 +567,7 @@ const styles = StyleSheet.create({
   selectedDayText: {
     color: "#fff",
     fontWeight: "700",
+    fontSize: 14, // Match the increased size
   },
   unavailableDay: {
     backgroundColor: "#f5f5f5",
@@ -577,8 +579,7 @@ const styles = StyleSheet.create({
   legend: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginTop: 20,
-    paddingTop: 12,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
   },
@@ -587,13 +588,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   legendDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    marginRight: 6,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 4,
   },
   legendText: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#666",
   },
   loadingContainer: {

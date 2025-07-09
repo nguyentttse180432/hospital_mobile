@@ -58,10 +58,6 @@ const AppointmentConfirmation = ({
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContent}
     >
-      <View style={styles.successHeader}>
-        <Text style={styles.successTitle}>Đặt Lịch Thành Công!</Text>
-        <Text style={styles.successSubtitle}>Phiếu khám bệnh của bạn</Text>
-      </View>
       <View style={styles.ticketContainer}>
         <View style={styles.qrSection}>
           <View style={styles.queueInfo}>
@@ -113,7 +109,7 @@ const AppointmentConfirmation = ({
                   {appointment.package.name}
                 </Text>
                 <Text style={styles.price}>
-                  {appointment.package.price.toLocaleString("vi-VN")} 
+                  {appointment.package.price.toLocaleString("vi-VN")}
                 </Text>
               </View>
             </View>
@@ -129,14 +125,14 @@ const AppointmentConfirmation = ({
                 <View key={sIndex} style={styles.serviceItem}>
                   <Text style={styles.serviceName}>{service.name}</Text>
                   <Text style={styles.price}>
-                    {service.price.toLocaleString("vi-VN")} 
+                    {service.price.toLocaleString("vi-VN")}
                   </Text>
                 </View>
               ))}
             </View>
           )}
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Thời gian khám:</Text>
+            <Text style={styles.detailLabel}>Thời gian:</Text>
             <Text style={styles.detailValue}>
               {appointment?.time?.time}, {appointment?.date}
             </Text>
@@ -145,7 +141,6 @@ const AppointmentConfirmation = ({
             <Text style={styles.detailLabel}>Tổng chi phí:</Text>
             <Text style={styles.feeValue}>
               {calculateAppointmentPrice(appointment).toLocaleString("vi-VN")}
-              
             </Text>
           </View>
         </View>
@@ -155,7 +150,11 @@ const AppointmentConfirmation = ({
           title="Về Trang Chủ"
           onPress={() => {
             resetAppointment();
-            navigation.navigate("Home");
+            // Navigate to the main Home tab in the BottomTabNavigator
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Trang chủ" }],
+            });
           }}
           style={{ width: "100%" }}
         />
@@ -190,6 +189,7 @@ const styles = StyleSheet.create({
   ticketContainer: {
     backgroundColor: "#fff",
     borderRadius: 12,
+    marginTop: 10,
     padding: 16,
     borderWidth: 1,
     borderColor: "#ddd",
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingBottom: 16,
-    marginBottom: 16,
+    marginBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
@@ -239,13 +239,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 10,
+    marginBottom: 5,
   },
   infoSection: {
     backgroundColor: "#f9f9f9",
     borderRadius: 8,
     padding: 8,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   infoRow: {
     flexDirection: "row",
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   },
   feeValue: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#1e88e5",
     flex: 2,
     textAlign: "right",

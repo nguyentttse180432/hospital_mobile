@@ -11,13 +11,16 @@ import {
   Button,
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
 import { getPatients } from "../../services/patientService";
 import ScreenContainer from "../../components/common/ScreenContainer";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { getBottomTabSafeStyle } from "../../utils/safeAreaHelper";
 
 const PatientRecordsScreen = () => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -245,8 +248,9 @@ const PatientRecordsScreen = () => {
       scrollable={false}
       header={customHeader}
       style={{ padding: 0 }}
+      hasBottomTabs={true}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, getBottomTabSafeStyle(insets)]}>
         <ScrollView
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -595,8 +599,10 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
     alignItems: "center",
+    justifyContent: "center",
   },
   detailButtonText: {
+    fontSize: 16,
     color: "white",
     fontWeight: "bold",
   },
@@ -609,9 +615,11 @@ const styles = StyleSheet.create({
     borderColor: "#4299e1",
     flex: 1,
     marginLeft: 8,
-    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
   },
   healthInfoButtonText: {
+    fontSize: 16,
     color: "#4299e1",
     fontWeight: "bold",
   },

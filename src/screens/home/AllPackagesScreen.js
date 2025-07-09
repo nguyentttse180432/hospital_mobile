@@ -14,6 +14,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
 import PackageDetailModal from "../../components/common/PackageDetailModal";
 import { usePackageModal } from "../../hooks/usePackageModal";
+import ScreenContainer from "../../components/common/ScreenContainer";
 
 const AllPackagesScreen = () => {
   const navigation = useNavigation();
@@ -126,113 +127,124 @@ const AllPackagesScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.centeredContainer}>
-        <ActivityIndicator size="large" color="#0071CE" />
-        <Text style={styles.loadingText}>Đang tải gói khám...</Text>
-      </View>
+      <ScreenContainer>
+        <View style={styles.centeredContainer}>
+          <ActivityIndicator size="large" color="#0071CE" />
+          <Text style={styles.loadingText}>Đang tải gói khám...</Text>
+        </View>
+      </ScreenContainer>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centeredContainer}>
-        <Icon name="alert-circle" size={40} color="#f44336" />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={fetchMedicalPackages}
-        >
-          <Text style={styles.retryButtonText}>Thử lại</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenContainer>
+        <View style={styles.centeredContainer}>
+          <Icon name="alert-circle" size={40} color="#f44336" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchMedicalPackages}
+          >
+            <Text style={styles.retryButtonText}>Thử lại</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar backgroundColor="#f8f9fa" barStyle="dark-content" />
+    <ScreenContainer>
+      <View style={styles.container}>
+        <StatusBar backgroundColor="#f8f9fa" barStyle="dark-content" />
 
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Icon name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.screenTitle}>Tất cả gói khám</Text>
-        <View style={styles.placeholderView} />
-      </View>
-
-      {/* Search input */}
-      <View style={styles.searchContainer}>
-        <Icon name="search" size={20} color="#666" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Tìm kiếm gói khám..."
-          value={searchQuery}
-          onChangeText={handleSearch}
-          placeholderTextColor="#999"
-          returnKeyType="search"
-        />
-        {searchQuery.length > 0 && (
+        <View style={styles.header}>
           <TouchableOpacity
-            style={styles.clearButton}
-            onPress={() => handleSearch("")}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
-            <Icon name="close-circle" size={20} color="#999" />
+            <Icon name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-        )}
+          <Text style={styles.screenTitle}>Tất cả gói khám</Text>
+          <View style={styles.placeholderView} />
+        </View>
+
+        {/* Search input */}
+        <View style={styles.searchContainer}>
+          <Icon
+            name="search"
+            size={20}
+            color="#666"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm kiếm gói khám..."
+            value={searchQuery}
+            onChangeText={handleSearch}
+            placeholderTextColor="#999"
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => handleSearch("")}
+            >
+              <Icon name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <FlatList
+          data={filteredPackages}
+          renderItem={renderPackageItem}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.packagesList}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Icon name="alert-circle-outline" size={40} color="#666" />
+              <Text style={styles.emptyText}>
+                {searchQuery.length > 0
+                  ? `Không tìm thấy gói khám phù hợp với từ khóa "${searchQuery}"`
+                  : "Không tìm thấy gói khám phù hợp"}
+              </Text>
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearSearchButton}
+                  onPress={() => handleSearch("")}
+                >
+                  <Text style={styles.clearSearchText}>Xóa tìm kiếm</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          }
+        />
+
+        {/* Use our reusable Package Detail Modal */}
+        <PackageDetailModal
+          visible={packageModal.modalVisible}
+          onClose={packageModal.closeModal}
+          packageDetails={packageModal.selectedPackageDetails}
+          packages={filteredPackages}
+          currentIndex={packageModal.currentPackageIndex}
+          onNavigate={packageModal.handleNavigatePackage}
+          onBookPackage={(packageId) => {
+            handleSelectPackage({ id: packageId });
+            packageModal.closeModal();
+          }}
+          swipeDistance={packageModal.swipeDistance}
+          fadeAnim={packageModal.fadeModalAnim}
+          scaleAnim={packageModal.scaleAnim}
+          indicatorAnim={packageModal.indicatorAnim}
+          isTransitioning={packageModal.isTransitioning}
+          canSwipe={packageModal.canSwipe}
+          panResponder={packageModal.panResponder}
+          showBookButton={true}
+          bookButtonText="Đặt lịch gói này"
+        />
       </View>
-
-      <FlatList
-        data={filteredPackages}
-        renderItem={renderPackageItem}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.packagesList}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Icon name="alert-circle-outline" size={40} color="#666" />
-            <Text style={styles.emptyText}>
-              {searchQuery.length > 0
-                ? `Không tìm thấy gói khám phù hợp với từ khóa "${searchQuery}"`
-                : "Không tìm thấy gói khám phù hợp"}
-            </Text>
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                style={styles.clearSearchButton}
-                onPress={() => handleSearch("")}
-              >
-                <Text style={styles.clearSearchText}>Xóa tìm kiếm</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        }
-      />
-
-      {/* Use our reusable Package Detail Modal */}
-      <PackageDetailModal
-        visible={packageModal.modalVisible}
-        onClose={packageModal.closeModal}
-        packageDetails={packageModal.selectedPackageDetails}
-        packages={filteredPackages}
-        currentIndex={packageModal.currentPackageIndex}
-        onNavigate={packageModal.handleNavigatePackage}
-        onBookPackage={(packageId) => {
-          handleSelectPackage({ id: packageId });
-          packageModal.closeModal();
-        }}
-        swipeDistance={packageModal.swipeDistance}
-        fadeAnim={packageModal.fadeModalAnim}
-        scaleAnim={packageModal.scaleAnim}
-        indicatorAnim={packageModal.indicatorAnim}
-        isTransitioning={packageModal.isTransitioning}
-        canSwipe={packageModal.canSwipe}
-        panResponder={packageModal.panResponder}
-        showBookButton={true}
-        bookButtonText="Đặt lịch gói này"
-      />
-    </View>
+    </ScreenContainer>
   );
 };
 
@@ -246,8 +258,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 16,
+    paddingVertical: 16,
     backgroundColor: "#fff",
     elevation: 2,
   },

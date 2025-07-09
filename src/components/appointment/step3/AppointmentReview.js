@@ -141,7 +141,7 @@ const AppointmentReview = ({
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Giá gói</Text>
                     <Text style={styles.packagePrice}>
-                      {appointmentData.package.price.toLocaleString("vi-VN")} 
+                      {appointmentData.package.price.toLocaleString("vi-VN")}
                       VNĐ
                     </Text>
                   </View>
@@ -173,19 +173,12 @@ const AppointmentReview = ({
 
               <View style={styles.scheduleSection}>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Ngày khám</Text>
+                  <Text style={styles.summaryLabel}>Thời gian</Text>
                   <Text style={styles.dateValue}>
+                    {appointmentData.time?.time ? `${appointmentData.time.time} - ` : ""}
                     {formatDate(appointmentData.date)}
                   </Text>
                 </View>
-
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Giờ khám</Text>
-                  <Text style={styles.timeValue}>
-                    {appointmentData.time?.time || "Chưa chọn"}
-                  </Text>
-                </View>
-
               </View>
               <View style={styles.totalSection}>
                 <View style={styles.totalRow}>
@@ -259,7 +252,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   sectionHeader: {
-    marginBottom: 12,
+    marginBottom: 8,
     paddingHorizontal: 16,
   },
   sectionTitle: {
@@ -269,8 +262,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   patientInfoContainer: {
-    marginTop: 16,
-    marginBottom: 24,
+    marginTop: 10,
+    marginBottom: 10,
   },
   patientInfo: {
     backgroundColor: "#fff",
@@ -285,7 +278,7 @@ const styles = StyleSheet.create({
   },
   infoRow: {
     flexDirection: "row",
-    paddingVertical: 12,
+    paddingVertical: 9,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
     alignItems: "center",
@@ -329,7 +322,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   appointmentContainer: {
-    marginBottom: 24,
   },
   appointmentSummary: {
     backgroundColor: "#fff",
@@ -344,7 +336,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   packageSection: {
-    marginBottom: 10,
+    marginBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
@@ -354,7 +346,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f0f0f0",
   },
   scheduleSection: {
-    marginBottom: 16,
+    marginBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
@@ -362,7 +354,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 5,
   },
   summaryLabel: {
     fontSize: 15,
@@ -418,7 +410,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   dateValue: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#333",
     fontWeight: "600",
     flex: 1.5,
@@ -442,7 +434,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
     padding: 12,
     borderRadius: 8,
-    marginTop: 8,
+    marginBottom: 4,
   },
   totalRow: {
     flexDirection: "row",

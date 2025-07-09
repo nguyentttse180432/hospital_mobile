@@ -14,6 +14,7 @@ import {
 import { getServices } from "../../services/serviceService";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
+import ScreenContainer from "../../components/common/ScreenContainer";
 
 const AllServicesScreen = () => {
   const navigation = useNavigation();
@@ -114,87 +115,98 @@ const AllServicesScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.centeredContainer}>
-        <ActivityIndicator size="large" color="#0071CE" />
-        <Text style={styles.loadingText}>Đang tải dịch vụ...</Text>
-      </View>
+      <ScreenContainer>
+        <View style={styles.centeredContainer}>
+          <ActivityIndicator size="large" color="#0071CE" />
+          <Text style={styles.loadingText}>Đang tải dịch vụ...</Text>
+        </View>
+      </ScreenContainer>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centeredContainer}>
-        <Icon name="alert-circle" size={40} color="#f44336" />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchServices}>
-          <Text style={styles.retryButtonText}>Thử lại</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenContainer>
+        <View style={styles.centeredContainer}>
+          <Icon name="alert-circle" size={40} color="#f44336" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchServices}>
+            <Text style={styles.retryButtonText}>Thử lại</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenContainer>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar backgroundColor="#f8f9fa" barStyle="dark-content" />
+    <ScreenContainer>
+      <View style={styles.container}>
+        <StatusBar backgroundColor="#f8f9fa" barStyle="dark-content" />
 
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Icon name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.screenTitle}>Tất cả dịch vụ</Text>
-        <View style={styles.placeholderView} />
-      </View>
-
-      {/* Search input */}
-      <View style={styles.searchContainer}>
-        <Icon name="search" size={20} color="#666" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Tìm kiếm dịch vụ..."
-          value={searchQuery}
-          onChangeText={handleSearch}
-          placeholderTextColor="#999"
-          returnKeyType="search"
-        />
-        {searchQuery.length > 0 && (
+        <View style={styles.header}>
           <TouchableOpacity
-            style={styles.clearButton}
-            onPress={() => handleSearch("")}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
-            <Icon name="close-circle" size={20} color="#999" />
+            <Icon name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-        )}
-      </View>
+          <Text style={styles.screenTitle}>Tất cả dịch vụ</Text>
+          <View style={styles.placeholderView} />
+        </View>
 
-      <FlatList
-        data={filteredServices}
-        renderItem={renderServiceItem}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.servicesList}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Icon name="alert-circle-outline" size={40} color="#666" />
-            <Text style={styles.emptyText}>
-              {searchQuery.length > 0
-                ? `Không tìm thấy dịch vụ phù hợp với từ khóa "${searchQuery}"`
-                : "Không tìm thấy dịch vụ phù hợp"}
-            </Text>
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                style={styles.clearSearchButton}
-                onPress={() => handleSearch("")}
-              >
-                <Text style={styles.clearSearchText}>Xóa tìm kiếm</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        }
-      />
-    </View>
+        {/* Search input */}
+        <View style={styles.searchContainer}>
+          <Icon
+            name="search"
+            size={20}
+            color="#666"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm kiếm dịch vụ..."
+            value={searchQuery}
+            onChangeText={handleSearch}
+            placeholderTextColor="#999"
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => handleSearch("")}
+            >
+              <Icon name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <FlatList
+          data={filteredServices}
+          renderItem={renderServiceItem}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.servicesList}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Icon name="alert-circle-outline" size={40} color="#666" />
+              <Text style={styles.emptyText}>
+                {searchQuery.length > 0
+                  ? `Không tìm thấy dịch vụ phù hợp với từ khóa "${searchQuery}"`
+                  : "Không tìm thấy dịch vụ phù hợp"}
+              </Text>
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearSearchButton}
+                  onPress={() => handleSearch("")}
+                >
+                  <Text style={styles.clearSearchText}>Xóa tìm kiếm</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          }
+        />
+      </View>
+    </ScreenContainer>
   );
 };
 
@@ -208,8 +220,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 16,
+    paddingVertical: 16,
     backgroundColor: "#fff",
     elevation: 2,
   },

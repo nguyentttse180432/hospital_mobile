@@ -18,6 +18,7 @@ import {
   getServiceFeedback,
 } from "../../services/appointmentService";
 import Button from "../../components/common/Button";
+import ScreenContainer from "../../components/common/ScreenContainer";
 
 const FeedbackScreenNew = ({ route, navigation }) => {
   const {
@@ -425,153 +426,11 @@ const FeedbackScreenNew = ({ route, navigation }) => {
 
   // Main feedback screen
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => {
-            // Go back directly to the profile/appointment detail screen
-            if (route.params?.fromAppointmentDetail) {
-              navigation.navigate("AppointmentDetail", {
-                appointmentCode: appointmentCode,
-                status: status,
-                patientName: patientName,
-              });
-            } else {
-              navigation.navigate("ProfileMain");
-            }
-          }}
-        >
-          <Icon name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {isViewMode
-            ? feedbackType === "doctor"
-              ? "Xem đánh giá bác sĩ"
-              : "Xem đánh giá dịch vụ"
-            : feedbackType === "doctor"
-            ? "Đánh giá bác sĩ"
-            : "Đánh giá dịch vụ"}
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView style={styles.scrollView}>
-        {/* Appointment summary */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Chi tiết lịch khám</Text>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Mã lịch hẹn:</Text>
-            <Text style={styles.infoValue}>#{appointmentCode}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Ngày khám:</Text>
-            <Text style={styles.infoValue}>
-              {formatDate(appointment?.bookingDate)}
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Dịch vụ:</Text>
-            <Text style={styles.infoValue}>
-              {appointment?.packageName || "Dịch vụ khám bệnh"}
-            </Text>
-          </View>
-
-          {feedbackType === "doctor" && doctor && (
-            <>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Bác sĩ:</Text>
-                <Text style={styles.infoValue}>
-                  {doctor?.doctorName || "Chưa xác định"}
-                </Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Khoa:</Text>
-                <Text style={styles.infoValue}>
-                  {doctor?.departmentName || "Chưa xác định"}
-                </Text>
-              </View>
-            </>
-          )}
-        </View>
-
-        {/* Doctor specific feedback */}
-        {feedbackType === "doctor" && (
-          <>
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>
-                {isViewMode ? "Đánh giá của bạn cho bác sĩ" : "Đánh giá bác sĩ"}
-              </Text>
-
-              {renderStars()}
-
-              <Text style={styles.ratingText}>
-                {rating === 0 && "Chưa đánh giá"}
-                {rating === 1 && "Rất không hài lòng"}
-                {rating === 2 && "Không hài lòng"}
-                {rating === 3 && "Bình thường"}
-                {rating === 4 && "Hài lòng"}
-                {rating === 5 && "Rất hài lòng"}
-              </Text>
-
-              <Text style={styles.inputLabel}>Nhận xét của bạn</Text>
-              <TextInput
-                style={[styles.textInput, isViewMode && styles.disabledInput]}
-                value={comment}
-                onChangeText={(text) => !isViewMode && setComment(text)}
-                placeholder="Nhận xét về bác sĩ..."
-                multiline
-                numberOfLines={4}
-                editable={!isViewMode}
-              />
-            </View>
-          </>
-        )}
-
-        {/* Service feedback */}
-        {feedbackType === "service" && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              {isViewMode
-                ? "Đánh giá của bạn về dịch vụ"
-                : "Đánh giá về dịch vụ"}
-            </Text>
-
-            {renderFeedbackItem("Thái độ nhân viên", "staffFriendliness")}
-            {renderFeedbackItem("Giao tiếp rõ ràng", "communicationClarity")}
-            {renderFeedbackItem("Sẵn sàng giải đáp", "questionWillingness")}
-            {renderFeedbackItem("Thời gian chờ hợp lý", "reasonableWaitTime")}
-            {renderFeedbackItem("Đúng giờ hẹn", "onTimeAppointment")}
-            {renderFeedbackItem("Quy trình rõ ràng", "clearProcedure")}
-            {renderFeedbackItem("Hướng dẫn tận tình", "guidedThroughProcess")}
-            {renderFeedbackItem("Cơ sở vật chất sạch sẽ", "cleanFacility")}
-            {renderFeedbackItem("Trang thiết bị hiện đại", "modernEquipment")}
-            {renderFeedbackItem("Mức độ hài lòng", "overallSatisfaction")}
-            {renderBooleanFeedbackItem(
-              "Giới thiệu cho người khác",
-              "recommendToOthers"
-            )}
-          </View>
-        )}
-
-        {/* Submit button - only in create mode */}
-        {!isViewMode && (
-          <Button
-            title={submitting ? "Đang gửi..." : "Gửi đánh giá"}
-            onPress={handleSubmit}
-            disabled={submitting}
-            style={{ marginBottom: 40, marginTop: 10 }}
-          />
-        )}
-
-        {/* Close button - only in view mode */}
-        {isViewMode && (
-          <Button
-            title="Đóng"
+    <ScreenContainer>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
             onPress={() => {
               // Go back directly to the profile/appointment detail screen
               if (route.params?.fromAppointmentDetail) {
@@ -584,15 +443,161 @@ const FeedbackScreenNew = ({ route, navigation }) => {
                 navigation.navigate("ProfileMain");
               }
             }}
-            style={{
-              backgroundColor: "#757575",
-              marginBottom: 40,
-              marginTop: 10,
-            }}
-          />
-        )}
-      </ScrollView>
-    </View>
+          >
+            <Icon name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
+            {isViewMode
+              ? feedbackType === "doctor"
+                ? "Xem đánh giá bác sĩ"
+                : "Xem đánh giá dịch vụ"
+              : feedbackType === "doctor"
+              ? "Đánh giá bác sĩ"
+              : "Đánh giá dịch vụ"}
+          </Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView style={styles.scrollView}>
+          {/* Appointment summary */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Chi tiết lịch khám</Text>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Mã lịch hẹn:</Text>
+              <Text style={styles.infoValue}>#{appointmentCode}</Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Ngày khám:</Text>
+              <Text style={styles.infoValue}>
+                {formatDate(appointment?.bookingDate)}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Dịch vụ:</Text>
+              <Text style={styles.infoValue}>
+                {appointment?.packageName || "Dịch vụ khám bệnh"}
+              </Text>
+            </View>
+
+            {feedbackType === "doctor" && doctor && (
+              <>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Bác sĩ:</Text>
+                  <Text style={styles.infoValue}>
+                    {doctor?.doctorName || "Chưa xác định"}
+                  </Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Khoa:</Text>
+                  <Text style={styles.infoValue}>
+                    {doctor?.departmentName || "Chưa xác định"}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+
+          {/* Doctor specific feedback */}
+          {feedbackType === "doctor" && (
+            <>
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>
+                  {isViewMode
+                    ? "Đánh giá của bạn cho bác sĩ"
+                    : "Đánh giá bác sĩ"}
+                </Text>
+
+                {renderStars()}
+
+                <Text style={styles.ratingText}>
+                  {rating === 0 && "Chưa đánh giá"}
+                  {rating === 1 && "Rất không hài lòng"}
+                  {rating === 2 && "Không hài lòng"}
+                  {rating === 3 && "Bình thường"}
+                  {rating === 4 && "Hài lòng"}
+                  {rating === 5 && "Rất hài lòng"}
+                </Text>
+
+                <Text style={styles.inputLabel}>Nhận xét của bạn</Text>
+                <TextInput
+                  style={[styles.textInput, isViewMode && styles.disabledInput]}
+                  value={comment}
+                  onChangeText={(text) => !isViewMode && setComment(text)}
+                  placeholder="Nhận xét về bác sĩ..."
+                  multiline
+                  numberOfLines={4}
+                  editable={!isViewMode}
+                />
+              </View>
+            </>
+          )}
+
+          {/* Service feedback */}
+          {feedbackType === "service" && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>
+                {isViewMode
+                  ? "Đánh giá của bạn về dịch vụ"
+                  : "Đánh giá về dịch vụ"}
+              </Text>
+
+              {renderFeedbackItem("Thái độ nhân viên", "staffFriendliness")}
+              {renderFeedbackItem("Giao tiếp rõ ràng", "communicationClarity")}
+              {renderFeedbackItem("Sẵn sàng giải đáp", "questionWillingness")}
+              {renderFeedbackItem("Thời gian chờ hợp lý", "reasonableWaitTime")}
+              {renderFeedbackItem("Đúng giờ hẹn", "onTimeAppointment")}
+              {renderFeedbackItem("Quy trình rõ ràng", "clearProcedure")}
+              {renderFeedbackItem("Hướng dẫn tận tình", "guidedThroughProcess")}
+              {renderFeedbackItem("Cơ sở vật chất sạch sẽ", "cleanFacility")}
+              {renderFeedbackItem("Trang thiết bị hiện đại", "modernEquipment")}
+              {renderFeedbackItem("Mức độ hài lòng", "overallSatisfaction")}
+              {renderBooleanFeedbackItem(
+                "Giới thiệu cho người khác",
+                "recommendToOthers"
+              )}
+            </View>
+          )}
+
+          {/* Submit button - only in create mode */}
+          {!isViewMode && (
+            <Button
+              title={submitting ? "Đang gửi..." : "Gửi đánh giá"}
+              onPress={handleSubmit}
+              disabled={submitting}
+              style={{ marginBottom: 40, marginTop: 10 }}
+            />
+          )}
+
+          {/* Close button - only in view mode */}
+          {isViewMode && (
+            <Button
+              title="Đóng"
+              onPress={() => {
+                // Go back directly to the profile/appointment detail screen
+                if (route.params?.fromAppointmentDetail) {
+                  navigation.navigate("AppointmentDetail", {
+                    appointmentCode: appointmentCode,
+                    status: status,
+                    patientName: patientName,
+                  });
+                } else {
+                  navigation.navigate("ProfileMain");
+                }
+              }}
+              style={{
+                backgroundColor: "#757575",
+                marginBottom: 40,
+                marginTop: 10,
+              }}
+            />
+          )}
+        </ScrollView>
+      </View>
+    </ScreenContainer>
   );
 };
 
@@ -608,7 +613,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#4299e1",
     paddingVertical: 15,
     paddingHorizontal: 16,
-    paddingTop: 50,
   },
   headerTitle: {
     fontSize: 18,

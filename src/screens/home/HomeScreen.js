@@ -27,6 +27,7 @@ import { logout } from "../../services/authService";
 import PackageDetailModal from "../../components/common/PackageDetailModal";
 import { usePackageModal } from "../../hooks/usePackageModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getBottomTabSafeStyle } from "../../utils/safeAreaHelper";
 
 const { width } = Dimensions.get("window");
 
@@ -66,10 +67,7 @@ const HomeScreen = (props) => {
 
   const getScrollContentStyle = () => ({
     ...styles.scrollContent,
-    paddingBottom:
-      Platform.OS === "android"
-        ? Math.max(insets.bottom + 100, 50) // Much more padding for Android with gesture nav
-        : Math.max(insets.bottom + 100, 50), // More padding for iOS
+    ...getBottomTabSafeStyle(insets, 20), // Additional 20px padding
   });
 
   useEffect(() => {
@@ -456,12 +454,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8f9fa",
+    marginBottom: 20, // Thêm margin bottom
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f8f9fa",
+    marginBottom: 20, // Thêm margin bottom
   },
   loadingContent: {
     alignItems: "center",
