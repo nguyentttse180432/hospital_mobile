@@ -11,6 +11,8 @@ import {
   StatusBar,
   Animated,
   Alert,
+  SafeAreaView,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -24,6 +26,7 @@ import {
 import { logout } from "../../services/authService";
 import PackageDetailModal from "../../components/common/PackageDetailModal";
 import { usePackageModal } from "../../hooks/usePackageModal";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -31,6 +34,7 @@ const HomeScreen = (props) => {
   const navigation = useNavigation();
   const route = useRoute();
   const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
 
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,6 +49,28 @@ const HomeScreen = (props) => {
 
   // Use our custom hook for package modal
   const packageModal = usePackageModal(medicalPackages);
+
+  // Calculate safe areas for better layout
+  const getContainerStyle = () => ({
+    ...styles.container,
+    // Remove bottom padding from container to avoid double padding
+  });
+
+  const getHeaderStyle = () => ({
+    ...styles.header,
+    paddingTop:
+      Platform.OS === "android"
+        ? Math.max(insets.top + 15, 55) // Handle Android status bar better
+        : Math.max(insets.top + 10, 50),
+  });
+
+  const getScrollContentStyle = () => ({
+    ...styles.scrollContent,
+    paddingBottom:
+      Platform.OS === "android"
+        ? Math.max(insets.bottom + 100, 50) // Much more padding for Android with gesture nav
+        : Math.max(insets.bottom + 100, 50), // More padding for iOS
+  });
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -234,11 +260,11 @@ const HomeScreen = (props) => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={getContainerStyle()}>
       <StatusBar backgroundColor="#f8f9fa" barStyle="dark-content" />
 
       {/* Header with user info */}
-      <View style={styles.header}>
+      <View style={getHeaderStyle()}>
         <View style={styles.userInfo}>
           <TouchableOpacity onPress={showLogoutConfirmation}>
             {googleAvatar ? (
@@ -274,7 +300,8 @@ const HomeScreen = (props) => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={getScrollContentStyle()}
+        contentInsetAdjustmentBehavior="automatic"
       >
         {/* Banner */}
         <Animated.View
@@ -421,7 +448,7 @@ const HomeScreen = (props) => {
         panResponder={packageModal.panResponder}
         showBookButton={false}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -453,10 +480,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: 50,
     paddingBottom: 16,
     backgroundColor: "#fff",
     elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   userInfo: {
     flexDirection: "row",
@@ -519,7 +549,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: 20, // Much more padding for bottom navigation and system bars
   },
   bannerContainer: {
     marginHorizontal: 16,
