@@ -25,7 +25,7 @@ import { logout } from "../../services/authService";
 import PackageDetailModal from "../../components/common/PackageDetailModal";
 import { usePackageModal } from "../../hooks/usePackageModal";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 const HomeScreen = (props) => {
   const navigation = useNavigation();
@@ -136,9 +136,37 @@ const HomeScreen = (props) => {
     }
   };
 
-  const handleViewPackageDetail = (packageId) => {
-    // Navigate to package detail screen
-    navigation.navigate("PackageDetailScreen", { packageId });
+  const handleBookAppointment = async (itemId, isService = false) => {
+    // Check if phone is verified
+    if (!phoneVerified) {
+      Alert.alert(
+        "Xác minh số điện thoại",
+        "Vui lòng xác minh số điện thoại để đặt khám",
+        [
+          {
+            text: "Xác minh ngay",
+            onPress: () => navigation.navigate("VerifyPhoneScreen"),
+          },
+          {
+            text: "Để sau",
+            style: "cancel",
+          },
+        ]
+      );
+    } else {
+      // Navigate to appointment booking screen with the appropriate ID
+      if (isService) {
+        navigation.navigate("AppointmentBookingScreen", { serviceId: itemId });
+      } else {
+        navigation.navigate("AppointmentBookingScreen", { packageId: itemId });
+      }
+    }
+  };
+
+  const handleViewServiceDetail = (serviceId) => {
+    // Navigate to service detail screen
+    // This is allowed in ViewOnly mode
+    navigation.navigate("ServiceDetailScreen", { serviceId });
   };
 
   const handleLogout = async () => {
@@ -166,17 +194,19 @@ const HomeScreen = (props) => {
   };
 
   const showLogoutConfirmation = () => {
-    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
-      {
-        text: "Hủy",
-        style: "cancel",
-      },
-      {
-        text: "Đăng xuất",
-        onPress: handleLogout,
-        style: "destructive",
-      },
-    ]);
+    if (!phoneVerified) {
+      Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Đăng xuất",
+          onPress: handleLogout,
+          style: "destructive",
+        },
+      ]);
+    }
   };
 
   // Enhanced Default Avatar
@@ -218,6 +248,11 @@ const HomeScreen = (props) => {
             ) : (
               <DefaultAvatar firstName={userData?.name} />
             )}
+            {!phoneVerified && (
+              <View style={styles.logoutIndicator}>
+                <Icon name="log-out-outline" size={12} color="#fff" />
+              </View>
+            )}
           </TouchableOpacity>
           <View style={styles.userDetails}>
             <Text style={styles.greeting}>Xin chào,</Text>
@@ -226,6 +261,15 @@ const HomeScreen = (props) => {
             </Text>
           </View>
         </View>
+
+        {!phoneVerified && (
+          <TouchableOpacity
+            style={styles.verifyButton}
+            onPress={() => navigation.navigate("VerifyPhoneScreen")}
+          >
+            <Icon name="alert-circle-outline" size={18} color="#ff6b6b" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
@@ -279,7 +323,7 @@ const HomeScreen = (props) => {
                 <View style={styles.packageCardContent}>
                   <Text style={styles.packageName}>{item.name}</Text>
                   <Text style={styles.packagePrice}>
-                    {item.price.toLocaleString("vi-VN")} đ
+                    {item.price.toLocaleString("vi-VN")} VNĐ
                   </Text>
                   <View style={styles.packageDescriptionContainer}>
                     <Text style={styles.packageDescription} numberOfLines={2}>
@@ -316,11 +360,14 @@ const HomeScreen = (props) => {
             horizontal
             showsHorizontalScrollIndicator={false}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.serviceCard}>
+              <TouchableOpacity
+                style={styles.serviceCard}
+                onPress={() => handleViewServiceDetail(item.id)}
+              >
                 <View style={styles.serviceCardContent}>
                   <Text style={styles.serviceName}>{item.name}</Text>
                   <Text style={styles.servicePrice}>
-                    {item.price.toLocaleString("vi-VN")} đ
+                    {item.price.toLocaleString("vi-VN")} VNĐ
                   </Text>
                   <View style={styles.serviceDescriptionContainer}>
                     <Text style={styles.serviceDescription} numberOfLines={2}>
@@ -335,6 +382,22 @@ const HomeScreen = (props) => {
             }
           />
         </View>
+
+        {/* Verification Banner */}
+        {!phoneVerified && (
+          <View style={styles.verifyBanner}>
+            <Icon name="information-circle-outline" size={24} color="#fff" />
+            <Text style={styles.verifyBannerText}>
+              Vui lòng xác minh số điện thoại để sử dụng đầy đủ tính năng
+            </Text>
+            <TouchableOpacity
+              style={styles.verifyBannerButton}
+              onPress={() => navigation.navigate("VerifyPhoneScreen")}
+            >
+              <Text style={styles.verifyBannerButtonText}>Xác minh ngay</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       {/* Use our reusable Package Detail Modal */}
@@ -346,8 +409,8 @@ const HomeScreen = (props) => {
         currentIndex={packageModal.currentPackageIndex}
         onNavigate={packageModal.handleNavigatePackage}
         onBookPackage={(packageId) => {
-          handleViewPackageDetail(packageId);
           packageModal.closeModal();
+          handleBookAppointment(packageId, false);
         }}
         swipeDistance={packageModal.swipeDistance}
         fadeAnim={packageModal.fadeModalAnim}
@@ -417,6 +480,19 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
   },
+  logoutIndicator: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#ff6b6b",
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#fff",
+  },
   userDetails: {
     marginLeft: 12,
   },
@@ -427,6 +503,20 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 18,
     fontWeight: "bold",
+  },
+  verifyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffe5e5",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  verifyText: {
+    color: "#ff6b6b",
+    fontSize: 14,
+    fontWeight: "bold",
+    marginLeft: 4,
   },
   scrollContent: {
     paddingBottom: 20,
@@ -491,7 +581,7 @@ const styles = StyleSheet.create({
   },
   packageCardContent: {
     padding: 16,
-    height: 190,
+    height: 200, // Đặt chiều cao cố định cho card content
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -503,12 +593,12 @@ const styles = StyleSheet.create({
   },
   packagePrice: {
     fontSize: 16,
-    color: "#0071CE",
+    color: "#4299e1",
     fontWeight: "bold",
     marginBottom: 8,
   },
   packageDescriptionContainer: {
-    minHeight: 40,
+    minHeight: 40, // Đặt chiều cao tối thiểu cho phần mô tả
     marginBottom: 12,
   },
   packageDescription: {
@@ -536,22 +626,24 @@ const styles = StyleSheet.create({
   },
   serviceCardContent: {
     padding: 16,
-    height: 150,
+    height: 160, // Increased height to accommodate the button
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
   },
   serviceName: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "bold",
+    marginBottom: 8,
   },
   servicePrice: {
-    fontSize: 17,
-    color: "#0071CE",
+    fontSize: 14,
+    color: "#4299e1",
     fontWeight: "bold",
+    marginBottom: 8,
   },
   serviceDescriptionContainer: {
-    minHeight: 40,
+    minHeight: 40, // Đặt chiều cao tối thiểu cho phần mô tả
   },
   serviceDescription: {
     fontSize: 14,
@@ -562,6 +654,32 @@ const styles = StyleSheet.create({
     color: "#999",
     textAlign: "center",
     marginTop: 20,
+  },
+  verifyBanner: {
+    backgroundColor: "#4299e1",
+    marginHorizontal: 16,
+    marginTop: 24,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  verifyBannerText: {
+    color: "#fff",
+    fontSize: 16,
+    textAlign: "center",
+    marginVertical: 8,
+  },
+  verifyBannerButton: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  verifyBannerButtonText: {
+    color: "#4299e1",
+    fontWeight: "bold",
   },
 });
 
