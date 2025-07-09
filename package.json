@@ -19,6 +19,7 @@
     "eas-cli": "^16.13.2",
     "expo": "53.0.13",
     "expo-auth-session": "^6.2.0",
+    "expo-camera": "~16.1.10",
     "expo-crypto": "^14.1.5",
     "expo-status-bar": "~2.2.3",
     "expo-web-browser": "^14.2.0",

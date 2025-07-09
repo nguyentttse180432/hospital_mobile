@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Alert, Platform } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  Platform,
+  Text,
+  Button,
+  TouchableOpacity,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Icon from "react-native-vector-icons/Ionicons";
 import { sendOtpToPhone, verifyOtp } from "../../services/authService";
 import {
   getPatientByIdNumber,
@@ -15,21 +24,36 @@ import PhoneVerificationStep from "../../components/patientProfile/PhoneVerifica
 import PersonalInfoForm from "../../components/patientProfile/PersonalInfoForm";
 import AddressInfoForm from "../../components/patientProfile/AddressInfoForm";
 import SelectionModal from "../../components/patientProfile/SelectionModal";
+import { CameraView, useCameraPermissions } from "expo-camera";
 
 const CreateProfileScreen = ({ route, navigation }) => {
-  const { isPrimary = true } = route.params || {};
+  const {
+    isPrimary = true,
+    scannedIdCard = "",
+    scannedData = null,
+  } = route.params || {};
+
+  // Camera states
+  const [facing, setFacing] = useState("back");
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanned, setScanned] = useState(false);
 
   // Flow states
   const [step, setStep] = useState("checkIdCard"); // checkIdCard, verifyPhone, personalInfo, addressInfo
-  const [idCard, setIdCard] = useState("");
+  const [idCard, setIdCard] = useState(
+    scannedIdCard || (scannedData ? scannedData.idCard : "")
+  );
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   // Profile form states
-  const [name, setName] = useState("");
-  const [gender, setGender] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [name, setName] = useState(scannedData ? scannedData.name : "");
+  const [gender, setGender] = useState(scannedData ? scannedData.gender : "");
+  const [dateOfBirth, setDateOfBirth] = useState(
+    scannedData ? scannedData.dateOfBirth : ""
+  );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
   const [insuranceNumber, setInsuranceNumber] = useState("");
@@ -43,6 +67,54 @@ const CreateProfileScreen = ({ route, navigation }) => {
   const [district, setDistrict] = useState("");
   const [ward, setWard] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
+
+  // Initialize address from scanned data
+  useEffect(() => {
+    if (scannedData && scannedData.address) {
+      // Parse the address string to extract components
+      // Format: "Xóm 1, Thôn Liên Trung, Tân Hà, Lâm Hà, Lâm Đồng"
+      const addressParts = scannedData.address.split(", ");
+
+      if (addressParts.length >= 3) {
+        // Get the last parts as province, district, ward
+        const addressProvince = addressParts[addressParts.length - 1];
+        const addressDistrict = addressParts[addressParts.length - 2];
+        const addressWard = addressParts[addressParts.length - 3];
+
+        // Get the street address (everything before ward)
+        const addressStreet = addressParts
+          .slice(0, addressParts.length - 3)
+          .join(", ");
+
+        // Try to match with known provinces/districts
+        const formattedProvince = addressProvince.includes("Tỉnh")
+          ? addressProvince
+          : `Tỉnh ${addressProvince}`;
+        const formattedDistrict = addressDistrict.includes("Huyện")
+          ? addressDistrict
+          : `Huyện ${addressDistrict}`;
+        const formattedWard = addressWard.includes("Xã")
+          ? addressWard
+          : `Xã ${addressWard}`;
+
+        setProvince(formattedProvince);
+        setDistrict(formattedDistrict);
+        setWard(formattedWard);
+        setStreetAddress(addressStreet);
+      } else {
+        // If can't parse, put the whole address in streetAddress
+        setStreetAddress(scannedData.address);
+      }
+
+      // Show notification that data has been auto-filled
+      setTimeout(() => {
+        Alert.alert(
+          "Thông tin đã được tự động điền",
+          `Thông tin từ QR CCCD đã được điền vào form:\n- Họ tên: ${scannedData.name}\n- CCCD: ${scannedData.idCard}\n- Ngày sinh: ${scannedData.dateOfBirth}\n- Giới tính: ${scannedData.gender}\n\nVui lòng kiểm tra và hoàn thiện thông tin còn thiếu.`
+        );
+      }, 500);
+    }
+  }, [scannedData]);
 
   // Modal states
   const [showGenderModal, setShowGenderModal] = useState(false);
@@ -857,80 +929,170 @@ const CreateProfileScreen = ({ route, navigation }) => {
     );
   };
 
-  // Render methods replaced with component usage
+  // Camera and barcode handling functions
+  const handleBarcodeScanned = ({ type, data }) => {
+    if (!scanned) {
+      console.log("Barcode scanned:", type, data);
 
-  const renderCreateProfileStep = () => {
-    // Based on the current step, render either personal info or address info
-    if (step === "createProfile") {
-      // Split the form into two parts
-      const subStep = "personalInfo"; // Could be "personalInfo" or "addressInfo" based on your logic
-      return subStep === "personalInfo" ? (
-        <PersonalInfoForm
-          name={name}
-          setName={setName}
-          dateOfBirth={dateOfBirth}
-          setDateOfBirth={setDateOfBirth}
-          showDatePickerModal={showDatePickerModal}
-          gender={gender}
-          setShowGenderModal={() => setShowGenderModal(true)}
-          idCard={idCard}
-          insuranceNumber={insuranceNumber}
-          setInsuranceNumber={setInsuranceNumber}
-          occupation={occupation}
-          setShowOccupationModal={() => setShowOccupationModal(true)}
-          email={email}
-          setEmail={setEmail}
-          phoneNumber={phoneNumber}
-          setPhoneNumber={setPhoneNumber}
-          loading={loading}
-          proceedToAddressInfo={proceedToAddressInfo}
-          goBack={() => setStep("verifyPhone")}
-        />
-      ) : (
-        <AddressInfoForm
-          country={country}
-          ethnicity={ethnicity}
-          province={province}
-          district={district}
-          ward={ward}
-          streetAddress={streetAddress}
-          setStreetAddress={setStreetAddress}
-          loading={loading}
-          handleCreateProfile={handleCreateProfile}
-          goBack={() => setStep("personalInfo")}
-          showEthnicityModal={() => setShowEthnicityModal(true)}
-          showProvinceModal={() => setShowProvinceModal(true)}
-          showDistrictModal={() => setShowDistrictModal(true)}
-          showWardModal={() => setShowWardModal(true)}
-        />
-      );
+      // Parse Vietnamese CCCD QR code format
+      const parseVietnameseCCCD = (qrData) => {
+        try {
+          // Format: ID|CIC|Name|DOB|Gender|Address|IssueDate
+          const parts = qrData.split("|");
+
+          if (parts.length >= 6) {
+            const idCard = parts[0]; // CCCD number
+            const name = parts[2]; // Full name
+            const dobRaw = parts[3]; // Date of birth (DDMMYYYY)
+            const gender = parts[4]; // Gender
+            const address = parts[5]; // Full address
+
+            // Parse date of birth from DDMMYYYY to DD/MM/YYYY
+            let dateOfBirth = "";
+            if (dobRaw && dobRaw.length === 8) {
+              const day = dobRaw.substring(0, 2);
+              const month = dobRaw.substring(2, 4);
+              const year = dobRaw.substring(4, 8);
+              dateOfBirth = `${day}/${month}/${year}`;
+            }
+
+            return {
+              idCard,
+              name,
+              dateOfBirth,
+              gender,
+              address,
+            };
+          }
+        } catch (error) {
+          console.error("Error parsing CCCD QR code:", error);
+        }
+        return null;
+      };
+
+      // Check if the scanned data looks like a Vietnamese ID card number
+      if (data && data.length >= 9 && data.length <= 12 && /^\d+$/.test(data)) {
+        setScanned(true);
+        setIdCard(data);
+        setShowCamera(false);
+        Alert.alert("Thành công", `Đã quét được số CCCD/CMND: ${data}`);
+        // Reset scanned state after a delay
+        setTimeout(() => setScanned(false), 3000);
+      } else {
+        // Try to parse Vietnamese CCCD QR code format first
+        const cccdData = parseVietnameseCCCD(data);
+
+        if (cccdData) {
+          setScanned(true);
+          setShowCamera(false);
+
+          // Auto-fill all the form data
+          setIdCard(cccdData.idCard);
+          setName(cccdData.name);
+          setGender(cccdData.gender);
+          setDateOfBirth(cccdData.dateOfBirth);
+
+          // Parse and set address components
+          if (cccdData.address) {
+            const addressParts = cccdData.address.split(", ");
+
+            if (addressParts.length >= 3) {
+              const addressProvince = addressParts[addressParts.length - 1];
+              const addressDistrict = addressParts[addressParts.length - 2];
+              const addressWard = addressParts[addressParts.length - 3];
+              const addressStreet = addressParts
+                .slice(0, addressParts.length - 3)
+                .join(", ");
+
+              const formattedProvince = addressProvince.includes("Tỉnh")
+                ? addressProvince
+                : `Tỉnh ${addressProvince}`;
+              const formattedDistrict = addressDistrict.includes("Huyện")
+                ? addressDistrict
+                : `Huyện ${addressDistrict}`;
+              const formattedWard = addressWard.includes("Xã")
+                ? addressWard
+                : `Xã ${addressWard}`;
+
+              setProvince(formattedProvince);
+              setDistrict(formattedDistrict);
+              setWard(formattedWard);
+              setStreetAddress(addressStreet);
+            } else {
+              setStreetAddress(cccdData.address);
+            }
+          }
+
+          Alert.alert(
+            "Thành công",
+            `Đã quét được thông tin CCCD:\n- Họ tên: ${cccdData.name}\n- CCCD: ${cccdData.idCard}\n- Ngày sinh: ${cccdData.dateOfBirth}\n- Giới tính: ${cccdData.gender}`
+          );
+          // Reset scanned state after a delay
+          setTimeout(() => setScanned(false), 3000);
+        } else {
+          // Fallback: Try to find ID number pattern in the data
+          const idMatches = data.match(/\b\d{9,12}\b/);
+          if (idMatches && idMatches.length > 0) {
+            setScanned(true);
+            const extractedId = idMatches[0];
+            setIdCard(extractedId);
+            setShowCamera(false);
+            Alert.alert(
+              "Thành công",
+              `Đã quét được số CCCD/CMND: ${extractedId}`
+            );
+            // Reset scanned state after a delay
+            setTimeout(() => setScanned(false), 3000);
+          } else {
+            Alert.alert(
+              "Lỗi",
+              "Không tìm thấy thông tin CCCD/CMND hợp lệ trong mã quét. Vui lòng thử lại hoặc nhập thủ công."
+            );
+          }
+        }
+      }
     }
-
-    // For backward compatibility, show the default form
-    return (
-      <PersonalInfoForm
-        name={name}
-        setName={setName}
-        dateOfBirth={dateOfBirth}
-        setDateOfBirth={setDateOfBirth}
-        showDatePickerModal={showDatePickerModal}
-        gender={gender}
-        setShowGenderModal={() => setShowGenderModal(true)}
-        idCard={idCard}
-        insuranceNumber={insuranceNumber}
-        setInsuranceNumber={setInsuranceNumber}
-        occupation={occupation}
-        setShowOccupationModal={() => setShowOccupationModal(true)}
-        email={email}
-        setEmail={setEmail}
-        phoneNumber={phoneNumber}
-        setPhoneNumber={setPhoneNumber}
-        loading={loading}
-        proceedToAddressInfo={proceedToAddressInfo}
-        goBack={() => setStep("verifyPhone")}
-      />
-    );
   };
+
+  const openCamera = () => {
+    if (permission?.granted) {
+      setShowCamera(true);
+      setScanned(false); // Reset scanned state when opening camera
+    } else {
+      requestPermission();
+    }
+  };
+
+  const closeCamera = () => {
+    setShowCamera(false);
+    setScanned(false); // Reset scanned state when closing camera
+  };
+
+  // Render the camera view
+  function toggleCameraFacing() {
+    setFacing((current) => (current === "back" ? "front" : "back"));
+  }
+
+  // Show permission request UI if needed
+  if (showCamera && !permission) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.message}>Đang tải quyền camera...</Text>
+      </View>
+    );
+  }
+
+  if (showCamera && !permission.granted) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.message}>
+          Ứng dụng cần quyền truy cập camera để quét mã
+        </Text>
+        <Button onPress={requestPermission} title="Cấp quyền" />
+        <Button onPress={closeCamera} title="Hủy" />
+      </View>
+    );
+  }
 
   return (
     <ScreenContainer style={styles.screenContainer}>
@@ -941,6 +1103,7 @@ const CreateProfileScreen = ({ route, navigation }) => {
             setIdCard={setIdCard}
             checkIdCardExists={checkIdCardExists}
             loading={loading}
+            onScanPress={openCamera}
           />
         )}
         {step === "verifyPhone" && (
@@ -1057,6 +1220,61 @@ const CreateProfileScreen = ({ route, navigation }) => {
         () => setShowWardModal(false)
       )}
 
+      {/* Camera Modal for Barcode Scanning */}
+      {showCamera && (
+        <View style={styles.cameraContainer}>
+          <View style={styles.cameraHeader}>
+            <Text style={styles.cameraTitle}>Quét mã CCCD/CMND</Text>
+            <TouchableOpacity style={styles.closeButton} onPress={closeCamera}>
+              <Icon name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          <CameraView
+            style={styles.camera}
+            facing={facing}
+            barcodeScannerSettings={{
+              barcodeTypes: [
+                "qr",
+                "ean13",
+                "ean8",
+                "upc_a",
+                "upc_e",
+                "code39",
+                "code128",
+                "pdf417",
+              ],
+            }}
+            onBarcodeScanned={handleBarcodeScanned}
+          >
+            <View style={styles.overlay}>
+              <View style={styles.scanArea}>
+                <Text style={styles.scanInstruction}>
+                  Đặt mã QR hoặc barcode vào khung quét
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.flipButton}
+                onPress={toggleCameraFacing}
+              >
+                <Icon name="camera-reverse-outline" size={24} color="#fff" />
+                <Text style={styles.flipButtonText}>Lật camera</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.flipButton, { marginLeft: 10 }]}
+                onPress={closeCamera}
+              >
+                <Icon name="close-outline" size={24} color="#fff" />
+                <Text style={styles.flipButtonText}>Đóng</Text>
+              </TouchableOpacity>
+            </View>
+          </CameraView>
+        </View>
+      )}
+
       {/* Đã loại bỏ DateTimePicker vì chúng ta đã chuyển sang nhập trực tiếp */}
     </ScreenContainer>
   );
@@ -1069,6 +1287,90 @@ const styles = StyleSheet.create({
   screenContainer: {
     padding: 0, // Loại bỏ padding mặc định
     paddingTop: 0, // Đặc biệt loại bỏ padding phía trên
+  },
+  message: {
+    textAlign: "center",
+    paddingBottom: 10,
+    fontSize: 16,
+    color: "#333",
+  },
+  // Camera styles
+  cameraContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#000",
+    zIndex: 1000,
+  },
+  cameraHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: Platform.OS === "ios" ? 50 : 30,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: "rgba(0,0,0,0.7)",
+  },
+  cameraTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  closeButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
+  camera: {
+    flex: 1,
+  },
+  overlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scanArea: {
+    width: 250,
+    height: 250,
+    borderWidth: 2,
+    borderColor: "#4CAF50",
+    borderRadius: 12,
+    backgroundColor: "rgba(76, 175, 80, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scanInstruction: {
+    color: "#fff",
+    fontSize: 16,
+    textAlign: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
+    padding: 10,
+    borderRadius: 8,
+    margin: 20,
+  },
+  buttonContainer: {
+    position: "absolute",
+    bottom: 50,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  flipButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+  },
+  flipButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    marginLeft: 8,
   },
 });
 

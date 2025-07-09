@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,26 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
+  Platform,
+  Button,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { getPatients } from "../../services/patientService";
 import ScreenContainer from "../../components/common/ScreenContainer";
-import Button from "../../components/common/Button";
+import { CameraView, useCameraPermissions } from "expo-camera";
 
 const PatientRecordsScreen = () => {
   const navigation = useNavigation();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Camera states
+  const [facing, setFacing] = useState("back");
+  const [permission, requestPermission] = useCameraPermissions();
+  const [scanned, setScanned] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   const loadPatients = async () => {
     try {
@@ -65,9 +72,137 @@ const PatientRecordsScreen = () => {
     navigation.goBack();
   };
 
+  // Camera and barcode handling functions
+  const handleBarcodeScanned = ({ type, data }) => {
+    if (!scanned) {
+      console.log("Barcode scanned:", type, data);
+
+      // Parse Vietnamese CCCD QR code format
+      const parseVietnameseCCCD = (qrData) => {
+        try {
+          // Format: ID|CIC|Name|DOB|Gender|Address|IssueDate
+          // Example: 042173007269|250980646|Nguyễn Thị Thanh|16111973|Nữ|Xóm 1, Thôn Liên Trung, Tân Hà, Lâm Hà, Lâm Đồng|27122021
+          const parts = qrData.split("|");
+
+          if (parts.length >= 6) {
+            const idCard = parts[0]; // CCCD number
+            const name = parts[2]; // Full name
+            const dobRaw = parts[3]; // Date of birth (DDMMYYYY)
+            const gender = parts[4]; // Gender
+            const address = parts[5]; // Full address
+
+            // Parse date of birth from DDMMYYYY to DD/MM/YYYY
+            let dateOfBirth = "";
+            if (dobRaw && dobRaw.length === 8) {
+              const day = dobRaw.substring(0, 2);
+              const month = dobRaw.substring(2, 4);
+              const year = dobRaw.substring(4, 8);
+              dateOfBirth = `${day}/${month}/${year}`;
+            }
+
+            return {
+              idCard,
+              name,
+              dateOfBirth,
+              gender,
+              address,
+            };
+          }
+        } catch (error) {
+          console.error("Error parsing CCCD QR code:", error);
+        }
+        return null;
+      };
+
+      // Check if the scanned data looks like a Vietnamese ID card number or insurance number
+      if (data && data.length >= 9 && data.length <= 15 && /^\d+$/.test(data)) {
+        setScanned(true);
+        setShowCamera(false);
+
+        // Navigate to create profile with scanned data
+        navigation.navigate("CreateProfileScreen", {
+          isPrimary: false,
+          scannedIdCard: data,
+        });
+
+        Alert.alert(
+          "Thành công",
+          `Đã quét được mã: ${data}. Chuyển đến tạo hồ sơ mới.`
+        );
+        // Reset scanned state after a delay
+        setTimeout(() => setScanned(false), 3000);
+      } else {
+        // Try to parse Vietnamese CCCD QR code format first
+        const cccdData = parseVietnameseCCCD(data);
+
+        if (cccdData) {
+          setScanned(true);
+          setShowCamera(false);
+
+          // Navigate to create profile with parsed CCCD data
+          navigation.navigate("CreateProfileScreen", {
+            isPrimary: false,
+            scannedData: cccdData,
+          });
+
+          Alert.alert(
+            "Thành công",
+            `Đã quét được thông tin:\n- Họ tên: ${cccdData.name}\n- CCCD: ${cccdData.idCard}\n- Ngày sinh: ${cccdData.dateOfBirth}\nChuyển đến tạo hồ sơ mới.`
+          );
+          // Reset scanned state after a delay
+          setTimeout(() => setScanned(false), 3000);
+        } else {
+          // Fallback: Try to find ID number pattern in the data
+          const idMatches = data.match(/\b\d{9,15}\b/);
+          if (idMatches && idMatches.length > 0) {
+            setScanned(true);
+            const extractedId = idMatches[0];
+            setShowCamera(false);
+
+            // Navigate to create profile with scanned data
+            navigation.navigate("CreateProfileScreen", {
+              isPrimary: false,
+              scannedIdCard: extractedId,
+            });
+
+            Alert.alert(
+              "Thành công",
+              `Đã quét được mã: ${extractedId}. Chuyển đến tạo hồ sơ mới.`
+            );
+            // Reset scanned state after a delay
+            setTimeout(() => setScanned(false), 3000);
+          } else {
+            Alert.alert(
+              "Lỗi",
+              "Không tìm thấy thông tin CCCD/CMND hợp lệ trong mã quét. Vui lòng thử lại."
+            );
+          }
+        }
+      }
+    }
+  };
+
+  const openCamera = () => {
+    if (permission?.granted) {
+      setShowCamera(true);
+      setScanned(false);
+    } else {
+      requestPermission();
+    }
+  };
+
+  const closeCamera = () => {
+    setShowCamera(false);
+    setScanned(false);
+  };
+
+  const toggleCameraFacing = () => {
+    setFacing((current) => (current === "back" ? "front" : "back"));
+  };
+
   const handleScanId = () => {
-    // Xử lý quét mã BHYT/CCCD
-    Alert.alert("Thông báo", "Tính năng quét mã BHYT/CCCD đang phát triển");
+    // Mở camera để quét mã BHYT/CCCD
+    openCamera();
   };
 
   // Tạo header tùy chỉnh với nút back và nút tạo mới
@@ -83,6 +218,27 @@ const PatientRecordsScreen = () => {
       </TouchableOpacity>
     </View>
   );
+
+  // Show permission request UI if needed
+  if (showCamera && !permission) {
+    return (
+      <View style={styles.permissionContainer}>
+        <Text style={styles.permissionMessage}>Đang tải quyền camera...</Text>
+      </View>
+    );
+  }
+
+  if (showCamera && !permission?.granted) {
+    return (
+      <View style={styles.permissionContainer}>
+        <Text style={styles.permissionMessage}>
+          Ứng dụng cần quyền truy cập camera để quét mã
+        </Text>
+        <Button onPress={requestPermission} title="Cấp quyền" />
+        <Button onPress={closeCamera} title="Hủy" />
+      </View>
+    );
+  }
 
   return (
     <ScreenContainer
@@ -141,7 +297,7 @@ const PatientRecordsScreen = () => {
               </View>
             </View>
           ) : (
-            <View>           
+            <View>
               <View style={styles.patientList}>
                 {patients.map((patient, index) => (
                   <View key={patient.id || index} style={styles.patientCard}>
@@ -217,6 +373,61 @@ const PatientRecordsScreen = () => {
           )}
         </ScrollView>
       </View>
+
+      {/* Camera Modal for Barcode Scanning */}
+      {showCamera && permission?.granted && (
+        <View style={styles.cameraContainer}>
+          <View style={styles.cameraHeader}>
+            <Text style={styles.cameraTitle}>Quét mã BHYT/CCCD</Text>
+            <TouchableOpacity style={styles.closeButton} onPress={closeCamera}>
+              <Icon name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          <CameraView
+            style={styles.camera}
+            facing={facing}
+            barcodeScannerSettings={{
+              barcodeTypes: [
+                "qr",
+                "ean13",
+                "ean8",
+                "upc_a",
+                "upc_e",
+                "code39",
+                "code128",
+                "pdf417",
+              ],
+            }}
+            onBarcodeScanned={handleBarcodeScanned}
+          >
+            <View style={styles.overlay}>
+              <View style={styles.scanArea}>
+                <Text style={styles.scanInstruction}>
+                  Đặt mã QR, barcode CCCD/CMND hoặc thẻ BHYT vào khung quét
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.cameraButtonContainer}>
+              <TouchableOpacity
+                style={styles.flipButton}
+                onPress={toggleCameraFacing}
+              >
+                <Icon name="camera-reverse-outline" size={24} color="#fff" />
+                <Text style={styles.flipButtonText}>Lật camera</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.flipButton, { marginLeft: 10 }]}
+                onPress={closeCamera}
+              >
+                <Icon name="close-outline" size={24} color="#fff" />
+                <Text style={styles.flipButtonText}>Đóng</Text>
+              </TouchableOpacity>
+            </View>
+          </CameraView>
+        </View>
+      )}
     </ScreenContainer>
   );
 };
@@ -403,6 +614,97 @@ const styles = StyleSheet.create({
   healthInfoButtonText: {
     color: "#4299e1",
     fontWeight: "bold",
+  },
+  // Camera styles
+  permissionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+    padding: 20,
+  },
+  permissionMessage: {
+    textAlign: "center",
+    paddingBottom: 20,
+    fontSize: 16,
+    color: "#333",
+  },
+  cameraContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#000",
+    zIndex: 1000,
+  },
+  cameraHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: Platform.OS === "ios" ? 50 : 30,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: "rgba(0,0,0,0.7)",
+  },
+  cameraTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  closeButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
+  camera: {
+    flex: 1,
+  },
+  overlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scanArea: {
+    width: 250,
+    height: 250,
+    borderWidth: 2,
+    borderColor: "#4CAF50",
+    borderRadius: 12,
+    backgroundColor: "rgba(76, 175, 80, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scanInstruction: {
+    color: "#fff",
+    fontSize: 16,
+    textAlign: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
+    padding: 10,
+    borderRadius: 8,
+    margin: 20,
+  },
+  cameraButtonContainer: {
+    position: "absolute",
+    bottom: 50,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  flipButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+  },
+  flipButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    marginLeft: 8,
   },
 });
 
