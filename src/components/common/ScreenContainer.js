@@ -7,9 +7,11 @@ import {
   Platform,
   StatusBar,
   Text,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getBottomTabSafeStyle } from "../../utils/safeAreaHelper";
+import Icon from "react-native-vector-icons/Ionicons";
 
 const ScreenContainer = ({
   children,
@@ -20,6 +22,7 @@ const ScreenContainer = ({
   headerBackgroundColor = "#4299e1",
   leftComponent,
   hasBottomTabs = false, // Add prop to indicate if screen has bottom tabs
+  onBack,
 }) => {
   const Container = scrollable ? ScrollView : View;
   const insets = useSafeAreaInsets();
@@ -44,13 +47,20 @@ const ScreenContainer = ({
           { backgroundColor: headerBackgroundColor },
         ]}
       >
-        {leftComponent && (
-          <View style={styles.headerLeftContainer}>{leftComponent}</View>
+        {(leftComponent || onBack) && (
+          <View style={styles.headerLeftContainer}>
+            {leftComponent || (
+              <TouchableOpacity onPress={onBack}>
+
+                <Icon name="chevron-back" size={24} color="#fff" />
+              </TouchableOpacity>
+            )}
+          </View>
         )}
         <Text
           style={[
             styles.headerTitle,
-            leftComponent ? styles.headerTitleWithLeft : null,
+            leftComponent || onBack ? styles.headerTitleWithLeft : null,
           ]}
         >
           {title}
@@ -63,7 +73,8 @@ const ScreenContainer = ({
     <SafeAreaView
       style={[
         styles.safeArea,
-        { backgroundColor: title ? headerBackgroundColor : "#f5f5f5" },
+        // Luôn dùng màu nền app, không lấy headerBackgroundColor
+        // { backgroundColor: title ? headerBackgroundColor : "#f5f5f5" },
       ]}
     >
       <StatusBar
@@ -115,13 +126,15 @@ const styles = StyleSheet.create({
   },
   standardHeader: {
     backgroundColor: "#4299e1",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 2,
     paddingBottom: 12,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
+    height:
+      Platform.OS === "android" ? (StatusBar.currentHeight || 24) + 56 : 56,
   },
   headerTitle: {
     fontSize: 20,
@@ -130,12 +143,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   headerTitleWithLeft: {
-    marginLeft: -40, // Adjust this value to properly center the title
+    marginLeft: 0, // Adjust this value to properly center the title
+    flex: 1,
   },
   headerLeftContainer: {
     position: "absolute",
-    top: 52,
-    left: 30,
+    left: 16,
+    top: Platform.OS === "android" ? StatusBar.currentHeight : 2,
     zIndex: 10,
     height: "100%",
     justifyContent: "center",

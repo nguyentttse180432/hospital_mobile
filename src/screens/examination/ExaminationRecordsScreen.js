@@ -366,7 +366,7 @@ const ExaminationRecordsScreen = () => {
           patientName:
             appointment.patientFullName ||
             appointment.patientName ||
-            "Bệnh nhân",
+            "Người khám",
           bookingDate: appointment.bookingDate,
         });
       }

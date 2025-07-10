@@ -12,8 +12,7 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import {
   getAppointmentByCode,
-  getDoctorFeedback,
-  getServiceFeedback,
+  getAppointmentFeedback,
 } from "../../services/appointmentService";
 import Button from "../../components/common/Button";
 import ScreenContainer from "../../components/common/ScreenContainer";
@@ -24,8 +23,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
   const [appointment, setAppointment] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [feedbackStatus, setFeedbackStatus] = useState({
-    hasDoctorFeedback: false,
-    hasServiceFeedback: false,
+    hasFeedback: false,
     isLoading: true,
   });
 
@@ -66,45 +64,27 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
   const fetchFeedbackStatus = async () => {
     if (!appointmentCode || status !== "Completed") {
       setFeedbackStatus({
-        hasDoctorFeedback: false,
-        hasServiceFeedback: false,
+        hasFeedback: false,
         isLoading: false,
       });
       return;
     }
-
     try {
       setFeedbackStatus((prev) => ({ ...prev, isLoading: true }));
-
-      // Get doctor feedback
-      const doctorFeedbackResponse = await getDoctorFeedback(appointmentCode);
-      const hasDoctorFeedback =
-        doctorFeedbackResponse &&
-        doctorFeedbackResponse.isSuccess &&
-        doctorFeedbackResponse.value;
-
-      // Get service feedback
-      const serviceFeedbackResponse = await getServiceFeedback(appointmentCode);
-      const hasServiceFeedback =
-        serviceFeedbackResponse &&
-        serviceFeedbackResponse.isSuccess &&
-        serviceFeedbackResponse.value;
-
+      const feedbackResponse = await getAppointmentFeedback(appointmentCode);
+      const hasFeedback =
+        feedbackResponse &&
+        feedbackResponse.isSuccess &&
+        feedbackResponse.value !== null;
       setFeedbackStatus({
-        hasDoctorFeedback: !!hasDoctorFeedback,
-        hasServiceFeedback: !!hasServiceFeedback,
+        hasFeedback,
         isLoading: false,
       });
-
-      console.log("Feedback status:", {
-        hasDoctorFeedback: !!hasDoctorFeedback,
-        hasServiceFeedback: !!hasServiceFeedback,
-      });
+      console.log("Feedback status:", { hasFeedback });
     } catch (error) {
       console.error("Error fetching feedback status:", error);
       setFeedbackStatus({
-        hasDoctorFeedback: false,
-        hasServiceFeedback: false,
+        hasFeedback: false,
         isLoading: false,
       });
     }
@@ -262,12 +242,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
     return (
       <ScreenContainer
         title="Chi tiết lịch hẹn"
-        headerBackgroundColor="#4299e1"
-        leftComponent={
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-        }
+        onBack={() => navigation.navigate("ExaminationMain")}
       >
         <View style={styles.loadingContainer}>
           <Animated.View
@@ -284,14 +259,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
   return (
     <ScreenContainer
       title="Chi tiết lịch hẹn"
-      headerBackgroundColor="#4299e1"
-      leftComponent={
-        <TouchableOpacity
-          onPress={() => navigation.navigate("ExaminationMain")}
-        >
-          <Icon name="chevron-back" size={24} color="#fff" />
-        </TouchableOpacity>
-      }
+      onBack={() => navigation.navigate("ExaminationMain")}
     >
       <ScrollView style={styles.scrollView}>
         <View style={styles.statusCard}>
@@ -347,7 +315,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
                 style={styles.infoIcon}
               />
               <View>
-                <Text style={styles.infoLabel}>Bệnh nhân</Text>
+                <Text style={styles.infoLabel}>Người khám</Text>
                 <Text style={styles.infoValue}>
                   {patientName || "Không có thông tin"}
                 </Text>
@@ -499,36 +467,38 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
             )}
           {(status === "Completed" ||
             appointment?.checkupRecordStatus === "Completed") && (
-            <Button
-              title={
-                feedbackStatus.isLoading
-                  ? "Đang kiểm tra..."
-                  : feedbackStatus.hasDoctorFeedback ||
-                    feedbackStatus.hasServiceFeedback
-                  ? "Xem đánh giá"
-                  : "Đánh giá"
-              }
-              onPress={() => {
-                navigation.navigate("FeedbackTypeSelection", {
-                  appointmentCode: appointmentCode,
-                  feedbackStatus: {
-                    hasDoctorFeedback: feedbackStatus.hasDoctorFeedback,
-                    hasServiceFeedback: feedbackStatus.hasServiceFeedback,
-                    hasAllFeedbacks:
-                      feedbackStatus.hasDoctorFeedback &&
-                      feedbackStatus.hasServiceFeedback,
-                  },
-                  fromAppointmentDetail: true,
-                  status: status || appointment?.checkupRecordStatus,
-                  patientName: patientName,
-                });
-              }}
-              style={[
-                styles.feedbackButton,
-                feedbackStatus.isLoading && styles.disabledButton,
-              ]}
-              disabled={feedbackStatus.isLoading}
-            />
+            <>
+              <Button
+                title="Xem kết quả khám"
+                onPress={() => {
+                  navigation.navigate("CheckupResults", {
+                    checkupCode: appointmentCode,
+                    patientName: patientName,
+                  });
+                }}
+                style={styles.viewResultsButton}
+              />
+              <Button
+                title={
+                  feedbackStatus.isLoading
+                    ? "Đang kiểm tra..."
+                    : feedbackStatus.hasFeedback
+                    ? "Xem đánh giá"
+                    : "Đánh giá"
+                }
+                onPress={() => {
+                  navigation.navigate("FeedbackScreen", {
+                    appointmentCode: appointmentCode,
+                    patientName: patientName,
+                  });
+                }}
+                style={[
+                  styles.feedbackButton,
+                  feedbackStatus.isLoading && styles.disabledButton,
+                ]}
+                disabled={feedbackStatus.isLoading}
+              />
+            </>
           )}
           <Button
             title="Tạo lịch hẹn mới"
@@ -795,6 +765,11 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: "#9ca3af",
     opacity: 0.7,
+  },
+  viewResultsButton: {
+    backgroundColor: "#4299e1",
+    borderRadius: 8,
+    paddingVertical: 14,
   },
   newAppointmentButton: {
     backgroundColor: "#2563eb",

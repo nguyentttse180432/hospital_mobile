@@ -71,7 +71,7 @@ const DoneCheckup = () => {
             </Text>
             {patientName && (
               <Text style={styles.checkupInfoText}>
-                Bệnh nhân: {patientName}
+                Người khám: {patientName}
               </Text>
             )}
           </View>

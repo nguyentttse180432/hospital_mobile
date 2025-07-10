@@ -206,7 +206,8 @@ const CheckupResultsScreen = () => {
   if (loading) {
     return (
       <ScreenContainer
-        header={renderCustomHeader()}
+        title="Kết quả khám bệnh"
+        onBack={() => navigation.goBack()}
         headerBackgroundColor="#4299e1"
         hasBottomTabs={true}
       >
@@ -222,7 +223,8 @@ const CheckupResultsScreen = () => {
     <ScreenContainer
       scrollable={false}
       style={{ padding: 0 }}
-      header={renderCustomHeader()}
+      title="Kết quả khám bệnh"
+      onBack={() => navigation.goBack()}
       headerBackgroundColor="#4299e1"
       hasBottomTabs={true}
     >

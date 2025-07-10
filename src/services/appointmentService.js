@@ -108,84 +108,39 @@ export const getAppointmentByCode = async (code) => {
   }
 };
 
-// Gửi đánh giá cho bác sĩ
-export const submitFeedbackDoctor = async (code, feedbackData) => {
+//gửi feedback
+export const sendAppointmentFeedback = async (code, feedback) => {
   try {
-    const response = await api.post(
-      `/CheckupRecords/${code}/feedback/medicalstaff`,
-      feedbackData
-    );
-    console.log("Feedback doctor with data:", response.data);
+    const response = await api.post(`/Appointments/${code}/feedback`, feedback);
+    // {
+    //   "code": "string",
+    //   "serviceStar": 0,
+    //   "serviceFeedbackDetail": "string",
+    //   "doctorStar": 0,
+    //   "doctorFeedbackDetail": "string"
+    // }
     return response.data;
   } catch (error) {
+    console.error("Error sending appointment feedback:", error);
     throw error;
   }
 };
 
-// Lấy bác sĩ
-export const getDoctorByCode = async (code) => {
-  try {
-    const response = await api.get(`/CheckupRecords/${code}/medical-staff`);
-    console.log("Fetched doctor:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching doctor with code ${code}:`, error);
-    throw error;
-  }
-};
-
-// Gửi đánh giá dịch vụ (cách chăm sóc, thái độ, v.v.)
-export const submitServiceFeedback = async (code, feedbackData) => {
-  try {
-    const response = await api.post(
-      `/CheckupRecords/${code}/feedback`,
-      feedbackData
-    );
-    console.log("Service feedback submitted:", response.data);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Function to handle both types of feedback (doctor and service)
-export const submitFeedback = async (
-  code,
-  feedbackData,
-  feedbackType = "service"
-) => {
-  try {
-    if (feedbackType === "doctor") {
-      return await submitFeedbackDoctor(code, feedbackData);
-    } else {
-      return await submitServiceFeedback(code, feedbackData);
-    }
-  } catch (error) {
-    console.error(`Error submitting ${feedbackType} feedback:`, error);
-    throw error;
-  }
-};
-
-//lấy feedback của bác sĩ
-export const getDoctorFeedback = async (code) => {
-  try {
-    const response = await api.get(`/Appointments/${code}/feedback-doctor`);
-    console.log("Fetched doctor feedback:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching doctor feedback for code ${code}:`, error);
-    throw error;
-  }
-};
-
-// Lấy lịch feedback của dịch vụ
-export const getServiceFeedback = async (code) => {
+//lấy feedback
+export const getAppointmentFeedback = async (code) => {
   try {
     const response = await api.get(`/Appointments/${code}/feedback`);
-    console.log("Fetched service feedback:", response.data);
+    // {
+    //   "value": null,
+    //   "error": {
+    //     "code": "",
+    //     "message": ""
+    //   },
+    //   "isSuccess": true
+    // }
     return response.data;
   } catch (error) {
-    console.error(`Error fetching service feedback for code ${code}:`, error);
+    console.error("Error fetching appointment feedback:", error);
     throw error;
   }
 };
@@ -219,14 +174,6 @@ export const getDateInMultipleFormats = () => {
 export const getSystemTime = async () => {
   try {
     const response = await api.get("/WorkingDates/datetime-server");
-    // {
-    //   "value": "2025-07-05T03:10:04.2392176",
-    //   "error": {
-    //     "code": "",
-    //     "message": ""
-    //   },
-    //   "isSuccess": true
-    // }
     return response.data;
   } catch (error) {
     console.error(`Error fetching system time:`, error);

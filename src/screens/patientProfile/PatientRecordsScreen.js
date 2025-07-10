@@ -214,7 +214,7 @@ const PatientRecordsScreen = () => {
       <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
         <Icon name="chevron-back" size={24} color="#FFFFFF" />
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>Hồ sơ bệnh nhân</Text>
+      <Text style={styles.headerTitle}>Hồ sơ người khám</Text>
       <TouchableOpacity style={styles.createButton} onPress={handleAddProfile}>
         <Icon name="person-add" size={24} color="#FFFFFF" />
         <Text style={styles.createButtonText}>Tạo mới</Text>
@@ -270,13 +270,13 @@ const PatientRecordsScreen = () => {
                   color="#4299e1"
                 />
                 <Text style={styles.infoMessage}>
-                  Bạn chưa có hồ sơ bệnh nhân. Vui lòng tạo mới hồ sơ để được
+                  Bạn chưa có hồ sơ. Vui lòng tạo mới hồ sơ để được
                   đặt khám.
                 </Text>
               </View>
 
               <View style={styles.emptyContent}>
-                <Text style={styles.createTitle}>Tạo hồ sơ bệnh nhân</Text>
+                <Text style={styles.createTitle}>Tạo hồ sơ</Text>
                 <Text style={styles.createDescription}>
                   Bạn được phép tạo tối đa 10 hồ sơ (cá nhân và người thân trong
                   gia đình)

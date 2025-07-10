@@ -176,7 +176,7 @@ const LinkProfileScreen = ({ route, navigation }) => {
   return (
     <ScreenContainer>
       <View style={styles.container}>
-        <Text style={styles.title}>Liên kết hồ sơ bệnh nhân</Text>
+        <Text style={styles.title}>Liên kết hồ sơ</Text>
 
         {patientInfo && (
           <View style={styles.profileInfo}>

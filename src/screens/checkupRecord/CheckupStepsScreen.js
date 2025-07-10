@@ -603,7 +603,7 @@ const CheckupStepsScreen = () => {
         <Card style={styles.headerCard}>
           <View style={styles.patientInfoSection}>
             <View style={styles.patientHeader}>
-              <Text style={styles.patientNameLabel}>Bệnh nhân:</Text>
+              <Text style={styles.patientNameLabel}>Người khám:</Text>
               <Text style={styles.patientName}>{patientName}</Text>
             </View>
             <View style={styles.infoGrid}>
