@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -5,9 +6,13 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  NativeEventEmitter,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import Button from "../../../components/common/Button";
+import VnpayMerchant, {
+  VnpayMerchantModule,
+} from "../../../../react-native-vnpay-merchant";
 
 const PaymentScreen = ({
   appointment,
@@ -19,6 +24,45 @@ const PaymentScreen = ({
   totalAmount,
   isSubmitting,
 }) => {
+  // Đảm bảo chỉ addListener 1 lần, tránh lồng nhau và leak memory
+  useEffect(() => {
+    const eventEmitter = new NativeEventEmitter(VnpayMerchantModule);
+    const listener = eventEmitter.addListener("PaymentBack", (e) => {
+      console.log("Sdk back!");
+      if (e) {
+        console.log("e.resultCode = " + e.resultCode);
+        switch (e.resultCode) {
+          // resultCode == -1: Người dùng nhấn back từ sdk để quay lại
+          // resultCode == 10: Người dùng nhấn chọn mở thanh toán qua app thanh toán (Mobile Banking, Ví...)
+          // resultCode == 99: user Hủy thanh toán từ Cổng VNPAY-QR
+          // resultCode == 98: kết quả thanh toán không thành công từ phương thức ATM, Tài khoản, thẻ quốc tế
+          // resultCode == 97: kết quả thanh toán thành công từ phương thức ATM,Tài khoản, thẻ quốc tế hoặc scanQR
+          default:
+            break;
+        }
+      }
+    });
+    return () => {
+      listener.remove();
+    };
+  }, []);
+
+  // Hàm mở SDK VNPay
+  const handleVNPayPayment = () => {
+    VnpayMerchant.show({
+      isSandbox: true, // hoặc false nếu production
+      scheme: "com.hospital.app", // phải giống với AndroidManifest.xml
+      backAlert: "Bạn có chắc chắn trở lại không?",
+      paymentUrl: "https://sandbox.vnpayment.vn/tryitnow/Home/CreateOrder", 
+      title: "Thanh toán",
+      titleColor: "#E26F2C",
+      beginColor: "#F06744",
+      endColor: "#E26F2C",
+      iconBackName: "ion_back",
+      tmn_code: "FAHASA02", // mã merchant của bạn
+    });
+  };
+
   // Sử dụng số tiền đã được truyền vào hoặc mặc định là 0
   const totalFee = totalAmount || 0;
   return (
@@ -89,7 +133,9 @@ const PaymentScreen = ({
         ) : (
           <Button
             title="Thanh Toán"
-            onPress={handleNext}
+            onPress={
+              paymentMethod === "VNPay" ? handleVNPayPayment : handleNext
+            }
             disabled={!canProceed()}
             style={styles.halfButton}
           />
