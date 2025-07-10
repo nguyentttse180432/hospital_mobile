@@ -15,6 +15,7 @@ import AllServicesScreen from "../screens/home/AllServicesScreen";
 import CheckupResultsScreen from "../screens/checkupRecord/CheckupResultsScreen";
 import CheckupResultDetailScreen from "../screens/checkupRecord/CheckupResultDetailScreen";
 import ImageViewerScreen from "../screens/checkupRecord/ImageViewerScreen";
+import PrescriptionScreen from "../screens/checkupRecord/PrescriptionScreen";
 
 const Stack = createStackNavigator();
 
@@ -90,6 +91,11 @@ const AppNavigator = () => {
         <Stack.Screen
           name="ImageViewer"
           component={ImageViewerScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PrescriptionScreen"
+          component={PrescriptionScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

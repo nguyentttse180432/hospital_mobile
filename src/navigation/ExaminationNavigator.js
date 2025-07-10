@@ -1,8 +1,8 @@
 import { createStackNavigator } from "@react-navigation/stack";
 
 import ExaminationRecordsScreen from "../screens/examination/ExaminationRecordsScreen";
-import AppointmentDetailScreen from "../screens/account/AppointmentDetailScreen";
-import FeedbackScreen from "../screens/account/FeedbackScreen";
+import AppointmentDetailScreen from "../screens/appointment/AppointmentDetailScreen";
+import FeedbackScreen from "../screens/appointment/FeedbackScreen";
 import TodayCheckupScreen from "../screens/checkupRecord/TodayCheckupScreen";
 import CheckupStepsScreen from "../screens/checkupRecord/CheckupStepsScreen";
 import DoneCheckup from "../screens/checkupRecord/DoneCheckup";

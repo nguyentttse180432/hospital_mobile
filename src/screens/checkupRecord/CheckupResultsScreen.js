@@ -17,6 +17,7 @@ import Card from "../../components/common/Card";
 import { getCheckupRecordResults } from "../../services/checkupRecordService";
 import * as FileUtils from "../../utils/fileUtils";
 import Icon from "react-native-vector-icons/Ionicons";
+import PrescriptionScreen from "./PrescriptionScreen";
 
 const CheckupResultsScreen = () => {
   const navigation = useNavigation();

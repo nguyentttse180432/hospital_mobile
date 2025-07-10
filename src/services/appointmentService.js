@@ -112,13 +112,6 @@ export const getAppointmentByCode = async (code) => {
 export const sendAppointmentFeedback = async (code, feedback) => {
   try {
     const response = await api.post(`/Appointments/${code}/feedback`, feedback);
-    // {
-    //   "code": "string",
-    //   "serviceStar": 0,
-    //   "serviceFeedbackDetail": "string",
-    //   "doctorStar": 0,
-    //   "doctorFeedbackDetail": "string"
-    // }
     return response.data;
   } catch (error) {
     console.error("Error sending appointment feedback:", error);
@@ -130,14 +123,6 @@ export const sendAppointmentFeedback = async (code, feedback) => {
 export const getAppointmentFeedback = async (code) => {
   try {
     const response = await api.get(`/Appointments/${code}/feedback`);
-    // {
-    //   "value": null,
-    //   "error": {
-    //     "code": "",
-    //     "message": ""
-    //   },
-    //   "isSuccess": true
-    // }
     return response.data;
   } catch (error) {
     console.error("Error fetching appointment feedback:", error);

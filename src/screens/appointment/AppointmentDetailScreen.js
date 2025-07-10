@@ -26,6 +26,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
     hasFeedback: false,
     isLoading: true,
   });
+  const [showPrescription, setShowPrescription] = useState(false);
 
   const spinValue = useRef(new Animated.Value(0)).current;
 
@@ -477,6 +478,19 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
                   });
                 }}
                 style={styles.viewResultsButton}
+              />
+              {/* Nút xem thuốc */}
+              <Button
+                title="Xem thuốc"
+                onPress={() =>
+                  navigation.navigate("PrescriptionScreen", {
+                    checkupCode: appointmentCode,
+                  })
+                }
+                style={[
+                  styles.viewResultsButton,
+                  { backgroundColor: "#28a745", marginTop: 10 },
+                ]}
               />
               <Button
                 title={

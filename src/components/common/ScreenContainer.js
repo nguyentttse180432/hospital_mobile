@@ -51,7 +51,6 @@ const ScreenContainer = ({
           <View style={styles.headerLeftContainer}>
             {leftComponent || (
               <TouchableOpacity onPress={onBack}>
-
                 <Icon name="chevron-back" size={24} color="#fff" />
               </TouchableOpacity>
             )}

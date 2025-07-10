@@ -55,6 +55,23 @@ const DoneCheckup = () => {
           <Text style={styles.homeButtonText}>Xem kết quả khám</Text>
         </TouchableOpacity>
 
+        {/* Nút xem thuốc */}
+        {checkupCode && (
+          <TouchableOpacity
+            style={[
+              styles.homeButton,
+              { backgroundColor: "#28a745", marginTop: 10 },
+            ]}
+            onPress={() =>
+              navigation.navigate("PrescriptionScreen", { checkupCode })
+            }
+          >
+            <Text style={[styles.homeButtonText, { color: "#fff" }]}>
+              Xem thuốc
+            </Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           style={[styles.homeButton, styles.secondaryButton]}
           onPress={handleGoHome}
@@ -77,6 +94,8 @@ const DoneCheckup = () => {
           </View>
         )}
       </View>
+      {/* Modal xem thuốc */}
+      {/* PrescriptionDetailModal đã được thay thế bằng PrescriptionScreen */}
     </SafeAreaView>
   );
 };
