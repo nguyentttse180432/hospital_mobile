@@ -203,51 +203,12 @@ const CheckupResultsScreen = () => {
     );
   };
 
-  const renderSummaryCard = () => {
-    const totalServices = results.length;
-    const servicesWithResults = results.filter((item) => {
-      const hasStepValues =
-        item.stepServiceTrackingResponses &&
-        item.stepServiceTrackingResponses.some(
-          (step) =>
-            step.stepServiceValueTrackings &&
-            step.stepServiceValueTrackings.length > 0
-        );
-      const hasFiles = item.testResults && item.testResults.length > 0;
-      return hasStepValues || hasFiles;
-    }).length;
-
-    const totalFiles = results.reduce(
-      (sum, item) => sum + (item.testResults ? item.testResults.length : 0),
-      0
-    );
-
-    return (
-      <Card style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Tổng quan kết quả</Text>
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>{servicesWithResults}</Text>
-            <Text style={styles.summaryLabel}>Có kết quả</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>{totalServices}</Text>
-            <Text style={styles.summaryLabel}>Tổng dịch vụ</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>{totalFiles}</Text>
-            <Text style={styles.summaryLabel}>Tệp đính kèm</Text>
-          </View>
-        </View>
-      </Card>
-    );
-  };
-
   if (loading) {
     return (
       <ScreenContainer
         header={renderCustomHeader()}
         headerBackgroundColor="#4299e1"
+        hasBottomTabs={true}
       >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4299e1" />
@@ -263,6 +224,7 @@ const CheckupResultsScreen = () => {
       style={{ padding: 0 }}
       header={renderCustomHeader()}
       headerBackgroundColor="#4299e1"
+      hasBottomTabs={true}
     >
       <View style={styles.container}>
         {/* Patient Info */}
@@ -272,9 +234,6 @@ const CheckupResultsScreen = () => {
             <Text style={styles.checkupCode}>Mã phiếu: {checkupCode}</Text>
           </View>
         </Card>
-
-        {/* Summary */}
-        {renderSummaryCard()}
 
         {/* Services List */}
         {results.length === 0 ? (
@@ -355,6 +314,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   checkupCode: {
+    marginLeft: 12,
     fontSize: 14,
     color: "#666",
   },
@@ -388,7 +348,7 @@ const styles = StyleSheet.create({
   },
   servicesList: {
     paddingHorizontal: 12,
-    paddingBottom: 20,
+    paddingBottom: 10, // Increased padding to ensure content is not obscured by bottom tabs
   },
   serviceCard: {
     backgroundColor: "#fff",

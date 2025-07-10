@@ -504,3 +504,34 @@ export const getCheckupRecordServiceResults = async (serviceId) => {
     throw error;
   }
 };
+
+//lấy kết quả đo sinh hiệu
+export const getVitalSignsResults = async (serviceId) => {
+  try {
+    const response = await api.get(`/VitalSigns/${serviceId}`);
+    // {
+    //   "value": {
+    //     "id": "1ad1ab3a-b463-4e11-4975-08ddbebf58df",
+    //     "height": 160,
+    //     "weight": 50,
+    //     "temperature": 37,
+    //     "spO2": 42,
+    //     "bloodPressure": "120/80",
+    //     "speed": 75,
+    //     "bmi": 19.53,
+    //     "pulse": 75,
+    //     "note": "okela đó",
+    //     "status": "Completed"
+    //   },
+    //   "error": {
+    //     "code": "",
+    //     "message": ""
+    //   },
+    //   "isSuccess": true
+    // };
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching vital signs results:", error);
+    throw error;
+  }
+};

@@ -24,7 +24,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 12,
-    marginBottom: 12,
   },
   selectedCard: {
     borderColor: "#1e88e5",

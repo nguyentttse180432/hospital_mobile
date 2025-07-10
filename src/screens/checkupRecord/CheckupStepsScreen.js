@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { useRoute, useFocusEffect } from "@react-navigation/native";
 import ScreenContainer from "../../components/common/ScreenContainer";
@@ -31,6 +32,7 @@ const CheckupStepsScreen = () => {
 
   const getServiceStatus = (service) => {
     if (service.serviceName === "Đo sinh hiệu") {
+      // Đảm bảo trả về đúng trạng thái Completed nếu có
       return service.vitalSignStatus || "Pending";
     }
     if (service.testRecordStatus && service.testRecordStatus !== "Paid") {
@@ -54,8 +56,84 @@ const CheckupStepsScreen = () => {
       const response = await getCheckupRecordServices(checkupCode);
       if (response && response.isSuccess) {
         const sortedServices = response.value.sort((a, b) => {
-          if (a.serviceName === "Đo sinh hiệu") return -1;
-          if (b.serviceName === "Đo sinh hiệu") return 1;
+          // Lấy trạng thái của các dịch vụ
+          const statusA = getServiceStatus(a);
+          const statusB = getServiceStatus(b);
+
+          // Ưu tiên hiển thị dịch vụ đang trong quá trình thực hiện
+          // Checkin (chờ cận lâm sàng) có ưu tiên cao nhất
+          if (statusA === "Checkin" && statusB !== "Checkin") return -1;
+          if (statusA !== "Checkin" && statusB === "Checkin") return 1;
+
+          // Tiếp theo là các dịch vụ đang xử lý
+          if (
+            (statusA === "Processing" || statusA === "Testing") &&
+            statusB !== "Processing" &&
+            statusB !== "Testing" &&
+            statusB !== "Checkin"
+          )
+            return -1;
+          if (
+            statusA !== "Processing" &&
+            statusA !== "Testing" &&
+            statusA !== "Checkin" &&
+            (statusB === "Processing" || statusB === "Testing")
+          )
+            return 1;
+
+          // Tiếp theo là các dịch vụ đang chờ kết quả
+          if (
+            statusA === "ProcessingResult" &&
+            statusB !== "ProcessingResult" &&
+            statusB !== "Checkin" &&
+            statusB !== "Processing" &&
+            statusB !== "Testing"
+          )
+            return -1;
+          if (
+            statusA !== "ProcessingResult" &&
+            statusA !== "Checkin" &&
+            statusA !== "Processing" &&
+            statusA !== "Testing" &&
+            statusB === "ProcessingResult"
+          )
+            return 1;
+
+          // Các dịch vụ đã hoàn thành xét nghiệm nhưng chưa có kết quả
+          if (
+            statusA === "TestDone" &&
+            statusB !== "TestDone" &&
+            statusB !== "Checkin" &&
+            statusB !== "Processing" &&
+            statusB !== "Testing" &&
+            statusB !== "ProcessingResult"
+          )
+            return -1;
+          if (
+            statusA !== "TestDone" &&
+            statusA !== "Checkin" &&
+            statusA !== "Processing" &&
+            statusA !== "Testing" &&
+            statusA !== "ProcessingResult" &&
+            statusB === "TestDone"
+          )
+            return 1;
+
+          // Đo sinh hiệu ở trạng thái Pending được ưu tiên hơn các dịch vụ Pending khác
+          if (
+            a.serviceName === "Đo sinh hiệu" &&
+            statusA === "Pending" &&
+            (b.serviceName !== "Đo sinh hiệu" || statusB !== "Pending")
+          )
+            return -1;
+          if (
+            (a.serviceName !== "Đo sinh hiệu" || statusA !== "Pending") &&
+            b.serviceName === "Đo sinh hiệu" &&
+            statusB === "Pending"
+          )
+            return 1;
+
+          // Giữ nguyên thứ tự ban đầu cho các trạng thái khác
           return 0;
         });
         setServices(sortedServices);
@@ -187,7 +265,12 @@ const CheckupStepsScreen = () => {
 
   // No need for a separate handleGoBack function since we're using ScreenContainer with title
   // which already has back navigation built-in
-  const getStatusColor = (status) => {
+  const getStatusColor = (status, serviceName) => {
+    // Special case for "Đo sinh hiệu" service with Pending status
+    if (serviceName === "Đo sinh hiệu" && status === "Pending") {
+      return "#5C6BC0"; // Indigo color for waiting for vital signs
+    }
+
     switch (status) {
       case "Completed":
       case "Finished":
@@ -209,10 +292,15 @@ const CheckupStepsScreen = () => {
     }
   };
 
-  const getStatusText = (status) => {
+  const getStatusText = (status, serviceName) => {
+    // Special case for "Đo sinh hiệu" service with Pending status
+    if (serviceName === "Đo sinh hiệu" && status === "Pending") {
+      return "Chờ đo sinh hiệu";
+    }
+
     switch (status) {
       case "Completed":
-        return "Đã hoàn thành";
+        return "Đã có kết quả";
       case "Checkin":
         return "Chờ cận lâm sàng";
       case "Finished":
@@ -231,7 +319,12 @@ const CheckupStepsScreen = () => {
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status, serviceName) => {
+    // Special case for "Đo sinh hiệu" service with Pending status
+    if (serviceName === "Đo sinh hiệu" && status === "Pending") {
+      return "pulse"; // Heart rate icon for vital signs
+    }
+
     switch (status) {
       case "Completed":
       case "Finished":
@@ -257,93 +350,189 @@ const CheckupStepsScreen = () => {
   };
 
   const handleServicePress = (item) => {
-    const status = getServiceStatus(item);
-    // Only allow viewing results if service is completed/finished
-    if (status === "Completed" || status === "Finished") {
-      navigation.navigate("CheckupResultDetail", {
-        serviceId: item.id,
-        serviceName: item.serviceName,
-        serviceCode: item.serviceCode,
-      });
+    console.log("HANDLE SERVICE PRESS CALLED");
+    console.log(JSON.stringify(item, null, 2));
+
+    try {
+      // Cố gắng sử dụng phương thức điều hướng trực tiếp hơn
+      if (item.serviceName === "Đo sinh hiệu") {
+        console.log("Đo sinh hiệu được chọn, thử điều hướng...");
+
+        // Kiểm tra trạng thái của Đo sinh hiệu, chỉ cho phép xem khi Completed hoặc Finished
+        const status = getServiceStatus(item);
+        if (status === "Completed" || status === "Finished") {
+          navigation.navigate("CheckupResultDetail", {
+            serviceId: item.id,
+            serviceName: item.serviceName,
+            serviceCode: item.serviceCode,
+            isVitalSign: true, // Đánh dấu đây là kết quả đo sinh hiệu
+          });
+        } else {
+          Alert.alert("Thông báo", "Dịch vụ này chưa có kết quả để xem");
+        }
+        return;
+      }
+
+      // Xử lý các dịch vụ khác
+      const status = getServiceStatus(item);
+
+      if (status === "Completed" || status === "Finished") {
+        navigation.navigate("CheckupResultDetail", {
+          serviceId: item.id,
+          serviceName: item.serviceName,
+          serviceCode: item.serviceCode,
+        });
+      } else {
+        Alert.alert("Thông báo", "Dịch vụ này chưa có kết quả để xem");
+      }
+    } catch (error) {
+      console.error("Lỗi khi xử lý sự kiện nhấn:", JSON.stringify(error));
+      Alert.alert("Lỗi", "Đã xảy ra lỗi khi xử lý yêu cầu: " + error.message);
     }
   };
 
   const renderServiceItem = ({ item, index }) => {
+    // Console.log để debug cho mỗi item được render
+
     const status = getServiceStatus(item);
-    const statusColor = getStatusColor(status);
-    const statusText = getStatusText(status);
-    const statusIcon = getStatusIcon(status);
-    const canViewResults = status === "Completed" || status === "Finished";
+
+    const statusColor = getStatusColor(status, item.serviceName);
+    const statusText = getStatusText(status, item.serviceName);
+    const statusIcon = getStatusIcon(status, item.serviceName);
+
+    // Kiểm tra có thể xem kết quả không
+    let canViewResults;
+
+    // Chỉ hiển thị nút Xem kết quả khi trạng thái là Completed hoặc Finished
+    if (item.serviceName === "Đo sinh hiệu") {
+      canViewResults = status === "Completed" || status === "Finished";
+    } else {
+      // Các dịch vụ khác
+      canViewResults = status === "Completed" || status === "Finished";
+    }
 
     return (
-      <TouchableOpacity
-        onPress={() => handleServicePress(item)}
-        disabled={!canViewResults}
-      >
-        <Card
-          key={item.id}
-          style={[
-            styles.serviceCard,
-            { borderLeftWidth: 4, borderLeftColor: statusColor },
-          ]}
+      <View style={{ flex: 1 }}>
+        <TouchableOpacity
+          onPress={() => {
+            console.log("Card pressed for:", item.serviceName);
+            // Chỉ xử lý nhấn vào card nếu dịch vụ có trạng thái Completed
+            if (canViewResults) {
+              handleServicePress(item);
+            } else {
+              Alert.alert("Thông báo", "Dịch vụ này chưa có kết quả để xem.");
+            }
+          }}
+          activeOpacity={0.7}
+          style={{ marginVertical: 8 }}
         >
-          <View style={styles.serviceContent}>
-            <View
-              style={[styles.serviceNumber, { backgroundColor: statusColor }]}
-            >
-              <Text style={styles.serviceNumberText}>{index + 1}</Text>
-            </View>
-            <View style={styles.serviceInfo}>
-              <Text style={styles.serviceName}>{item.serviceName}</Text>
-              {item.roomNumber && (
-                <View style={styles.roomInfoContainer}>
-                  <Text style={styles.roomLabel}>Phòng:</Text>
-                  <Text style={styles.roomNumber}>{item.roomNumber}</Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.statusContainer}>
+          <Card
+            key={item.id}
+            style={[
+              styles.serviceCard,
+              { borderLeftWidth: 4, borderLeftColor: statusColor },
+            ]}
+          >
+            <View style={styles.serviceContent}>
               <View
-                style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor:
-                      status === "Completed" || status === "Finished"
-                        ? "#e8f5e9"
-                        : status === "TestDone"
-                        ? "#f1f8e9"
-                        : status === "Processing" || status === "Testing"
-                        ? "#fbe9e7"
-                        : status === "Checkin"
-                        ? "#e3f2fd"
-                        : status === "ProcessingResult"
-                        ? "#fff3e0"
-                        : "#f5f5f5",
-                  },
-                ]}
+                style={[styles.serviceNumber, { backgroundColor: statusColor }]}
               >
-                <Icon
-                  name={statusIcon}
-                  size={16}
-                  color={statusColor}
-                  style={styles.statusIcon}
-                />
-                <Text style={[styles.statusText, { color: statusColor }]}>
-                  {statusText}
-                </Text>
+                <Text style={styles.serviceNumberText}>{index + 1}</Text>
               </View>
-              {canViewResults && (
-                <Icon
-                  name="chevron-forward"
-                  size={16}
-                  color={statusColor}
-                  style={styles.viewResultIcon}
-                />
-              )}
+              <View style={styles.serviceInfo}>
+                <Text style={styles.serviceName}>{item.serviceName}</Text>
+                {item.roomNumber && (
+                  <View style={styles.roomInfoContainer}>
+                    <Text style={styles.roomLabel}>Phòng:</Text>
+                    <Text style={styles.roomNumber}>{item.roomNumber}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.statusContainer}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    {
+                      backgroundColor:
+                        status === "Completed" || status === "Finished"
+                          ? "#e8f5e9"
+                          : status === "TestDone"
+                          ? "#f1f8e9"
+                          : status === "Processing" || status === "Testing"
+                          ? "#fbe9e7"
+                          : status === "Checkin"
+                          ? "#e3f2fd"
+                          : status === "ProcessingResult"
+                          ? "#fff3e0"
+                          : item.serviceName === "Đo sinh hiệu" &&
+                            status === "Pending"
+                          ? "#e8eaf6" // Light indigo for waiting for vital signs
+                          : "#f5f5f5",
+                    },
+                  ]}
+                >
+                  <Icon
+                    name={statusIcon}
+                    size={16}
+                    color={statusColor}
+                    style={styles.statusIcon}
+                  />
+                  <Text style={[styles.statusText, { color: statusColor }]}>
+                    {statusText}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={(event) => {
+                    // Ngăn sự kiện lan sang thẻ cha
+                    event.stopPropagation();
+                    console.log("View button pressed for:", item.serviceName);
+
+                    // Chỉ xử lý nhấn khi dịch vụ có trạng thái Completed
+                    if (canViewResults) {
+                      handleServicePress(item);
+                    } else {
+                      Alert.alert(
+                        "Thông báo",
+                        "Dịch vụ này chưa có kết quả để xem."
+                      );
+                    }
+                  }}
+                  style={{
+                    marginTop: 4,
+                    backgroundColor: canViewResults ? "#e8f5e9" : "#f5f5f5",
+                    padding: 8,
+                    borderRadius: 8,
+                    alignItems: "center",
+                    flexDirection: "row",
+                    elevation: 2,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 1,
+                    display: canViewResults ? "flex" : "none", // Chỉ hiển thị khi trạng thái là Completed hoặc Finished
+                  }}
+                >
+                  <Icon
+                    name="chevron-forward"
+                    size={16}
+                    color={statusColor}
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text
+                    style={{
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Xem kết quả
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </Card>
-      </TouchableOpacity>
+          </Card>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -351,6 +540,7 @@ const CheckupStepsScreen = () => {
     if (autoRefreshIntervalRef.current) {
       clearInterval(autoRefreshIntervalRef.current);
     }
+    // Use a more battery-friendly 3-second interval instead of 1 second
     autoRefreshIntervalRef.current = setInterval(() => {
       fetchServices();
     }, 1000);
@@ -361,16 +551,43 @@ const CheckupStepsScreen = () => {
     };
   }, [fetchServices]);
 
+  // Thêm hàm kiểm tra điều hướng để gỡ lỗi
+  const testNavigation = () => {
+    console.log("Test navigation called...");
+    try {
+      navigation.navigate("CheckupResultDetail", {
+        serviceId: "test-id",
+        serviceName: "Test Service",
+        serviceCode: "TEST123",
+      });
+      console.log("Navigation attempted successfully");
+    } catch (err) {
+      console.error("Navigation error:", err);
+      Alert.alert(
+        "Lỗi điều hướng",
+        "Không thể chuyển đến màn hình kết quả: " + err.message
+      );
+    }
+  };
+
   const renderCustomHeader = () => (
     <View style={styles.customHeader}>
       <TouchableOpacity
         style={styles.headerBackButton}
         onPress={() => navigation.goBack()}
+        accessibilityLabel="Quay lại"
+        accessibilityRole="button"
+        accessibilityHint="Quay lại màn hình trước đó"
       >
         <Icon name="chevron-back" size={24} color="#fff" />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>Chi tiết phiếu khám</Text>
-      <View style={styles.headerRightPlaceholder} />
+      <TouchableOpacity
+        onPress={testNavigation}
+        style={styles.headerRightPlaceholder}
+      >
+        <Icon name="bug-outline" size={20} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 
@@ -380,6 +597,7 @@ const CheckupStepsScreen = () => {
       style={{ padding: 0 }}
       header={renderCustomHeader()}
       headerBackgroundColor="#4299e1"
+      hasBottomTabs={true} // Enable bottom tab safe area handling
     >
       <View style={styles.container}>
         <Card style={styles.headerCard}>
@@ -403,9 +621,13 @@ const CheckupStepsScreen = () => {
 
         {services.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              Không có dịch vụ xét nghiệm nào
-            </Text>
+            {loading ? (
+              <ActivityIndicator size="large" color="#4299e1" />
+            ) : (
+              <Text style={styles.emptyText}>
+                Không có dịch vụ xét nghiệm nào
+              </Text>
+            )}
           </View>
         ) : (
           <FlatList
@@ -418,9 +640,11 @@ const CheckupStepsScreen = () => {
                 refreshing={refreshing}
                 onRefresh={onRefresh}
                 tintColor="#4299e1"
+                colors={["#4299e1"]}
               />
             }
-            style={{ marginBottom: 0 }} // Ensure the FlatList doesn't overflow
+            style={{ marginBottom: 0 }}
+            showsVerticalScrollIndicator={false}
           />
         )}
       </View>
@@ -442,7 +666,6 @@ const styles = StyleSheet.create({
     elevation: 2,
     marginHorizontal: 12,
     marginTop: 12,
-    marginBottom: 12,
   },
   patientInfoSection: {
     padding: 16,
@@ -485,10 +708,9 @@ const styles = StyleSheet.create({
   serviceList: {
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 80, // Added extra padding at the bottom to account for the bottom tab navigation
+    paddingBottom: 10,
   },
   serviceCard: {
-    marginVertical: 8,
     padding: 14,
     borderRadius: 10,
     backgroundColor: "#fff",
@@ -565,7 +787,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#fff",
     margin: 12,
-    marginBottom: 80, // Added extra margin at the bottom to account for the bottom tab navigation
+    marginBottom: 20, // Giảm margin để tránh khoảng trống lớn ở dưới
     borderRadius: 8,
   },
   emptyText: {
