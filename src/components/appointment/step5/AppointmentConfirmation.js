@@ -10,17 +10,21 @@ const AppointmentConfirmation = ({
   resetAppointment,
   appointmentCode,
 }) => {
+  console.log(
+    "[AppointmentConfirmation] Rendering with appointment:",
+    appointment
+  );
+
   // Calculate total price for an appointment
   const calculateAppointmentPrice = (appt) => {
+    if (!appt) return 0;
     let total = 0;
     if (appt.package) {
       total += appt.package.price;
     }
-
     if (appt.services && appt.services.length > 0) {
       total += appt.services.reduce((sum, service) => sum + service.price, 0);
     }
-
     return total;
   };
   const generateQueueNumber = () => {
@@ -37,6 +41,40 @@ const AppointmentConfirmation = ({
     return `${dateStr}${randomNum.toString().padStart(3, "0")}`;
   };
 
+  // Nếu không có appointment, hiển thị thông báo
+  if (!appointment) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text
+          style={{
+            color: "#f44336",
+            fontSize: 16,
+            marginBottom: 16,
+          }}
+        >
+          Không có thông tin lịch khám!
+        </Text>
+        <Button
+          title="Về Trang Chủ"
+          onPress={() => {
+            resetAppointment();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Trang chủ" }],
+            });
+          }}
+          style={{ width: 200 }}
+        />
+      </View>
+    );
+  }
+
   const queueNumber = generateQueueNumber();
 
   const qrData = JSON.stringify({
@@ -51,6 +89,32 @@ const AppointmentConfirmation = ({
     },
     phone: patientProfile?.phone,
   });
+
+  // Tính tổng chi phí
+  const totalFee = (() => {
+    const pkg = appointment?.packagePrice || 0;
+    const add =
+      appointment?.additionalServices?.reduce(
+        (sum, s) => sum + (s.servicePrice || 0),
+        0
+      ) || 0;
+    return pkg + add;
+  })();
+
+  // Hàm format ngày giờ Việt Nam
+  const formatVietnamTime = (isoString) => {
+    if (!isoString) return "-";
+    const date = new Date(isoString);
+    // Cộng thêm 7 tiếng cho UTC+7
+    const vietnamTime = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+    const pad = (n) => n.toString().padStart(2, "0");
+    const hours = pad(vietnamTime.getHours());
+    const minutes = pad(vietnamTime.getMinutes());
+    const day = pad(vietnamTime.getDate());
+    const month = pad(vietnamTime.getMonth() + 1);
+    const year = vietnamTime.getFullYear();
+    return `${hours}:${minutes}, ${day}/${month}/${year}`;
+  };
 
   return (
     <ScrollView
@@ -99,48 +163,60 @@ const AppointmentConfirmation = ({
         </View>
         <Text style={styles.sectionTitle}>Chi tiết đặt khám</Text>
         <View style={styles.appointmentDetails}>
-          {appointment?.package && (
+          {/* Gói khám */}
+          {appointment?.packageName && (
             <View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Gói khám:</Text>
-              </View>
-              <View style={styles.packageRow}>
-                <Text style={styles.packageName}>
-                  {appointment.package.name}
+                <Text style={styles.detailValue}>
+                  {appointment.packageName}
                 </Text>
-                <Text style={styles.price}>
-                  {appointment.package.price.toLocaleString("vi-VN")}
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Giá gói:</Text>
+                <Text style={styles.detailValue}>
+                  {appointment.packagePrice?.toLocaleString("vi-VN")}
                 </Text>
               </View>
             </View>
           )}
-          {appointment?.services && appointment.services.length > 0 && (
-            <View style={styles.servicesContainer}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>
-                  Dịch vụ ({appointment.services.length}):
-                </Text>
-              </View>
-              {appointment.services.map((service, sIndex) => (
-                <View key={sIndex} style={styles.serviceItem}>
-                  <Text style={styles.serviceName}>{service.name}</Text>
-                  <Text style={styles.price}>
-                    {service.price.toLocaleString("vi-VN")}
+          {/* Dịch vụ bổ sung */}
+          {appointment?.additionalServices &&
+            appointment.additionalServices.length > 0 && (
+              <View style={styles.servicesContainer}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>
+                    Dịch vụ bổ sung ({appointment.additionalServices.length}):
                   </Text>
                 </View>
-              ))}
-            </View>
-          )}
+                {appointment.additionalServices.map((service, idx) => (
+                  <View key={idx} style={styles.serviceItem}>
+                    <Text style={styles.serviceName}>
+                      {service.serviceName}
+                    </Text>
+                    <Text style={styles.price}>
+                      {service.servicePrice?.toLocaleString("vi-VN")}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          {/* Thời gian */}
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Thời gian:</Text>
             <Text style={styles.detailValue}>
-              {appointment?.time?.time}, {appointment?.date}
+              {appointment?.date
+                ? `${appointment.date}`
+                : appointment?.bookingDate
+                ? `${formatVietnamTime(appointment.bookingDate)}`
+                : "-"}
             </Text>
           </View>
+          {/* Tổng chi phí */}
           <View style={[styles.detailRow, styles.feeRow]}>
             <Text style={styles.detailLabel}>Tổng chi phí:</Text>
             <Text style={styles.feeValue}>
-              {calculateAppointmentPrice(appointment).toLocaleString("vi-VN")}
+              {totalFee.toLocaleString("vi-VN")}
             </Text>
           </View>
         </View>

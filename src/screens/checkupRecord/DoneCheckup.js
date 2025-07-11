@@ -9,7 +9,6 @@ import {
   StatusBar,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import Icon from "react-native-vector-icons/Ionicons";
 
 const DoneCheckup = () => {
   const navigation = useNavigation();
@@ -31,7 +30,6 @@ const DoneCheckup = () => {
         patientName,
       });
     } else {
-      // If no checkupCode provided, navigate to a general results screen
       navigation.navigate("CheckupResults");
     }
   };
@@ -39,63 +37,56 @@ const DoneCheckup = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#ffffff" barStyle="dark-content" />
-      <View style={styles.content}>
-        <Text style={styles.successTitle}>Khám thành công</Text>
-        <Text style={styles.successMessage}>
-          Cảm ơn bạn đã tin tưởng chúng tôi
-        </Text>
-
-        <Image
-          source={require("../../assets/family.png")}
-          style={styles.successImage}
-          resizeMode="contain"
-        />
-
-        <TouchableOpacity style={styles.homeButton} onPress={handleViewResults}>
-          <Text style={styles.homeButtonText}>Xem kết quả khám</Text>
-        </TouchableOpacity>
-
-        {/* Nút xem thuốc */}
-        {checkupCode && (
-          <TouchableOpacity
-            style={[
-              styles.homeButton,
-              { backgroundColor: "#28a745", marginTop: 10 },
-            ]}
-            onPress={() =>
-              navigation.navigate("PrescriptionScreen", { checkupCode })
-            }
-          >
-            <Text style={[styles.homeButtonText, { color: "#fff" }]}>
-              Xem thuốc
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={[styles.homeButton, styles.secondaryButton]}
-          onPress={handleGoHome}
-        >
-          <Text style={[styles.homeButtonText, styles.secondaryButtonText]}>
-            Về trang chủ
+      <View style={styles.screenContainer}>
+        <View style={styles.content}>
+          <Text style={styles.successTitle}>Khám thành công</Text>
+          <Text style={styles.successMessage}>
+            Cảm ơn bạn đã tin tưởng chúng tôi
           </Text>
-        </TouchableOpacity>
 
-        {checkupCode && (
-          <View style={styles.checkupInfo}>
-            <Text style={styles.checkupInfoText}>
-              Mã phiếu khám: {checkupCode}
-            </Text>
-            {patientName && (
-              <Text style={styles.checkupInfoText}>
-                Người khám: {patientName}
+          <Image
+            source={require("../../assets/family.png")}
+            style={styles.successImage}
+            resizeMode="contain"
+          />
+
+          <TouchableOpacity
+            style={styles.homeButton}
+            onPress={handleViewResults}
+          >
+            <Text style={styles.homeButtonText}>Xem kết quả khám</Text>
+          </TouchableOpacity>
+
+          {/* Nút xem thuốc */}
+          {checkupCode && (
+            <TouchableOpacity
+              style={[
+                styles.homeButton,
+                { backgroundColor: "#28a745", marginTop: 10 },
+              ]}
+              onPress={() =>
+                navigation.navigate("PrescriptionScreen", { checkupCode })
+              }
+            >
+              <Text style={[styles.homeButtonText, { color: "#fff" }]}>
+                Xem thuốc
               </Text>
-            )}
-          </View>
-        )}
+            </TouchableOpacity>
+          )}
+          {checkupCode && (
+            <View style={styles.checkupInfo}>
+              <Text style={styles.checkupInfoText}>
+                Mã phiếu khám: {checkupCode}
+              </Text>
+              {patientName && (
+                <Text style={styles.checkupInfoText}>
+                  Người khám: {patientName}
+                </Text>
+              )}
+            </View>
+          )}
+        </View>
       </View>
-      {/* Modal xem thuốc */}
-      {/* PrescriptionDetailModal đã được thay thế bằng PrescriptionScreen */}
     </SafeAreaView>
   );
 };
@@ -104,6 +95,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
+  },
+  screenContainer: {
+    flex: 1,
+    backgroundColor: "#fff",
   },
   content: {
     flex: 1,
@@ -126,36 +121,27 @@ const styles = StyleSheet.create({
   },
   successImage: {
     width: "80%",
-    height: 250,
-    marginBottom: 50,
+    height: 180,
+    marginBottom: 30,
   },
   homeButton: {
     backgroundColor: "#4CAF50",
-    paddingVertical: 15,
-    paddingHorizontal: 30,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
     borderRadius: 30,
     elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    marginBottom: 15,
-  },
-  secondaryButton: {
-    backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: "#4CAF50",
   },
   homeButtonText: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
   },
-  secondaryButtonText: {
-    color: "#4CAF50",
-  },
   checkupInfo: {
-    marginTop: 30,
+    marginTop: 20,
     padding: 15,
     borderRadius: 10,
     backgroundColor: "#f5f5f5",

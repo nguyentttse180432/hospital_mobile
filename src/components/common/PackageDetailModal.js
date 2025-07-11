@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   Modal,
-  PanResponder,
+  StatusBar,
   Vibration,
   Dimensions,
 } from "react-native";
@@ -65,7 +65,12 @@ const PackageDetailModal = ({
       visible={visible}
       onRequestClose={onClose}
     >
-      <View style={styles.modalContainer}>
+      <View
+        style={[
+          styles.modalContainer,
+          { paddingTop: StatusBar.currentHeight || 0 },
+        ]}
+      >
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Chi tiết gói khám</Text>
@@ -93,10 +98,10 @@ const PackageDetailModal = ({
               <Text style={styles.detailPrice}>
                 {packageDetails.price.toLocaleString("vi-VN")} VNĐ
               </Text>
-                <Text style={styles.detailDescription}>
-                  <Text style={styles.detailSectionInline}>Mô tả: </Text>
-                  {packageDetails.description}
-                </Text>
+              <Text style={styles.detailDescription}>
+                <Text style={styles.detailSectionInline}>Mô tả: </Text>
+                {packageDetails.description}
+              </Text>
               <Text style={styles.detailSectionTitle}>
                 Các xét nghiệm bao gồm:
               </Text>

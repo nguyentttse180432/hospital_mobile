@@ -87,56 +87,70 @@ const AppointmentScreen = ({ navigation }) => {
     }
   };
 
-  // Submit appointment to API
-  const submitAppointment = async () => {
+  // New: handle payment logic in step 4
+  const handlePayment = async () => {
     if (
       !selectedProfile ||
       (!currentPackage && selectedServices.length === 0)
     ) {
       return Alert.alert("Lỗi", "Thông tin lịch khám không đầy đủ");
     }
-
+    if (!currentDate) {
+      return Alert.alert("Lỗi", "Vui lòng chọn ngày khám.");
+    }
+    if (!currentTime) {
+      return Alert.alert("Lỗi", "Vui lòng chọn giờ khám.");
+    }
+    if (!paymentMethod) {
+      return Alert.alert("Lỗi", "Vui lòng chọn phương thức thanh toán.");
+    }
     setIsSubmitting(true);
-
     try {
       // Format the appointment datetime
-      const appointmentDateTime = formatDateTimeForApi();
-      if (!appointmentDateTime) {
-        throw new Error("Invalid date or time format");
-      }
-
-      // Format appointment data for API
+      const [day, month, year] = currentDate.split("/");
+      const [startTime] = currentTime.time.split(" - ");
+      const [hours, minutes] = startTime.split(":");
+      const appointmentDate = new Date(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(hours),
+        parseInt(minutes)
+      );
       const appointmentData = formatAppointmentData(
         selectedProfile.id,
-        appointmentDateTime,
+        appointmentDate,
         currentPackage,
         selectedServices
-      ); // Send to API
+      );
       const response = await createAppointment(appointmentData);
-
-      // Save the appointment code from the response
+      let code = null;
       if (
         response &&
         response.isSuccess &&
         response.value &&
         response.value.code
       ) {
-        setAppointmentCode(response.value.code);
+        code = response.value.code;
+        setAppointmentCode(code);
       } else if (
         response &&
         response.data &&
         response.data.value &&
         response.data.value.code
       ) {
-        setAppointmentCode(response.data.value.code);
+        code = response.data.value.code;
+        setAppointmentCode(code);
       }
-
-      // Chuyển trực tiếp đến bước xác nhận mà không hiển thị alert
-      setStep(5);
+      // Nếu chọn VNPay, trả về code cho PaymentScreen để tiếp tục gọi getPaymentUrl
+      if (paymentMethod === "VNPay") {
+        return code;
+      } else {
+        // Nếu chọn tại quầy, chuyển sang bước xác nhận
+        setStep(5);
+      }
     } catch (error) {
       console.error("Appointment creation error:", error);
-
-      // Kiểm tra lỗi cụ thể "This patient had enough booking in one day"
       if (
         error.response?.data?.detail ===
         "This patient had enough booking in one day."
@@ -146,7 +160,6 @@ const AppointmentScreen = ({ navigation }) => {
           "Bạn đã đặt lịch khám trong ngày này rồi. Mỗi bệnh nhân chỉ được đặt một lịch khám trong một ngày."
         );
       } else {
-        // Hiển thị thông báo lỗi chung cho các trường hợp khác
         Alert.alert(
           "Lỗi",
           "Không thể đặt lịch khám. Vui lòng thử lại sau." +
@@ -157,24 +170,9 @@ const AppointmentScreen = ({ navigation }) => {
               : "")
         );
       }
+      return null;
     } finally {
       setIsSubmitting(false);
-    }
-  };
-  const saveCurrentAppointment = () => {
-    if (
-      (currentPackage || selectedServices.length > 0) &&
-      currentDate &&
-      currentTime
-    ) {
-      const newAppointment = {
-        package: currentPackage,
-        services: selectedServices,
-        date: currentDate,
-        time: currentTime,
-      };
-      // Lưu thông tin lịch hẹn dưới dạng đối tượng đơn lẻ
-      setAppointment(newAppointment);
     }
   };
 
@@ -226,14 +224,13 @@ const AppointmentScreen = ({ navigation }) => {
       ) {
         return Alert.alert("Lỗi", "Thông tin lịch khám chưa hoàn chỉnh.");
       }
-      saveCurrentAppointment();
+      // Chuyển sang bước thanh toán, không gọi submitAppointment nữa
       setStep(4);
     } else if (step === 4) {
       if (!paymentMethod)
         return Alert.alert("Lỗi", "Vui lòng chọn phương thức thanh toán.");
-
-      // Submit appointment to API
-      submitAppointment();
+      // KHÔNG gọi submitAppointment ở đây nữa
+      // Chỉ xử lý thanh toán nếu cần
     }
   };
   const handleBack = () => {
@@ -423,13 +420,16 @@ const AppointmentScreen = ({ navigation }) => {
           {step === 4 && (
             <PaymentScreen
               appointment={appointment}
+              appointmentCode={appointmentCode}
               paymentMethod={paymentMethod}
               setPaymentMethod={setPaymentMethod}
-              handleNext={handleNext}
               handleBack={handleBack}
               canProceed={canProceed}
               totalAmount={calculateTotalAmount()}
               isSubmitting={isSubmitting}
+              handlePayment={handlePayment}
+              setStep={setStep}
+              setAppointment={setAppointment} // Thêm prop này
             />
           )}
           {step === 5 && (

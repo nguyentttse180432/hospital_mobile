@@ -16,7 +16,6 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { getPatients } from "../../services/patientService";
 import ScreenContainer from "../../components/common/ScreenContainer";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { getBottomTabSafeStyle } from "../../utils/safeAreaHelper";
 
 const PatientRecordsScreen = () => {
   const navigation = useNavigation();
@@ -128,10 +127,6 @@ const PatientRecordsScreen = () => {
           scannedIdCard: data,
         });
 
-        Alert.alert(
-          "Thành công",
-          `Đã quét được mã: ${data}. Chuyển đến tạo hồ sơ mới.`
-        );
         // Reset scanned state after a delay
         setTimeout(() => setScanned(false), 3000);
       } else {
@@ -148,10 +143,6 @@ const PatientRecordsScreen = () => {
             scannedData: cccdData,
           });
 
-          Alert.alert(
-            "Thành công",
-            `Đã quét được thông tin:\n- Họ tên: ${cccdData.name}\n- CCCD: ${cccdData.idCard}\n- Ngày sinh: ${cccdData.dateOfBirth}\nChuyển đến tạo hồ sơ mới.`
-          );
           // Reset scanned state after a delay
           setTimeout(() => setScanned(false), 3000);
         } else {
@@ -168,10 +159,6 @@ const PatientRecordsScreen = () => {
               scannedIdCard: extractedId,
             });
 
-            Alert.alert(
-              "Thành công",
-              `Đã quét được mã: ${extractedId}. Chuyển đến tạo hồ sơ mới.`
-            );
             // Reset scanned state after a delay
             setTimeout(() => setScanned(false), 3000);
           } else {
@@ -250,12 +237,13 @@ const PatientRecordsScreen = () => {
       style={{ padding: 0 }}
       hasBottomTabs={true}
     >
-      <View style={[styles.container, getBottomTabSafeStyle(insets)]}>
+      <View style={[styles.container]}>
         <ScrollView
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: 0 }} // Loại bỏ khoảng trống dưới
         >
           {loading && patients.length === 0 ? (
             <View style={styles.messageContainer}>
@@ -270,8 +258,7 @@ const PatientRecordsScreen = () => {
                   color="#4299e1"
                 />
                 <Text style={styles.infoMessage}>
-                  Bạn chưa có hồ sơ. Vui lòng tạo mới hồ sơ để được
-                  đặt khám.
+                  Bạn chưa có hồ sơ. Vui lòng tạo mới hồ sơ để được đặt khám.
                 </Text>
               </View>
 

@@ -990,7 +990,6 @@ const CreateProfileScreen = ({ route, navigation }) => {
         setScanned(true);
         setIdCard(data);
         setShowCamera(false);
-        Alert.alert("Thành công", `Đã quét được số CCCD/CMND: ${data}`);
         // Reset scanned state after a delay
         setTimeout(() => setScanned(false), 3000);
       } else {
@@ -1038,10 +1037,6 @@ const CreateProfileScreen = ({ route, navigation }) => {
             }
           }
 
-          Alert.alert(
-            "Thành công",
-            `Đã quét được thông tin CCCD:\n- Họ tên: ${cccdData.name}\n- CCCD: ${cccdData.idCard}\n- Ngày sinh: ${cccdData.dateOfBirth}\n- Giới tính: ${cccdData.gender}`
-          );
           // Reset scanned state after a delay
           setTimeout(() => setScanned(false), 3000);
         } else {
@@ -1052,10 +1047,7 @@ const CreateProfileScreen = ({ route, navigation }) => {
             const extractedId = idMatches[0];
             setIdCard(extractedId);
             setShowCamera(false);
-            Alert.alert(
-              "Thành công",
-              `Đã quét được số CCCD/CMND: ${extractedId}`
-            );
+           
             // Reset scanned state after a delay
             setTimeout(() => setScanned(false), 3000);
           } else {

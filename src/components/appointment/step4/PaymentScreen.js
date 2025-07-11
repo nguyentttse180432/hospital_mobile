@@ -7,63 +7,127 @@ import {
   ScrollView,
   ActivityIndicator,
   NativeEventEmitter,
+  NativeModules,
+  Linking,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import Button from "../../../components/common/Button";
-import VnpayMerchant, {
-  VnpayMerchantModule,
-} from "../../../../react-native-vnpay-merchant";
+import VnpayMerchant from "react-native-vnpay-merchant";
+import { getPaymentUrl, getPaymentResult } from "../../../services/payment"; // Import hàm lấy URL thanh toán
+import { getAppointmentByCode } from "../../../services/appointmentService";
 
 const PaymentScreen = ({
   appointment,
+  appointmentCode,
   paymentMethod,
   setPaymentMethod,
-  handleNext,
   handleBack,
   canProceed,
   totalAmount,
   isSubmitting,
+  handlePayment,
+  setStep,
+  setAppointment, // Thêm prop này để truyền dữ liệu appointment lên cha
 }) => {
-  // Đảm bảo chỉ addListener 1 lần, tránh lồng nhau và leak memory
   useEffect(() => {
-    const eventEmitter = new NativeEventEmitter(VnpayMerchantModule);
-    const listener = eventEmitter.addListener("PaymentBack", (e) => {
-      console.log("Sdk back!");
-      if (e) {
-        console.log("e.resultCode = " + e.resultCode);
-        switch (e.resultCode) {
-          // resultCode == -1: Người dùng nhấn back từ sdk để quay lại
-          // resultCode == 10: Người dùng nhấn chọn mở thanh toán qua app thanh toán (Mobile Banking, Ví...)
-          // resultCode == 99: user Hủy thanh toán từ Cổng VNPAY-QR
-          // resultCode == 98: kết quả thanh toán không thành công từ phương thức ATM, Tài khoản, thẻ quốc tế
-          // resultCode == 97: kết quả thanh toán thành công từ phương thức ATM,Tài khoản, thẻ quốc tế hoặc scanQR
-          default:
-            break;
+    // ✅ Hàm parse query chuẩn, xử lý + thành space
+    const parseQueryParams = (url) => {
+      const query = url.split("?")[1];
+      const params = {};
+      query.split("&").forEach((pair) => {
+        const [key, value] = pair.split("=");
+        params[key] = decodeURIComponent((value || "").replace(/\+/g, " "));
+      });
+      return params;
+    };
+
+    const handleDeepLink = async (event) => {
+      console.log("[DEEP LINK] App opened with URL:", event.url);
+
+      const params = parseQueryParams(event.url);
+      console.log("[DEEP LINK] Parsed params:", params);
+
+      if (params.vnp_ResponseCode === "00") {
+        try {
+          const result = await getPaymentResult(params);
+          console.log("[VNPay] Payment result from server:", result);
+          // Lấy lại thông tin appointment từ code
+          if (result?.value) {
+            setAppointment(appointment);
+          }
+          setStep && setStep(5); // Chuyển bước khi thanh toán thành công
+        } catch (err) {
+          console.error("[VNPay] Error fetching payment result:", err);
         }
+      } else if (params.vnp_ResponseCode) {
+        console.log(
+          "[DEEP LINK] Payment failed, code:",
+          params.vnp_ResponseCode
+        );
       }
-    });
+    };
+
+    const linkingSubscription = Linking.addEventListener("url", handleDeepLink);
+
+    // Native event listener (nếu có)
+    let listener;
+    const vnpayModule = NativeModules.VnpayMerchantModule;
+    if (vnpayModule) {
+      const eventEmitter = new NativeEventEmitter(vnpayModule);
+      listener = eventEmitter.addListener("PaymentBack", (e) => {
+        console.log("Sdk back! Full event data:", e);
+        // Optional: xử lý SDK back
+      });
+    }
+
     return () => {
-      listener.remove();
+      linkingSubscription.remove();
+      if (listener) listener.remove();
     };
   }, []);
 
-  // Hàm mở SDK VNPay
-  const handleVNPayPayment = () => {
-    VnpayMerchant.show({
-      isSandbox: true, // hoặc false nếu production
-      scheme: "com.hospital.app", // phải giống với AndroidManifest.xml
-      backAlert: "Bạn có chắc chắn trở lại không?",
-      paymentUrl: "https://sandbox.vnpayment.vn/tryitnow/Home/CreateOrder", 
-      title: "Thanh toán",
-      titleColor: "#E26F2C",
-      beginColor: "#F06744",
-      endColor: "#E26F2C",
-      iconBackName: "ion_back",
-      tmn_code: "FAHASA02", // mã merchant của bạn
-    });
+  // Gộp logic thanh toán vào một hàm duy nhất
+  const handlePay = async () => {
+    if (paymentMethod === "VNPay") {
+      // 1. Gọi API tạo appointment, lấy code
+      const code = await handlePayment();
+      if (!code) return; // Nếu lỗi thì dừng lại
+      // 2. Gọi getPaymentUrl và mở VNPay
+      try {
+        const paymentData = await getPaymentUrl(code);
+        const paymentUrl = paymentData?.value;
+        if (!paymentUrl) {
+          console.warn("Không lấy được URL thanh toán từ server!");
+          return;
+        }
+        VnpayMerchant.show({
+          isSandbox: true,
+          scheme: "com.hospital.app",
+          backAlert: "Bạn có chắc chắn trở lại không?",
+          paymentUrl: paymentUrl,
+          title: "Thanh toán",
+          titleColor: "#E26F2C",
+          beginColor: "#F06744",
+          endColor: "#E26F2C",
+          iconBackName: "ion_back",
+          tmn_code: "OIL8C48D",
+        });
+      } catch (error) {
+        console.error("Lỗi khi lấy URL thanh toán:", error);
+      }
+    } else if (paymentMethod === "Cash") {
+      // Gọi API tạo appointment, sau đó chuyển sang bước xác nhận
+      const code = await handlePayment();
+      if (code) {
+        setStep(5);
+      }
+    } else {
+      // Các phương thức khác (MoMo, ...)
+      // Có thể bổ sung logic tương tự nếu cần
+      console.warn("Chưa hỗ trợ phương thức này");
+    }
   };
 
-  // Sử dụng số tiền đã được truyền vào hoặc mặc định là 0
   const totalFee = totalAmount || 0;
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -133,9 +197,7 @@ const PaymentScreen = ({
         ) : (
           <Button
             title="Thanh Toán"
-            onPress={
-              paymentMethod === "VNPay" ? handleVNPayPayment : handleNext
-            }
+            onPress={handlePay}
             disabled={!canProceed()}
             style={styles.halfButton}
           />
@@ -149,12 +211,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-  },
-  stepTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 20,
   },
   sectionTitle: {
     marginTop: 20,
@@ -183,46 +239,6 @@ const styles = StyleSheet.create({
     color: "#333",
     marginLeft: 16,
     flex: 1,
-  },
-  orderSummary: {
-    marginVertical: 20,
-    padding: 16,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  summaryTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: "#666",
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#eee",
-    marginVertical: 12,
   },
   totalSection: {
     backgroundColor: "#edf7fd",

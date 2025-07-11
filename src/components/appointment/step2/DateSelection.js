@@ -9,6 +9,7 @@ import {
 import Button from "../../common/Button";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { getCurrentMonthDate } from "../../../services/workingDateService";
+import {getSystemTime} from "../../../services/workingDateService";
 
 const DateSelection = ({
   currentDate,
@@ -16,8 +17,36 @@ const DateSelection = ({
   setCurrentTime,
   setStep,
 }) => {
-  // Get current date info
-  const today = new Date();
+  // State for system time
+  const [systemTime, setSystemTime] = React.useState(null);
+  const [systemTimeLoading, setSystemTimeLoading] = React.useState(true);
+  const [systemTimeError, setSystemTimeError] = React.useState(null);
+
+  // Fetch system time on mount
+  React.useEffect(() => {
+    const fetchSystemTime = async () => {
+      setSystemTimeLoading(true);
+      setSystemTimeError(null);
+      try {
+        const response = await getSystemTime();
+        if (response && response.isSuccess && response.value) {
+          setSystemTime(new Date(response.value));
+        } else {
+          setSystemTimeError("Không lấy được thời gian hệ thống.");
+        }
+      } catch (err) {
+        setSystemTimeError("Lỗi khi lấy thời gian hệ thống.");
+      } finally {
+        setSystemTimeLoading(false);
+      }
+    };
+    fetchSystemTime();
+  }, []);
+
+  // Use systemTime instead of today
+  const today = systemTime || new Date();
+  console.log("Current system time:", today);
+  
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth(); // 0-based (0 = January)
   const currentDay = today.getDate();
@@ -319,6 +348,23 @@ const DateSelection = ({
 
     return dates;
   };
+
+  // Show loading/error if system time is not ready
+  if (systemTimeLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#1976d2" />
+        <Text style={styles.loadingText}>Đang lấy thời gian hệ thống...</Text>
+      </View>
+    );
+  }
+  if (systemTimeError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{systemTimeError}</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

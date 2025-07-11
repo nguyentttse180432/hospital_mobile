@@ -29,7 +29,7 @@ export const getAvailableBookingTime = async (dateTime) => {
     const response = await api.get(
       `/WorkingDates/availables?dateTime=${dateTime}`
     );
-    console.log("Fetched working dates by day:", response.data);
+    console.log("Fetched working dates by day:", response.data.value);
     return response.data;
   } catch (error) {
     console.error(`Error fetching working dates by day:`, error);
@@ -68,17 +68,20 @@ export const getAvailableTimeSlotsByDate = async (date) => {
 export const getSystemTime = async () => {
   try {
     const response = await api.get("/WorkingDates/datetime-server");
-    // {
-    //   "value": "2025-07-05T03:10:04.2392176",
-    //   "error": {
-    //     "code": "",
-    //     "message": ""
-    //   },
-    //   "isSuccess": true
-    // }
-    return response.data;
+
+    const utcString = response.data.value;
+    const dateUTC = new Date(utcString);
+
+    // Tạo ngày mới theo múi giờ Việt Nam (GMT+7)
+    const dateVN = new Date(dateUTC.getTime() + 7 * 60 * 60 * 1000);
+
+    return {
+      ...response.data,
+      vnDateTime: dateVN.toLocaleDateString("vi-VN"),
+    };
   } catch (error) {
     console.error(`Error fetching system time:`, error);
     throw error;
   }
 };
+

@@ -157,7 +157,7 @@ const AppointmentSelection = ({
 
       <View style={styles.footer}>
         <Button
-          title={canProceed() ? "Xác Nhận Đặt Lịch" : "Hoàn Tất Thông Tin"}
+          title={canProceed() ? "Xác Nhận" : "Hoàn Tất Thông Tin"}
           onPress={() => setStep(3)}
           disabled={!canProceed()}
         />
