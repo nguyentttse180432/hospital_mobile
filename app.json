@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "Hospital",
-    "slug": "Hospital",
+    "name": "HSMS",
+    "slug": "HSMS",
     "version": "1.0.0",
+    "icon": "./src/assets/hospital.png",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,

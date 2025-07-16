@@ -7,6 +7,9 @@ export const getMedicalPackages = async (gender = null, age = null) => {
     let url = "/MedicalPackages";
     const params = [];
 
+    // Always set page size to 50
+    params.push(`PageSize=50`);
+
     if (gender) {
       params.push(`Gender=${encodeURIComponent(gender)}`);
     }
@@ -21,6 +24,7 @@ export const getMedicalPackages = async (gender = null, age = null) => {
     }
 
     const response = await api.get(url);
+    console.log("Fetched medical packages:", response.data);
 
     // Return the entire response including isSuccess flag
     return {

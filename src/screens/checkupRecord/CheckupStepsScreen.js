@@ -14,7 +14,10 @@ import {
 import { useRoute, useFocusEffect } from "@react-navigation/native";
 import ScreenContainer from "../../components/common/ScreenContainer";
 import Card from "../../components/common/Card";
-import { getCheckupRecordServices } from "../../services/checkupRecordService";
+import {
+  getCheckupRecordServices,
+  getCheckupRecordDetail,
+} from "../../services/checkupRecordService";
 import signalRConnect from "../../utils/signalR";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -27,12 +30,28 @@ const CheckupStepsScreen = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
   const signalRConnectionRef = useRef(null);
   const autoRefreshIntervalRef = useRef(null);
 
+  // ✅ Hàm kiểm tra nếu phiếu khám đã hoàn thành
+  const checkCheckupCompleted = useCallback(async () => {
+    try {
+      const response = await getCheckupRecordDetail(checkupCode);
+      console.log("Checkup record detail response:", response);
+      const status = response?.value?.status;
+
+      if (status === "Completed" || status === "Finished") {
+        console.log("✅ Điều hướng sang DoneCheckup");
+        navigation.navigate("DoneCheckup", { checkupCode, patientName });
+      }
+    } catch (error) {
+      console.error("❌ Lỗi khi kiểm tra trạng thái phiếu khám:", error);
+    }
+  }, [checkupCode, patientName, navigation]);
+
   const getServiceStatus = (service) => {
     if (service.serviceName === "Đo sinh hiệu") {
-      // Đảm bảo trả về đúng trạng thái Completed nếu có
       return service.vitalSignStatus || "Pending";
     }
     if (service.testRecordStatus && service.testRecordStatus !== "Paid") {
@@ -54,9 +73,8 @@ const CheckupStepsScreen = () => {
     try {
       setLoading(true);
       const response = await getCheckupRecordServices(checkupCode);
-      if (response && response.isSuccess) {
+      if (response?.isSuccess) {
         const sortedServices = response.value.sort((a, b) => {
-          // Lấy trạng thái của các dịch vụ
           const statusA = getServiceStatus(a);
           const statusB = getServiceStatus(b);
 
@@ -137,81 +155,45 @@ const CheckupStepsScreen = () => {
           return 0;
         });
         setServices(sortedServices);
-
-        // Check if all services are completed
-        checkAllServicesCompleted(sortedServices);
-      } else {
-        console.warn("Failed to fetch services or empty response", response);
+        await checkCheckupCompleted(); // ✅ Kiểm tra status ngay sau khi fetch
       }
     } catch (error) {
-      console.error("Error fetching services:", error);
-      Alert.alert("Lỗi", "Không thể tải danh sách dịch vụ");
+      console.error("Lỗi khi lấy danh sách dịch vụ:", error);
     } finally {
       setLoading(false);
     }
-  }, [checkupCode, checkAllServicesCompleted]);
+  }, [checkupCode, checkCheckupCompleted]);
 
   const initializeSignalR = useCallback(async () => {
     try {
-      console.log("Initializing SignalR connection for:", checkupCode);
       const connection = await signalRConnect({ code: checkupCode });
       connection.on("UpdateStatus", (statusUpdate) => {
-        console.log("Status updated via SignalR:", statusUpdate);
         if (statusUpdate) {
           updateServiceStatus(statusUpdate);
         }
       });
       signalRConnectionRef.current = connection;
     } catch (error) {
-      console.error("SignalR connection failed:", error);
+      console.error("SignalR error:", error);
     }
-  }, [checkupCode, updateServiceStatus]);
+  }, [checkupCode]);
 
   const cleanupSignalR = useCallback(() => {
     if (signalRConnectionRef.current) {
-      try {
-        signalRConnectionRef.current.stop();
-        signalRConnectionRef.current = null;
-      } catch (error) {
-        console.error("Error stopping SignalR connection:", error);
-      }
+      signalRConnectionRef.current.stop();
+      signalRConnectionRef.current = null;
     }
   }, []);
 
-  const checkAllServicesCompleted = useCallback(
-    (services) => {
-      if (!services || services.length === 0) return false;
-
-      const allCompleted = services.every((service) => {
-        const status = getServiceStatus(service);
-        return status === "Completed" || status === "Finished";
-      });
-
-      if (allCompleted) {
-        // Navigate to done screen after a short delay
-        setTimeout(() => {
-          navigation.navigate("DoneCheckup", { checkupCode, patientName });
-        }, 1000);
-      }
-
-      return allCompleted;
-    },
-    [navigation, checkupCode, patientName]
-  );
-
   const updateServiceStatus = useCallback(
     (statusUpdate) => {
-      setServices((prevServices) => {
-        const updatedServices = prevServices.map((service) => {
-          const serviceCodeMatches =
-            service.serviceCode &&
-            statusUpdate.serviceCode &&
-            service.serviceCode.trim() === statusUpdate.serviceCode.trim();
-          const testRecordMatches =
-            service.testRecordCode &&
-            statusUpdate.testRecordCode &&
+      setServices((prevServices) =>
+        prevServices.map((service) => {
+          const matchCode =
+            service.serviceCode?.trim() === statusUpdate.serviceCode?.trim();
+          const matchTest =
             service.testRecordCode === statusUpdate.testRecordCode;
-          if (serviceCodeMatches || testRecordMatches) {
+          if (matchCode || matchTest) {
             return {
               ...service,
               vitalSignStatus:
@@ -223,16 +205,27 @@ const CheckupStepsScreen = () => {
             };
           }
           return service;
-        });
-
-        // Check if all services are now completed
-        checkAllServicesCompleted(updatedServices);
-
-        return updatedServices;
-      });
+        })
+      );
+      // ✅ Có thể gọi lại checkCheckupCompleted nếu bạn muốn
+      checkCheckupCompleted();
     },
-    [checkAllServicesCompleted]
+    [checkCheckupCompleted]
   );
+
+  const setupAutoRefresh = useCallback(() => {
+    if (autoRefreshIntervalRef.current) {
+      clearInterval(autoRefreshIntervalRef.current);
+    }
+    autoRefreshIntervalRef.current = setInterval(() => {
+      fetchServices();
+    }, 1000);
+    return () => {
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+      }
+    };
+  }, [fetchServices]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -240,6 +233,7 @@ const CheckupStepsScreen = () => {
     setRefreshing(false);
   }, [fetchServices]);
 
+  // ✅ Init on mount
   useEffect(() => {
     fetchServices();
     const cleanup = setupAutoRefresh();
@@ -249,22 +243,26 @@ const CheckupStepsScreen = () => {
     };
   }, [fetchServices, setupAutoRefresh, cleanupSignalR]);
 
+  // ✅ Init on focus
   useFocusEffect(
     useCallback(() => {
-      console.log("Screen focused - initializing SignalR");
       fetchServices();
+      checkCheckupCompleted(); // ✅ Thêm dòng này
       initializeSignalR();
       const cleanup = setupAutoRefresh();
       return () => {
-        console.log("Screen unfocused - cleaning up SignalR");
         cleanupSignalR();
         if (cleanup) cleanup();
       };
-    }, [cleanupSignalR, setupAutoRefresh, fetchServices, initializeSignalR])
+    }, [
+      cleanupSignalR,
+      setupAutoRefresh,
+      fetchServices,
+      initializeSignalR,
+      checkCheckupCompleted,
+    ])
   );
 
-  // No need for a separate handleGoBack function since we're using ScreenContainer with title
-  // which already has back navigation built-in
   const getStatusColor = (status, serviceName) => {
     // Special case for "Đo sinh hiệu" service with Pending status
     if (serviceName === "Đo sinh hiệu" && status === "Pending") {
@@ -536,40 +534,6 @@ const CheckupStepsScreen = () => {
     );
   };
 
-  const setupAutoRefresh = useCallback(() => {
-    if (autoRefreshIntervalRef.current) {
-      clearInterval(autoRefreshIntervalRef.current);
-    }
-    // Use a more battery-friendly 3-second interval instead of 1 second
-    autoRefreshIntervalRef.current = setInterval(() => {
-      fetchServices();
-    }, 1000);
-    return () => {
-      if (autoRefreshIntervalRef.current) {
-        clearInterval(autoRefreshIntervalRef.current);
-      }
-    };
-  }, [fetchServices]);
-
-  // Thêm hàm kiểm tra điều hướng để gỡ lỗi
-  const testNavigation = () => {
-    console.log("Test navigation called...");
-    try {
-      navigation.navigate("CheckupResultDetail", {
-        serviceId: "test-id",
-        serviceName: "Test Service",
-        serviceCode: "TEST123",
-      });
-      console.log("Navigation attempted successfully");
-    } catch (err) {
-      console.error("Navigation error:", err);
-      Alert.alert(
-        "Lỗi điều hướng",
-        "Không thể chuyển đến màn hình kết quả: " + err.message
-      );
-    }
-  };
-
   const renderCustomHeader = () => (
     <View style={styles.customHeader}>
       <TouchableOpacity
@@ -583,7 +547,7 @@ const CheckupStepsScreen = () => {
       </TouchableOpacity>
       <Text style={styles.headerTitle}>Chi tiết phiếu khám</Text>
       <TouchableOpacity
-        onPress={testNavigation}
+        // onPress={testNavigation}
         style={styles.headerRightPlaceholder}
       >
         <Icon name="bug-outline" size={20} color="#fff" />
@@ -597,7 +561,7 @@ const CheckupStepsScreen = () => {
       style={{ padding: 0 }}
       header={renderCustomHeader()}
       headerBackgroundColor="#4299e1"
-      hasBottomTabs={true} // Enable bottom tab safe area handling
+      hasBottomTabs={true}
     >
       <View style={styles.container}>
         <Card style={styles.headerCard}>

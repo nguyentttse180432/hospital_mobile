@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Modal,
   ActivityIndicator,
   Linking,
 } from "react-native";
@@ -16,12 +15,19 @@ import ScreenContainer from "../../components/common/ScreenContainer";
 import * as FileUtils from "../../utils/fileUtils";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  getPaymentPrescriptionUrl,
+  getPaymentPrescriptionResult,
+} from "../../services/payment";
+import VnpayMerchant from "react-native-vnpay-merchant";
+import { NativeEventEmitter, NativeModules } from "react-native";
 
 const PrescriptionScreen = ({ route, navigation }) => {
   const { checkupCode } = route.params;
+  console.log("Checkup code:", checkupCode);
+
   const [prescription, setPrescription] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -34,6 +40,70 @@ const PrescriptionScreen = ({ route, navigation }) => {
         .catch(() => Alert.alert("Lỗi", "Không thể tải đơn thuốc"))
         .finally(() => setLoading(false));
     }
+  }, [checkupCode]);
+  console.log("Prescription code:", prescription?.code);
+
+  useEffect(() => {
+    // Deep link handler for VNPay result
+    const parseQueryParams = (url) => {
+      const query = url.split("?")[1];
+      const params = {};
+      if (!query) return params;
+      query.split("&").forEach((pair) => {
+        const [key, value] = pair.split("=");
+        params[key] = decodeURIComponent((value || "").replace(/\+/g, " "));
+      });
+      return params;
+    };
+
+    const handleDeepLink = async (event) => {
+      const params = parseQueryParams(event.url);
+      if (params.vnp_ResponseCode === "00") {
+        try {
+          const result = await getPaymentPrescriptionResult(params);
+          if (result?.value) {
+            // Reload prescription data
+            setLoading(true);
+            getMedicationsByCheckupRecord(checkupCode)
+              .then((res) => {
+                setPrescription(res.value);
+                if (res.value?.prescriptionStatus === "Paid") {
+                  Alert.alert(
+                    "Thành công",
+                    "Đơn thuốc đã được thanh toán thành công!"
+                  );
+                }
+              })
+              .catch(() => Alert.alert("Lỗi", "Không thể tải đơn thuốc"))
+              .finally(() => setLoading(false));
+          }
+        } catch (err) {
+          Alert.alert("Lỗi", "Không xác nhận được kết quả thanh toán");
+        }
+      } else if (params.vnp_ResponseCode) {
+        Alert.alert(
+          "Thanh toán thất bại",
+          `Mã lỗi: ${params.vnp_ResponseCode}`
+        );
+      }
+    };
+
+    const linkingSubscription = Linking.addEventListener("url", handleDeepLink);
+
+    // Native event listener (optional)
+    let listener;
+    const vnpayModule = NativeModules.VnpayMerchantModule;
+    if (vnpayModule) {
+      const eventEmitter = new NativeEventEmitter(vnpayModule);
+      listener = eventEmitter.addListener("PaymentBack", (e) => {
+        // Optional: handle SDK back
+      });
+    }
+
+    return () => {
+      linkingSubscription.remove();
+      if (listener) listener.remove();
+    };
   }, [checkupCode]);
 
   const handlePayment = () => {
@@ -53,6 +123,34 @@ const PrescriptionScreen = ({ route, navigation }) => {
       } catch (e) {
         Alert.alert("Lỗi", "Không thể mở file PDF");
       }
+    }
+  };
+
+  const handleVnpayPayment = async () => {
+    if (!prescription?.code) return;
+    try {
+      const paymentData = await getPaymentPrescriptionUrl(prescription.code);
+      console.log("[VNPay] Payment data:", paymentData.value);
+
+      const paymentUrl = paymentData?.value;
+      if (!paymentUrl) {
+        Alert.alert("Lỗi", "Không lấy được URL thanh toán từ server!");
+        return;
+      }
+      VnpayMerchant.show({
+        isSandbox: true,
+        scheme: "com.hospital.app",
+        backAlert: "Bạn có chắc chắn trở lại không?",
+        paymentUrl: paymentUrl,
+        title: "Thanh toán",
+        titleColor: "#E26F2C",
+        beginColor: "#F06744",
+        endColor: "#E26F2C",
+        iconBackName: "ion_back",
+        tmn_code: "OIL8C48D",
+      });
+    } catch (error) {
+      Alert.alert("Lỗi", "Không thể mở VNPay: " + error.message);
     }
   };
 
@@ -145,8 +243,8 @@ const PrescriptionScreen = ({ route, navigation }) => {
                 ]}
               >
                 <Button
-                  title="Thanh Toán Ngay"
-                  onPress={handlePayment}
+                  title="Thanh Toán Với VNPay"
+                  onPress={handleVnpayPayment}
                   style={styles.payButton}
                   textStyle={styles.payButtonText}
                 />
@@ -159,30 +257,6 @@ const PrescriptionScreen = ({ route, navigation }) => {
             <Text style={styles.emptyText}>Không có dữ liệu đơn thuốc</Text>
           </View>
         )}
-
-        <Modal visible={showPayment} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Chọn phương thức thanh toán</Text>
-              <Button
-                title="Thanh toán tại quầy"
-                onPress={() => handleSelectPayment("Tại quầy")}
-                style={styles.paymentButton}
-              />
-              <Button
-                title="Thanh toán VNPay"
-                onPress={() => handleSelectPayment("VNPay")}
-                style={styles.paymentButton}
-              />
-              <Button
-                title="Hủy"
-                onPress={() => setShowPayment(false)}
-                style={styles.cancelButton}
-                textStyle={styles.cancelButtonText}
-              />
-            </View>
-          </View>
-        </Modal>
       </View>
     </ScreenContainer>
   );

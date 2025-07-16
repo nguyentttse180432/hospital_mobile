@@ -13,8 +13,8 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import Button from "../../../components/common/Button";
 import VnpayMerchant from "react-native-vnpay-merchant";
-import { getPaymentUrl, getPaymentResult } from "../../../services/payment"; // Import hàm lấy URL thanh toán
-import { getAppointmentByCode } from "../../../services/appointmentService";
+import { getPaymentAppointmentUrl, getPaymentAppointmentResult } from "../../../services/payment"; // Import hàm lấy URL thanh toán
+import {getAppointmentByCode} from "../../../services/appointmentService"; // Import hàm lấy thông tin appointment
 
 const PaymentScreen = ({
   appointment,
@@ -49,15 +49,19 @@ const PaymentScreen = ({
 
       if (params.vnp_ResponseCode === "00") {
         try {
-          const result = await getPaymentResult(params);
+          const result = await getPaymentAppointmentResult(params);
           console.log("[VNPay] Payment result from server:", result);
           // Lấy lại thông tin appointment từ code
-          if (result?.value) {
-            setAppointment(appointment);
+          if (result.isSuccess) {
+            const appointmentData = await getAppointmentByCode(appointmentCode);
+            if (appointmentData?.isSuccess) {
+              setAppointment(appointmentData.value);
+            }
           }
+          console.log("Payment successful, appointment data:", appointment);
           setStep && setStep(5); // Chuyển bước khi thanh toán thành công
         } catch (err) {
-          console.error("[VNPay] Error fetching payment result:", err);
+          console.error("[VNPay] Error fetching payment result:", err.response.data);
         }
       } else if (params.vnp_ResponseCode) {
         console.log(
@@ -94,7 +98,7 @@ const PaymentScreen = ({
       if (!code) return; // Nếu lỗi thì dừng lại
       // 2. Gọi getPaymentUrl và mở VNPay
       try {
-        const paymentData = await getPaymentUrl(code);
+        const paymentData = await getPaymentAppointmentUrl(code);
         const paymentUrl = paymentData?.value;
         if (!paymentUrl) {
           console.warn("Không lấy được URL thanh toán từ server!");

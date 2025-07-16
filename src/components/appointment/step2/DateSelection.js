@@ -9,7 +9,7 @@ import {
 import Button from "../../common/Button";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { getCurrentMonthDate } from "../../../services/workingDateService";
-import {getSystemTime} from "../../../services/workingDateService";
+import { getSystemTime } from "../../../services/workingDateService";
 
 const DateSelection = ({
   currentDate,
@@ -46,7 +46,7 @@ const DateSelection = ({
   // Use systemTime instead of today
   const today = systemTime || new Date();
   console.log("Current system time:", today);
-  
+
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth(); // 0-based (0 = January)
   const currentDay = today.getDate();
@@ -115,26 +115,10 @@ const DateSelection = ({
 
   // Helper function to check if a date is a working day
   const isWorkingDay = (year, month, day) => {
-    // If using fallback data or when in the booking window, always return true
-    // This ensures that today and the next valid date (tomorrow or Monday) are always selectable
     const dateToCheck = new Date(year, month, day);
     dateToCheck.setHours(0, 0, 0, 0);
 
-    const todayDateOnly = new Date(today);
-    todayDateOnly.setHours(0, 0, 0, 0);
-
-    const nextValidDateOnly = new Date(nextValidDate);
-    nextValidDateOnly.setHours(0, 0, 0, 0);
-
-    // If the date is today or the next valid date, consider it a working day regardless of API data
-    if (
-      dateToCheck.getTime() === todayDateOnly.getTime() ||
-      dateToCheck.getTime() === nextValidDateOnly.getTime()
-    ) {
-      return true;
-    }
-
-    // If API data is not loaded yet, only consider today and the next valid date as working
+    // If API data is not loaded yet, do not allow selection
     if (!workingDates || workingDates.length === 0) {
       return false;
     }
@@ -144,10 +128,9 @@ const DateSelection = ({
       // Handle different possible formats from the API
       if (workingDate.workDate) {
         const apiDate = new Date(workingDate.workDate);
+        apiDate.setHours(0, 0, 0, 0);
         return (
-          dateToCheck.getDate() === apiDate.getDate() &&
-          dateToCheck.getMonth() === apiDate.getMonth() &&
-          dateToCheck.getFullYear() === apiDate.getFullYear() &&
+          dateToCheck.getTime() === apiDate.getTime() &&
           workingDate.isWorkingDay
         );
       } else if (workingDate.date) {
@@ -158,7 +141,8 @@ const DateSelection = ({
         return (
           day === apiDay &&
           month + 1 === apiMonth && // +1 because month is 0-based in JS
-          year === apiYear
+          year === apiYear &&
+          workingDate.isWorkingDay
         );
       }
       return false;
@@ -570,7 +554,6 @@ const styles = StyleSheet.create({
   },
   weekDayContainer: {
     width: "13.8%", // Match with day cells
-    alignItems: "center",
   },
   weekDay: {
     textAlign: "center",

@@ -931,6 +931,19 @@ const CreateProfileScreen = ({ route, navigation }) => {
     }
   };
 
+  // Compute which fields should be disabled if scannedData exists
+  const disabledFields = scannedData
+    ? {
+        name: true,
+        dateOfBirth: true,
+        gender: true,
+        province: true,
+        district: true,
+        ward: true,
+        streetAddress: true,
+      }
+    : {};
+
   // Render modal for selection options
   const renderSelectionModal = (visible, title, options, onSelect, onClose) => {
     return (
@@ -1047,7 +1060,7 @@ const CreateProfileScreen = ({ route, navigation }) => {
             const extractedId = idMatches[0];
             setIdCard(extractedId);
             setShowCamera(false);
-           
+
             // Reset scanned state after a delay
             setTimeout(() => setScanned(false), 3000);
           } else {
@@ -1147,6 +1160,7 @@ const CreateProfileScreen = ({ route, navigation }) => {
             loading={loading}
             proceedToAddressInfo={proceedToAddressInfo}
             goBack={() => setStep("verifyPhone")}
+            disabledFields={disabledFields}
           />
         )}
         {step === "addressInfo" && (
@@ -1165,6 +1179,7 @@ const CreateProfileScreen = ({ route, navigation }) => {
             showProvinceModal={() => setShowProvinceModal(true)}
             showDistrictModal={() => setShowDistrictModal(true)}
             showWardModal={() => setShowWardModal(true)}
+            disabledFields={disabledFields}
           />
         )}
       </View>

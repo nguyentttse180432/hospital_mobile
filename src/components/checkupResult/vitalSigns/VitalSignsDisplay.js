@@ -1,61 +1,38 @@
-import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Animated, Platform } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 
 const VitalSignsDisplay = ({ serviceResult, fadeAnim, onCopyValue }) => {
-  // Function to check if a value is within normal range
-  const isInNormalRange = (type, value) => {
-    if (!value || value === "N/A") return true;
-
-    switch (type) {
-      case "temperature":
-        return value >= 36.1 && value <= 37.2;
-      case "spO2":
-        return value >= 95;
-      case "bmi":
-        return value >= 18.5 && value <= 24.9;
-      case "pulse":
-        return value >= 60 && value <= 100;
-      case "bloodPressure":
-        const parts = value.split("/");
-        if (parts.length !== 2) return true;
-        const systolic = parseInt(parts[0]);
-        const diastolic = parseInt(parts[1]);
-        return systolic <= 120 && diastolic <= 80;
-      default:
-        return true;
-    }
-  };
-
-  // Get BMI status
-  const getBMIStatus = (bmi) => {
-    if (bmi < 18.5) return { text: "Thiếu cân", color: "#F57C00" };
-    if (bmi <= 24.9) return { text: "Bình thường", color: "#2E7D32" };
-    if (bmi <= 29.9) return { text: "Thừa cân", color: "#F57C00" };
-    return { text: "Béo phì", color: "#D32F2F" };
-  };
-
-  // Get status color for values
+  // Function to get status color
   const getStatusColor = (type, value) => {
     if (!value || value === "N/A") return "#666";
 
-    const inRange = isInNormalRange(type, value);
-
     switch (type) {
       case "temperature":
+        if (value >= 36.1 && value <= 37.2) return "#2E7D32";
+        if (value > 38.5) return "#D32F2F";
+        return "#F57C00";
       case "spO2":
+        if (value >= 95) return "#2E7D32";
+        if (value < 90) return "#D32F2F";
+        return "#F57C00";
+      case "bmi":
+        if (value >= 18.5 && value <= 24.9) return "#2E7D32";
+        if (value > 30) return "#D32F2F";
+        return "#F57C00";
       case "pulse":
-        return inRange ? "#2E7D32" : "#D32F2F";
+        if (value >= 60 && value <= 100) return "#2E7D32";
+        if (value > 120) return "#D32F2F";
+        return "#F57C00";
       case "bloodPressure":
         const parts = value.split("/");
-        if (parts.length !== 2) return "#1976D2";
+        if (parts.length !== 2) return "#666";
         const systolic = parseInt(parts[0]);
         const diastolic = parseInt(parts[1]);
         if (systolic <= 120 && diastolic <= 80) return "#2E7D32";
-        if (systolic <= 140 && diastolic <= 90) return "#F57C00";
-        return "#D32F2F";
+        if (systolic > 140 || diastolic > 90) return "#D32F2F";
+        return "#F57C00";
       default:
-        return "#1976D2";
+        return "#666";
     }
   };
 
@@ -71,7 +48,7 @@ const VitalSignsDisplay = ({ serviceResult, fadeAnim, onCopyValue }) => {
       case "pulse":
         return "60-100 bpm";
       case "bloodPressure":
-        return "≤120/80";
+        return "≤120/80 mmHg";
       default:
         return "";
     }
@@ -86,8 +63,6 @@ const VitalSignsDisplay = ({ serviceResult, fadeAnim, onCopyValue }) => {
     bloodPressure,
     pulse,
   }) => {
-    const bmiStatus = bmi ? getBMIStatus(bmi) : null;
-
     return (
       <View style={styles.summaryContainer}>
         <View style={styles.summaryHeader}>
@@ -97,48 +72,46 @@ const VitalSignsDisplay = ({ serviceResult, fadeAnim, onCopyValue }) => {
 
         <View style={styles.summaryContent}>
           {/* Thông tin cơ bản */}
-          {(height || weight) && (
+          {(height || weight || bmi) && (
             <View style={styles.summarySection}>
               <Text style={styles.sectionTitle}>Thông tin cơ bản:</Text>
               <View style={styles.sectionContent}>
                 {height && (
                   <View style={styles.summaryRow}>
                     <View style={styles.summaryBullet} />
-                    <Text style={styles.summaryText}>
-                      Chiều cao:{" "}
+                    <Text style={styles.labelText}>Chiều cao:</Text>
+                    <View style={styles.valueContainer}>
                       <Text style={styles.summaryValue}>{height} cm</Text>
-                    </Text>
+                    </View>
                   </View>
                 )}
                 {weight && (
                   <View style={styles.summaryRow}>
                     <View style={styles.summaryBullet} />
-                    <Text style={styles.summaryText}>
-                      Cân nặng:{" "}
+                    <Text style={styles.labelText}>Cân nặng:</Text>
+                    <View style={styles.valueContainer}>
                       <Text style={styles.summaryValue}>{weight} kg</Text>
-                    </Text>
+                    </View>
                   </View>
                 )}
                 {bmi && (
                   <View style={styles.summaryRow}>
                     <View style={styles.summaryBullet} />
-                    <Text style={styles.summaryText}>
-                      BMI:{" "}
-                      <Text style={styles.summaryValue}>{bmi.toFixed(2)}</Text>
+                    <Text style={styles.labelText}>BMI:</Text>
+                    <View style={styles.valueContainer}>
+                      <Text
+                        style={[
+                          styles.summaryValue,
+                          { color: getStatusColor("bmi", bmi) },
+                        ]}
+                      >
+                        {bmi.toFixed(2)}
+                      </Text>
                       <Text style={styles.referenceText}>
                         {" "}
                         (BT: {getReferenceRange("bmi")})
                       </Text>
-                      {" - "}
-                      <Text
-                        style={[
-                          styles.summaryStatus,
-                          { color: bmiStatus.color },
-                        ]}
-                      >
-                        {bmiStatus.text}
-                      </Text>
-                    </Text>
+                    </View>
                   </View>
                 )}
               </View>
@@ -153,8 +126,8 @@ const VitalSignsDisplay = ({ serviceResult, fadeAnim, onCopyValue }) => {
                 {temperature && (
                   <View style={styles.summaryRow}>
                     <View style={styles.summaryBullet} />
-                    <Text style={styles.summaryText}>
-                      Nhiệt độ:
+                    <Text style={styles.labelText}>Nhiệt độ:</Text>
+                    <View style={styles.valueContainer}>
                       <Text
                         style={[
                           styles.summaryValue,
@@ -167,15 +140,14 @@ const VitalSignsDisplay = ({ serviceResult, fadeAnim, onCopyValue }) => {
                         {" "}
                         (BT: {getReferenceRange("temperature")})
                       </Text>
-                    </Text>
+                    </View>
                   </View>
                 )}
-
                 {spO2 && (
                   <View style={styles.summaryRow}>
                     <View style={styles.summaryBullet} />
-                    <Text style={styles.summaryText}>
-                      SpO2:
+                    <Text style={styles.labelText}>SpO2:</Text>
+                    <View style={styles.valueContainer}>
                       <Text
                         style={[
                           styles.summaryValue,
@@ -188,15 +160,14 @@ const VitalSignsDisplay = ({ serviceResult, fadeAnim, onCopyValue }) => {
                         {" "}
                         (BT: {getReferenceRange("spO2")})
                       </Text>
-                    </Text>
+                    </View>
                   </View>
                 )}
-
                 {bloodPressure && (
                   <View style={styles.summaryRow}>
                     <View style={styles.summaryBullet} />
-                    <Text style={styles.summaryText}>
-                      Huyết áp:
+                    <Text style={styles.labelText}>Huyết áp:</Text>
+                    <View style={styles.valueContainer}>
                       <Text
                         style={[
                           styles.summaryValue,
@@ -214,15 +185,14 @@ const VitalSignsDisplay = ({ serviceResult, fadeAnim, onCopyValue }) => {
                         {" "}
                         (BT: {getReferenceRange("bloodPressure")})
                       </Text>
-                    </Text>
+                    </View>
                   </View>
                 )}
-
                 {pulse && (
                   <View style={styles.summaryRow}>
                     <View style={styles.summaryBullet} />
-                    <Text style={styles.summaryText}>
-                      Nhịp tim: 
+                    <Text style={styles.labelText}>Nhịp tim:</Text>
+                    <View style={styles.valueContainer}>
                       <Text
                         style={[
                           styles.summaryValue,
@@ -235,7 +205,7 @@ const VitalSignsDisplay = ({ serviceResult, fadeAnim, onCopyValue }) => {
                         {" "}
                         (BT: {getReferenceRange("pulse")})
                       </Text>
-                    </Text>
+                    </View>
                   </View>
                 )}
               </View>
@@ -271,8 +241,6 @@ const VitalSignsDisplay = ({ serviceResult, fadeAnim, onCopyValue }) => {
         bloodPressure={serviceResult.bloodPressure}
         pulse={serviceResult.pulse}
       />
-
-      {/* Notes section */}
       <NoteSection note={serviceResult.note} />
     </Animated.View>
   );
@@ -283,7 +251,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     marginHorizontal: 16,
     borderRadius: 20,
-    padding: 15,
+    padding: 10,
     marginBottom: 24,
     ...Platform.select({
       ios: {
@@ -302,7 +270,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: "#1976D2",
     borderRadius: 16,
-    padding: 20,
+    padding: 15,
     marginBottom: 16,
   },
   summaryHeader: {
@@ -344,18 +312,20 @@ const styles = StyleSheet.create({
     marginRight: 12,
     marginTop: 7,
   },
-  summaryText: {
+  labelText: {
     fontSize: 14,
     color: "#555",
-    flex: 1,
+    minWidth: 75, // Fixed width for label alignment
     lineHeight: 20,
+  },
+  valueContainer: {
+    flexDirection: "row",
+    flex: 1,
+    alignItems: "center",
   },
   summaryValue: {
     fontWeight: "bold",
-    color: "#1A1A1A",
-  },
-  summaryStatus: {
-    fontWeight: "bold",
+    minWidth: 50, // Ensure minimum width for value alignment
   },
   referenceText: {
     fontSize: 12,

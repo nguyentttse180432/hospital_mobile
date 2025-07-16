@@ -9,6 +9,7 @@ import {
   StatusBar,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 const DoneCheckup = () => {
   const navigation = useNavigation();
@@ -38,6 +39,13 @@ const DoneCheckup = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#ffffff" barStyle="dark-content" />
       <View style={styles.screenContainer}>
+        {/* Back button to ExaminationMain */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.navigate("ExaminationMain")}
+        >
+          <Ionicons name="chevron-back" size={28} color="#333" />
+        </TouchableOpacity>
         <View style={styles.content}>
           <Text style={styles.successTitle}>Khám thành công</Text>
           <Text style={styles.successMessage}>
@@ -152,6 +160,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#555",
     marginVertical: 3,
+  },
+  backButton: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    zIndex: 10,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 4,
+    elevation: 2,
   },
 });
 
