@@ -3,7 +3,6 @@ import { createStackNavigator } from "@react-navigation/stack";
 import ExaminationRecordsScreen from "../screens/examination/ExaminationRecordsScreen";
 import AppointmentDetailScreen from "../screens/appointment/AppointmentDetailScreen";
 import FeedbackScreen from "../screens/appointment/FeedbackScreen";
-import TodayCheckupScreen from "../screens/checkupRecord/TodayCheckupScreen";
 import CheckupStepsScreen from "../screens/checkupRecord/CheckupStepsScreen";
 import DoneCheckup from "../screens/checkupRecord/DoneCheckup";
 import CheckupResultsScreen from "../screens/checkupRecord/CheckupResultsScreen";
@@ -28,7 +27,6 @@ const ExaminationNavigator = () => {
         name="AppointmentDetail"
         component={AppointmentDetailScreen}
       />
-      <Stack.Screen name="TodayCheckup" component={TodayCheckupScreen} />
       <Stack.Screen name="CheckupSteps" component={CheckupStepsScreen} />
       <Stack.Screen name="FeedbackScreen" component={FeedbackScreen} />
       <Stack.Screen name="DoneCheckup" component={DoneCheckup} />

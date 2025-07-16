@@ -106,15 +106,6 @@ const PrescriptionScreen = ({ route, navigation }) => {
     };
   }, [checkupCode]);
 
-  const handlePayment = () => {
-    setShowPayment(true);
-  };
-
-  const handleSelectPayment = (method) => {
-    setShowPayment(false);
-    Alert.alert("Thanh toán", `Chọn thanh toán: ${method}`);
-  };
-
   const handleOpenPdf = async () => {
     if (prescription?.resultLink) {
       try {

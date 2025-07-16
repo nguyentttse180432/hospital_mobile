@@ -1,4 +1,4 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,19 +10,29 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { getMedicationsByCheckupRecord } from "../../services/checkupRecordService"; // Import service to fetch checkup record details
 
 const DoneCheckup = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const [prescription, setPrescription] = useState(null);
+  const [loading, setLoading] = useState(false);
   // Get optional parameters if passed from previous screen
   const { checkupCode, patientName } = route.params || {};
 
-  const handleGoHome = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "Main" }],
-    });
-  };
+  useEffect(() => {
+    if (checkupCode) {
+      setLoading(true);
+      getMedicationsByCheckupRecord(checkupCode)
+        .then((res) => {
+          setPrescription(res.value);
+        })
+        .catch(() => Alert.alert("Lỗi", "Không thể tải đơn thuốc"))
+        .finally(() => setLoading(false));
+    }
+  }, [checkupCode]);
+  console.log("Prescription code:", prescription?.code);
+  console.log("Prescription status:", prescription?.prescriptionStatus);
 
   const handleViewResults = () => {
     if (checkupCode) {
@@ -65,8 +75,8 @@ const DoneCheckup = () => {
             <Text style={styles.homeButtonText}>Xem kết quả khám</Text>
           </TouchableOpacity>
 
-          {/* Nút xem thuốc */}
-          {checkupCode && (
+          {/* Nút xem thuốc hoặc lấy thuốc */}
+          {checkupCode && prescription && (
             <TouchableOpacity
               style={[
                 styles.homeButton,
@@ -77,7 +87,9 @@ const DoneCheckup = () => {
               }
             >
               <Text style={[styles.homeButtonText, { color: "#fff" }]}>
-                Xem thuốc
+                {prescription.prescriptionStatus === "Unpaid"
+                  ? "Lấy thuốc"
+                  : "Xem thuốc"}
               </Text>
             </TouchableOpacity>
           )}
@@ -125,7 +137,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: 30,
   },
   successImage: {
     width: "80%",
@@ -163,7 +175,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: "absolute",
-    top: 10,
+    top: 35,
     left: 10,
     zIndex: 10,
     backgroundColor: "#fff",

@@ -9,15 +9,16 @@ import {
   ActivityIndicator,
   Platform,
   StatusBar,
-  ScrollView,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import ScreenContainer from "../../components/common/ScreenContainer";
 import Card from "../../components/common/Card";
-import { getCheckupRecordResults } from "../../services/checkupRecordService";
+import {
+  getCheckupRecordResults,
+  getMedicationsByCheckupRecord,
+} from "../../services/checkupRecordService";
 import * as FileUtils from "../../utils/fileUtils";
 import Icon from "react-native-vector-icons/Ionicons";
-import PrescriptionScreen from "./PrescriptionScreen";
 
 const CheckupResultsScreen = () => {
   const navigation = useNavigation();
@@ -26,10 +27,11 @@ const CheckupResultsScreen = () => {
 
   const [loading, setLoading] = useState(true);
   const [results, setResults] = useState([]);
-  const [patientInfo, setPatientInfo] = useState(null);
+  const [prescription, setPrescription] = useState(null);
 
   useEffect(() => {
     fetchResults();
+    fetchPrescription();
   }, [checkupCode]);
 
   const fetchResults = async () => {
@@ -58,6 +60,16 @@ const CheckupResultsScreen = () => {
     }
   };
 
+  const fetchPrescription = async () => {
+    try {
+      const response = await getMedicationsByCheckupRecord(checkupCode);
+      setPrescription(response.value);
+    } catch (error) {
+      console.error("Error fetching prescription:", error);
+      Alert.alert("Lỗi", "Không thể tải đơn thuốc");
+    }
+  };
+
   const navigateToServiceDetail = (service) => {
     navigation.navigate("CheckupResultDetail", {
       serviceId: service.id,
@@ -65,19 +77,6 @@ const CheckupResultsScreen = () => {
       serviceCode: service.serviceCode,
     });
   };
-
-  const renderCustomHeader = () => (
-    <View style={styles.customHeader}>
-      <TouchableOpacity
-        style={styles.headerBackButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Icon name="chevron-back" size={24} color="#fff" />
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>Kết quả khám bệnh</Text>
-      <View style={styles.headerRightPlaceholder} />
-    </View>
-  );
 
   const getServiceIcon = (serviceName, hasFiles, hasStepValues) => {
     const name = serviceName?.toLowerCase() || "";
@@ -251,6 +250,22 @@ const CheckupResultsScreen = () => {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.servicesList}
             showsVerticalScrollIndicator={false}
+            ListFooterComponent={
+              checkupCode && prescription ? (
+                <TouchableOpacity
+                  style={styles.prescriptionButton}
+                  onPress={() =>
+                    navigation.navigate("PrescriptionScreen", { checkupCode })
+                  }
+                >
+                  <Text style={styles.prescriptionButtonText}>
+                    {prescription.prescriptionStatus === "Unpaid"
+                      ? "Lấy thuốc"
+                      : "Xem thuốc"}
+                  </Text>
+                </TouchableOpacity>
+              ) : null
+            }
           />
         )}
       </View>
@@ -273,33 +288,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
   },
-  customHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#4299e1",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight + 10 : 10,
-    paddingBottom: 10,
-    paddingHorizontal: 16,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  headerBackButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-    flex: 1,
-  },
-  headerRightPlaceholder: {
-    width: 40,
-  },
   patientCard: {
     margin: 12,
     padding: 16,
@@ -321,37 +309,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
   },
-  summaryCard: {
+  prescriptionButton: {
+    backgroundColor: "#4299e1",
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 30,
     marginHorizontal: 12,
-    marginBottom: 12,
-    padding: 16,
+    marginTop: 10,
+    alignSelf: "center",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  summaryTitle: {
+  prescriptionButtonText: {
+    color: "#fff",
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 12,
-  },
-  summaryGrid: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  summaryItem: {
-    alignItems: "center",
-  },
-  summaryNumber: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#4299e1",
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 4,
+    fontWeight: "600",
+    textAlign: "center",
   },
   servicesList: {
     paddingHorizontal: 12,
-    paddingBottom: 10, // Increased padding to ensure content is not obscured by bottom tabs
+    paddingBottom: 10, // Added paddingBottom to ensure button has space at the bottom
   },
   serviceCard: {
     backgroundColor: "#fff",
@@ -404,6 +384,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 12,
     fontWeight: "500",
+    color: "#666",
   },
   fileCount: {
     fontSize: 12,
