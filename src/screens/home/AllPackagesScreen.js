@@ -12,7 +12,6 @@ import {
 import { getMedicalPackages } from "../../services/medicalPackageService";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
-import PackageDetailModal from "../../components/common/PackageDetailModal";
 import { usePackageModal } from "../../hooks/usePackageModal";
 import ScreenContainer from "../../components/common/ScreenContainer";
 
@@ -53,12 +52,16 @@ const AllPackagesScreen = () => {
   };
 
   const handleSelectPackage = (pkg) => {
-    navigation.navigate("PackageDetailScreen", { packageId: pkg.id });
+    // Truyền toàn bộ danh sách và index hiện tại
+    navigation.navigate("PackageDetailScreen", {
+      packages: filteredPackages,
+      initialIndex: filteredPackages.findIndex((p) => p.id === pkg.id),
+    });
   };
 
-  const showPackageDetails = (pkg, e) => {
-    if (e) e.stopPropagation();
-    packageModal.showPackageDetails(pkg);
+  // Không dùng modal nữa, chỉ chuyển screen
+  const showPackageDetails = (pkg) => {
+    handleSelectPackage(pkg);
   };
 
   const handleSearch = (text) => {
@@ -102,7 +105,7 @@ const AllPackagesScreen = () => {
   const renderPackageItem = ({ item }) => (
     <TouchableOpacity
       style={styles.packageItem}
-      onPress={() => handleSelectPackage(item)}
+      onPress={() => showPackageDetails(item)}
     >
       <View style={styles.packageDetails}>
         <View style={styles.headerRow}>
@@ -116,7 +119,7 @@ const AllPackagesScreen = () => {
         </Text>
         <TouchableOpacity
           style={styles.viewDetailsButton}
-          onPress={(e) => showPackageDetails(item, e)}
+          onPress={() => showPackageDetails(item)}
         >
           <Icon name="eye-outline" size={18} color="#0071CE" />
           <Text style={styles.viewDetailsText}>Xem chi tiết</Text>
@@ -154,20 +157,9 @@ const AllPackagesScreen = () => {
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer title="Tất cả gói khám" onBack={() => navigation.goBack()}>
       <View style={styles.container}>
         <StatusBar backgroundColor="#f8f9fa" barStyle="dark-content" />
-
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Icon name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.screenTitle}>Tất cả gói khám</Text>
-          <View style={styles.placeholderView} />
-        </View>
 
         {/* Search input */}
         <View style={styles.searchContainer}>
@@ -221,27 +213,7 @@ const AllPackagesScreen = () => {
           }
         />
 
-        {/* Use our reusable Package Detail Modal */}
-        <PackageDetailModal
-          visible={packageModal.modalVisible}
-          onClose={packageModal.closeModal}
-          packageDetails={packageModal.selectedPackageDetails}
-          packages={filteredPackages}
-          currentIndex={packageModal.currentPackageIndex}
-          onNavigate={packageModal.handleNavigatePackage}
-          onBookPackage={(packageId) => {
-            handleSelectPackage({ id: packageId });
-            packageModal.closeModal();
-          }}
-          swipeDistance={packageModal.swipeDistance}
-          fadeAnim={packageModal.fadeModalAnim}
-          scaleAnim={packageModal.scaleAnim}
-          indicatorAnim={packageModal.indicatorAnim}
-          isTransitioning={packageModal.isTransitioning}
-          canSwipe={packageModal.canSwipe}
-          panResponder={packageModal.panResponder}
-          showBookButton={false}
-        />
+        {/* Đã bỏ modal, chỉ chuyển screen khi nhấn */}
       </View>
     </ScreenContainer>
   );
@@ -252,26 +224,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f7fa",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: "#fff",
-    elevation: 2,
-  },
-  backButton: {
-    padding: 8,
-  },
-  screenTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  placeholderView: {
-    width: 40,
-  },
+  // ...existing code...
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",

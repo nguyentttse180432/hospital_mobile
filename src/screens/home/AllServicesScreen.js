@@ -50,11 +50,7 @@ const AllServicesScreen = () => {
       setLoading(false);
     }
   };
-
-  const handleSelectService = (service) => {
-    navigation.navigate("ServiceDetailScreen", { serviceId: service.id });
-  };
-
+  
   const showServiceDetails = (service) => {
     setSelectedServiceDetails(service);
     setModalVisible(true);
@@ -139,22 +135,13 @@ const AllServicesScreen = () => {
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer
+      title="Tất cả gói khám"
+      onBack={() => navigation.goBack()}
+    >
       <View style={styles.container}>
         <StatusBar backgroundColor="#f8f9fa" barStyle="dark-content" />
 
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Icon name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.screenTitle}>Tất cả dịch vụ</Text>
-          <View style={styles.placeholderView} />
-        </View>
-
-        {/* Search input */}
         <View style={styles.searchContainer}>
           <Icon
             name="search"

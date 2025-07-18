@@ -5,11 +5,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import Button from "../../common/Button";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { getCurrentMonthDate } from "../../../services/workingDateService";
 import { getSystemTime } from "../../../services/workingDateService";
+
+const { width: screenWidth } = Dimensions.get("window");
 
 const DateSelection = ({
   currentDate,
@@ -244,11 +247,6 @@ const DateSelection = ({
 
     // Add actual days
     for (let day = 1; day <= daysInMonth; day++) {
-      const isToday =
-        displayYear === currentYear &&
-        displayMonth === currentMonth &&
-        day === currentDay;
-
       const selectedDay = currentDate
         ? parseInt(currentDate.split("/")[0])
         : null;
@@ -257,7 +255,6 @@ const DateSelection = ({
       const dateToCheck = new Date(displayYear, displayMonth, day);
       const todayDate = new Date();
 
-      // Check if the date is in the past
       const isPast =
         dateToCheck <
         new Date(
@@ -266,17 +263,14 @@ const DateSelection = ({
           todayDate.getDate()
         );
 
-      // Check if it's a working day from API
       const isWorkingDayFromApi = isWorkingDay(displayYear, displayMonth, day);
 
-      // Check if date is within the allowed booking window (24 hours or next valid day)
       const isInBookingWindow = isWithinBookingWindow(
         displayYear,
         displayMonth,
         day
       );
 
-      // Date is available if it's not in the past, it's a working day, and it's within the booking window
       const isAvailable = !isPast && isWorkingDayFromApi && isInBookingWindow;
 
       days.push(
@@ -285,7 +279,6 @@ const DateSelection = ({
           style={[
             styles.day,
             isSelected && styles.selectedDay,
-            isToday && styles.todayDay,
             !isAvailable && styles.unavailableDay,
           ]}
           onPress={() => {
@@ -300,7 +293,6 @@ const DateSelection = ({
             style={[
               styles.dayText,
               isSelected && styles.selectedDayText,
-              isToday && styles.todayDayText,
               !isAvailable && styles.unavailableDayText,
             ]}
           >
@@ -337,7 +329,7 @@ const DateSelection = ({
   if (systemTimeLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1976d2" />
+        <ActivityIndicator size="large" color="#2196F3" />
         <Text style={styles.loadingText}>Đang lấy thời gian hệ thống...</Text>
       </View>
     );
@@ -354,7 +346,7 @@ const DateSelection = ({
     <View style={styles.container}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1976d2" />
+          <ActivityIndicator size="large" color="#2196F3" />
           <Text style={styles.loadingText}>
             Đang tải thông tin ngày làm việc...
           </Text>
@@ -364,9 +356,14 @@ const DateSelection = ({
           {/* Month navigation */}
           <View style={styles.monthNavigation}>
             <TouchableOpacity
-              style={styles.navButton}
+              style={[
+                styles.navButton,
+                (displayYear < currentYear ||
+                  (displayYear === currentYear &&
+                    displayMonth < currentMonth)) &&
+                  styles.navButtonDisabled,
+              ]}
               onPress={goToPreviousMonth}
-              // Disable going to past months
               disabled={
                 displayYear < currentYear ||
                 (displayYear === currentYear && displayMonth < currentMonth)
@@ -374,39 +371,29 @@ const DateSelection = ({
             >
               <Ionicons
                 name="chevron-back"
-                size={24}
-                style={[
-                  styles.navButtonIcon,
-                  (displayYear < currentYear ||
-                    (displayYear === currentYear &&
-                      displayMonth < currentMonth)) &&
-                    styles.navButtonDisabled,
-                ]}
+                size={20}
+                color={
+                  displayYear < currentYear ||
+                  (displayYear === currentYear && displayMonth < currentMonth)
+                    ? "#BDBDBD"
+                    : "#2196F3"
+                }
               />
             </TouchableOpacity>
-            <Text style={styles.month}>
-              {
-                [
-                  "Tháng 1",
-                  "Tháng 2",
-                  "Tháng 3",
-                  "Tháng 4",
-                  "Tháng 5",
-                  "Tháng 6",
-                  "Tháng 7",
-                  "Tháng 8",
-                  "Tháng 9",
-                  "Tháng 10",
-                  "Tháng 11",
-                  "Tháng 12",
-                ][displayMonth]
-              }
-              - {displayYear}
+
+            <Text style={styles.monthTitle}>
+              Tháng {displayMonth + 1} - {displayYear}
             </Text>
+
             <TouchableOpacity
-              style={styles.navButton}
+              style={[
+                styles.navButton,
+                ((displayYear === nextValidDate.getFullYear() &&
+                  displayMonth >= nextValidDate.getMonth()) ||
+                  displayYear > nextValidDate.getFullYear()) &&
+                  styles.navButtonDisabled,
+              ]}
               onPress={goToNextMonth}
-              // Disable going beyond the month of the next valid date
               disabled={
                 (displayYear === nextValidDate.getFullYear() &&
                   displayMonth >= nextValidDate.getMonth()) ||
@@ -415,21 +402,21 @@ const DateSelection = ({
             >
               <Ionicons
                 name="chevron-forward"
-                size={24}
-                style={[
-                  styles.navButtonIcon,
-                  ((displayYear === nextValidDate.getFullYear() &&
+                size={20}
+                color={
+                  (displayYear === nextValidDate.getFullYear() &&
                     displayMonth >= nextValidDate.getMonth()) ||
-                    displayYear > nextValidDate.getFullYear()) &&
-                    styles.navButtonDisabled,
-                ]}
+                  displayYear > nextValidDate.getFullYear()
+                    ? "#BDBDBD"
+                    : "#2196F3"
+                }
               />
             </TouchableOpacity>
           </View>
 
           {/* Booking window notice */}
           <View style={styles.noticeContainer}>
-            <Ionicons name="information-circle" size={16} color="#1976d2" />
+            <Ionicons name="information-circle" size={18} color="#2196F3" />
             <Text style={styles.noticeText}>
               {nextValidDate.getDate() === tomorrow.getDate()
                 ? "Bạn chỉ có thể đặt lịch cho hôm nay hoặc ngày mai"
@@ -438,27 +425,32 @@ const DateSelection = ({
           </View>
 
           {/* Week days header */}
-          <View style={styles.weekDays}>
-            {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((day) => (
-              <View key={day} style={styles.weekDayContainer}>
-                <Text style={styles.weekDay}>{day}</Text>
+          <View style={styles.weekDaysContainer}>
+            {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((day, index) => (
+              <View key={day} style={styles.weekDayItem}>
+                <Text
+                  style={[
+                    styles.weekDayText,
+                    (index === 0 || index === 6) && styles.weekendText,
+                  ]}
+                >
+                  {day}
+                </Text>
               </View>
             ))}
           </View>
+
           {/* Calendar grid */}
           <View style={styles.calendarGrid}>{renderCalendarDays()}</View>
+
           {/* Legend */}
-          <View style={styles.legend}>
+          <View style={styles.legendContainer}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, styles.todayDay]} />
-              <Text style={styles.legendText}>Hôm nay</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, styles.selectedDay]} />
+              <View style={[styles.legendDot, styles.selectedLegendDot]} />
               <Text style={styles.legendText}>Đã chọn</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, styles.unavailableDay]} />
+              <View style={[styles.legendDot, styles.unavailableLegendDot]} />
               <Text style={styles.legendText}>Không khả dụng</Text>
             </View>
           </View>
@@ -469,10 +461,12 @@ const DateSelection = ({
         title="Tiếp Tục"
         onPress={handleContinue}
         disabled={!currentDate}
-        style={{
-          marginTop: 16,
-          opacity: currentDate ? 1 : 0.6,
-        }}
+        style={[
+          styles.continueButton,
+          {
+            opacity: currentDate ? 1 : 0.5,
+          },
+        ]}
       />
     </View>
   );
@@ -481,136 +475,136 @@ const DateSelection = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 16,
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    backgroundColor: "#f5f5f5",
-  },
-  stepTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 20,
-    textAlign: "center",
+    backgroundColor: "#F5F7FA",
+    padding: 16,
   },
   calendar: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 3,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   monthNavigation: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
-    paddingBottom: 6,
+    marginBottom: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: "#E8EDF3",
   },
   navButton: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F8FAFC",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 16,
-    backgroundColor: "#f5f5f5",
-  },
-  navButtonIcon: {
-    color: "#1976d2",
+    borderWidth: 1,
+    borderColor: "#E8EDF3",
   },
   navButtonDisabled: {
-    color: "#ccc",
+    backgroundColor: "#F5F5F5",
   },
-  month: {
-    fontSize: 18,
+  monthTitle: {
+    fontSize: 20,
     fontWeight: "700",
-    color: "#1976d2",
+    color: "#2196F3",
+    textAlign: "center",
   },
   noticeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#e3f2fd",
-    padding: 8,
-    borderRadius: 6,
-    marginBottom: 12,
+    backgroundColor: "#E3F2FD",
+    padding: 10,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: "#2196F3",
   },
   noticeText: {
     fontSize: 12,
-    color: "#1976d2",
-    marginLeft: 4,
+    color: "#1976D2",
+    marginLeft: 8,
     flex: 1,
+    lineHeight: 20,
   },
-  weekDays: {
+  weekDaysContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-    paddingHorizontal: 0,
+    marginBottom: 12,
+    paddingHorizontal: 4,
   },
-  weekDayContainer: {
-    width: "13.8%", // Match with day cells
+  weekDayItem: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
   },
-  weekDay: {
-    textAlign: "center",
-    fontSize: 13, // Slightly larger
+  weekDayText: {
+    fontSize: 14,
     fontWeight: "600",
-    color: "#666",
+    color: "#64748B",
+  },
+  weekendText: {
+    color: "#EF4444",
   },
   calendarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    // justifyContent: "space-between",
+    paddingHorizontal: 4,
   },
   day: {
-    width: "13.8%", // Slightly smaller to fit better and remove gaps
+    width: `${100 / 7}%`,
     aspectRatio: 1,
-    marginBottom: 4,
-    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f9f9f9",
+    marginBottom: 4,
+    borderRadius: 12,
+    backgroundColor: "transparent",
   },
   dayText: {
-    fontSize: 14, // Increased from 12 to 14
-    fontWeight: "600",
-    color: "#333",
-  },
-  todayDay: {
-    backgroundColor: "#e3f2fd",
-    borderWidth: 1,
-    borderColor: "#1976d2",
-  },
-  todayDayText: {
-    color: "#1976d2",
-    fontWeight: "700",
-    fontSize: 14, // Match the increased size
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#334155",
   },
   selectedDay: {
-    backgroundColor: "#1976d2",
+    backgroundColor: "#2196F3",
+    shadowColor: "#2196F3",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   selectedDayText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontWeight: "700",
-    fontSize: 14, // Match the increased size
   },
   unavailableDay: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F8FAFC",
     opacity: 0.5,
   },
   unavailableDayText: {
-    color: "#bdbdbd",
+    color: "#CBD5E1",
   },
-  legend: {
+  legendContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    paddingTop: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 16,
+    marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
+    borderTopColor: "#E8EDF3",
+    gap: 24,
   },
   legendItem: {
     flexDirection: "row",
@@ -620,55 +614,51 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    marginRight: 4,
+    marginRight: 8,
+  },
+  selectedLegendDot: {
+    backgroundColor: "#2196F3",
+  },
+  unavailableLegendDot: {
+    backgroundColor: "#CBD5E1",
   },
   legendText: {
-    fontSize: 10,
-    color: "#666",
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: "500",
+  },
+  continueButton: {
+    marginTop: 8,
+    borderRadius: 12,
+    paddingVertical: 16,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 40,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#666",
+    color: "#64748B",
     textAlign: "center",
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 40,
   },
   errorText: {
-    marginTop: 12,
     fontSize: 16,
-    color: "#f44336",
+    color: "#EF4444",
     textAlign: "center",
-    marginBottom: 16,
-  },
-  retryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-  },
-  retryText: {
-    marginLeft: 8,
-    color: "#1976d2",
-    fontWeight: "600",
-  },
-  restrictionNotice: {
-    fontSize: 12,
-    color: "#f44336",
-    fontStyle: "italic",
-    marginTop: 10,
-    textAlign: "center",
+    lineHeight: 24,
   },
 });
 

@@ -53,7 +53,7 @@ const AppointmentSelection = ({
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container}>
       <View style={styles.selectionSection}>
         <Text style={styles.sectionTitle}>Chọn dịch vụ </Text>
 
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   priceSection: {
     backgroundColor: "#fff",
     marginHorizontal: 16,
-    marginVertical: 16,
+    marginTop: 16,
     borderRadius: 12,
     padding: 16,
     elevation: 2,
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 16,
     paddingVertical: 20,
-    paddingBottom: 30,
+    paddingBottom: 50,
   },
 });
 export default AppointmentSelection;

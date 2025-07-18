@@ -260,10 +260,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#1976d2",
     marginBottom: 4,
+    marginTop: 8,
   },
   patientInfoContainer: {
     marginTop: 10,
-    marginBottom: 10,
+    marginBottom: 1,
   },
   patientInfo: {
     backgroundColor: "#fff",
@@ -326,6 +327,7 @@ const styles = StyleSheet.create({
   appointmentSummary: {
     backgroundColor: "#fff",
     marginHorizontal: 16,
+    marginTop: 5,
     borderRadius: 12,
     paddingVertical: 5,
     paddingHorizontal: 16,
@@ -454,9 +456,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
   },
   confirmButton: {
     width: "100%",

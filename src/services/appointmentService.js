@@ -1,6 +1,8 @@
 import api from "./api";
 
 export const createAppointment = async (appointmentData) => {
+  console.log("Creating appointment with data:", appointmentData.services);
+  
   try {
     const response = await api.post("/Appointments", appointmentData);
     return response.data;

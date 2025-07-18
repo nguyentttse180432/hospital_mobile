@@ -182,11 +182,7 @@ const TimeSelection = ({
           >
             {item.time}
           </Text>
-          {isSelected && (
-            <View style={styles.checkmarkContainer}>
-              <Icon name="checkmark-circle" size={20} color="#0071CE" />
-            </View>
-          )}
+         
           {!isAvailable && (
             <View style={styles.unavailableContainer}>
               <Text style={styles.unavailableLabel}>
@@ -378,9 +374,7 @@ const styles = StyleSheet.create({
   unavailableTimeText: {
     color: "#999",
   },
-  checkmarkContainer: {
-    marginTop: 8,
-  },
+ 
   unavailableContainer: {
     marginTop: 4,
     alignItems: "center",

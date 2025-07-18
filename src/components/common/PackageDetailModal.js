@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,10 +11,13 @@ import {
   Dimensions,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { SwipeGesture } from "react-native-swipe-gesture-handler";
 
 const { width } = Dimensions.get("window");
 
-// Function to translate category names to Vietnamese
+const SWIPE_THRESHOLD = width * 0.25;
+const SWIPE_VELOCITY_THRESHOLD = 0.5;
+
 const translateCategoryName = (name) => {
   const translations = {
     Ophthalmology: "Nhãn khoa",
@@ -34,29 +37,117 @@ const translateCategoryName = (name) => {
     Oncology: "Ung bướu",
     Psychology: "Tâm lý",
   };
-
-  return translations[name] || name; // Return the translated name or original if no translation exists
+  return translations[name] || name;
 };
 
 const PackageDetailModal = ({
   visible,
   onClose,
-  packageDetails,
   packages,
-  currentIndex,
-  onNavigate,
+  initialIndex = 0,
   onBookPackage,
-  swipeDistance,
-  fadeAnim,
-  scaleAnim,
-  indicatorAnim,
-  isTransitioning,
-  canSwipe,
-  panResponder,
   showBookButton = false,
   bookButtonText = "Đặt lịch gói này",
 }) => {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const translateX = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+
   const scrollViewRef = useRef(null);
+
+  useEffect(() => {
+    setCurrentIndex(initialIndex);
+  }, [initialIndex, packages]);
+
+  useEffect(() => {
+    translateX.setValue(0);
+    opacity.setValue(1);
+    scale.setValue(1);
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: false });
+    }
+  }, [currentIndex]);
+
+  const currentPackage = packages[currentIndex];
+
+  const navigateToPackage = (direction) => {
+    if (isTransitioning) return;
+
+    const newIndex = currentIndex + direction;
+    if (newIndex < 0 || newIndex >= packages.length) return;
+
+    setIsTransitioning(true);
+    Vibration.vibrate(20);
+
+    Animated.parallel([
+      Animated.timing(translateX, {
+        toValue: direction > 0 ? -width : width,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 0.9,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) {
+        setCurrentIndex(newIndex);
+        translateX.setValue(direction > 0 ? width : -width);
+
+        Animated.parallel([
+          Animated.timing(translateX, {
+            toValue: 0,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+        ]).start(({ finished }) => {
+          if (finished) {
+            setIsTransitioning(false);
+          } else {
+            console.warn("Animation in failed");
+            setIsTransitioning(false);
+          }
+        });
+      } else {
+        console.warn("Animation out failed");
+        setIsTransitioning(false);
+      }
+    });
+  };
+
+  const onSwipePerformed = (action) => {
+    if (isTransitioning) return;
+    if (action === "left") {
+      if (currentIndex < packages.length - 1) {
+        navigateToPackage(1);
+      }
+    } else if (action === "right") {
+      if (currentIndex > 0) {
+        navigateToPackage(-1);
+      }
+    }
+  };
+
+  if (!currentPackage) return null;
 
   return (
     <Modal
@@ -78,38 +169,46 @@ const PackageDetailModal = ({
               <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
-          {packageDetails && (
+
+          <SwipeGesture
+            style={{ flex: 1 }}
+            onSwipePerformed={onSwipePerformed}
+            config={{
+              velocityThreshold: SWIPE_VELOCITY_THRESHOLD,
+              directionalOffsetThreshold: SWIPE_THRESHOLD,
+            }}
+          >
             <Animated.ScrollView
               ref={scrollViewRef}
               style={[
                 styles.modalBody,
                 {
-                  opacity: fadeAnim,
-                  transform: [
-                    { translateX: swipeDistance },
-                    { scale: scaleAnim },
-                  ],
+                  opacity: opacity,
+                  transform: [{ translateX: translateX }, { scale: scale }],
                 },
               ]}
-              {...panResponder.panHandlers}
               scrollEnabled={!isTransitioning}
+              showsVerticalScrollIndicator={true}
+              horizontal={false}
             >
-              <Text style={styles.detailTitle}>{packageDetails.name}</Text>
+              <Text style={styles.detailTitle}>{currentPackage.name}</Text>
               <Text style={styles.detailPrice}>
-                {packageDetails.price.toLocaleString("vi-VN")} VNĐ
+                {currentPackage.price.toLocaleString("vi-VN")} VNĐ
               </Text>
               <Text style={styles.detailDescription}>
                 <Text style={styles.detailSectionInline}>Mô tả: </Text>
-                {packageDetails.description}
+                {currentPackage.description}
               </Text>
+
               <Text style={styles.detailSectionTitle}>
                 Các xét nghiệm bao gồm:
               </Text>
-              {packageDetails.details &&
-              packageDetails.details.testCategories &&
-              packageDetails.details.testCategories.length > 0 ? (
+
+              {currentPackage.details &&
+              currentPackage.details.testCategories &&
+              currentPackage.details.testCategories.length > 0 ? (
                 <View style={styles.testCategoriesContainer}>
-                  {packageDetails.details.testCategories.map(
+                  {currentPackage.details.testCategories.map(
                     (category, index) => (
                       <View key={index} style={styles.categorySection}>
                         {category.name && (
@@ -147,19 +246,19 @@ const PackageDetailModal = ({
                     )
                   )}
                 </View>
-              ) : packageDetails.type ? (
+              ) : currentPackage.type ? (
                 <View style={styles.typeContainer}>
                   <View style={styles.serviceItem}>
                     <Icon name="medical" size={16} color="#0071CE" />
                     <Text style={styles.serviceText}>
-                      Loại gói: {packageDetails.type}
+                      Loại gói: {currentPackage.type}
                     </Text>
                   </View>
-                  {packageDetails.targetGroup && (
+                  {currentPackage.targetGroup && (
                     <View style={styles.serviceItem}>
                       <Icon name="people" size={16} color="#0071CE" />
                       <Text style={styles.serviceText}>
-                        Đối tượng: {packageDetails.targetGroup}
+                        Đối tượng: {currentPackage.targetGroup}
                       </Text>
                     </View>
                   )}
@@ -176,70 +275,20 @@ const PackageDetailModal = ({
                 </Text>
               )}
             </Animated.ScrollView>
-          )}
+          </SwipeGesture>
 
-          {/* Enhanced Navigation Buttons */}
           {packages.length > 1 && (
-            <View style={styles.navigationButtonsContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.navigationButton,
-                  isTransitioning && styles.navigationButtonDisabled,
-                ]}
-                onPress={() => {
-                  if (!isTransitioning) {
-                    Vibration.vibrate(20);
-                    onNavigate("prev");
-                  }
-                }}
-                disabled={isTransitioning}
-              >
-                <Icon
-                  name="chevron-back"
-                  size={24}
-                  color={isTransitioning ? "#ccc" : "#0071CE"}
-                />
-              </TouchableOpacity>
-
-              <View style={styles.navigationDots}>
-                {packages.map((_, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.navigationDot,
-                      index === currentIndex && styles.navigationDotActive,
-                    ]}
-                  />
-                ))}
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.navigationButton,
-                  isTransitioning && styles.navigationButtonDisabled,
-                ]}
-                onPress={() => {
-                  if (!isTransitioning) {
-                    Vibration.vibrate(20);
-                    onNavigate("next");
-                  }
-                }}
-                disabled={isTransitioning}
-              >
-                <Icon
-                  name="chevron-forward"
-                  size={24}
-                  color={isTransitioning ? "#ccc" : "#0071CE"}
-                />
-              </TouchableOpacity>
+            <View style={styles.swipeHintContainer}>
+              <Text style={styles.swipeHintText}>
+                Vuốt trái/phải để xem các gói khác
+              </Text>
             </View>
           )}
 
-          {/* Book Package Button - Only shown when showBookButton is true */}
-          {showBookButton && packageDetails && (
+          {showBookButton && currentPackage && (
             <TouchableOpacity
               style={styles.bookPackageButton}
-              onPress={() => onBookPackage(packageDetails.id)}
+              onPress={() => onBookPackage(currentPackage.id)}
               disabled={isTransitioning}
             >
               <Text style={styles.bookPackageButtonText}>{bookButtonText}</Text>
@@ -287,13 +336,10 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
-  detailDescriptionContainer: {
-    marginTop: 8,
-    marginBottom: 16,
-  },
   modalBody: {
     padding: 16,
-    paddingBottom: 24,
+    paddingBottom: 0,
+    minHeight: 300, // Ensure sufficient touch area
   },
   detailTitle: {
     fontSize: 20,
@@ -345,6 +391,7 @@ const styles = StyleSheet.create({
   },
   categorySection: {
     marginBottom: 12,
+    marginLeft: 12,
   },
   categoryName: {
     fontSize: 15,
@@ -359,45 +406,16 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
   },
-  // Enhanced navigation styles
-  navigationButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  swipeHintContainer: {
     alignItems: "center",
-    padding: 16,
+    paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: "#f0f0f0",
   },
-  navigationButton: {
-    backgroundColor: "#f0f0f0",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 2,
-  },
-  navigationButtonDisabled: {
-    backgroundColor: "#f8f8f8",
-    elevation: 0,
-  },
-  navigationDots: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  navigationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#ddd",
-    marginHorizontal: 3,
-  },
-  navigationDotActive: {
-    backgroundColor: "#0071CE",
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  swipeHintText: {
+    fontSize: 12,
+    color: "#888",
+    fontStyle: "italic",
   },
   bookPackageButton: {
     backgroundColor: "#0071CE",

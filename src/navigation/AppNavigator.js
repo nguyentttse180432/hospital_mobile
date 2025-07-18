@@ -11,6 +11,7 @@ import BottomTabNavigator from "./BottomTabNavigator";
 import HomeScreen from "../screens/home/HomeScreen";
 import PatientScreen from "../screens/account/ProfileScreen";
 import AllPackagesScreen from "../screens/home/AllPackagesScreen";
+import PackageDetailScreen from "../screens/home/PackageDetailScreen";
 import AllServicesScreen from "../screens/home/AllServicesScreen";
 import CheckupResultsScreen from "../screens/checkupRecord/CheckupResultsScreen";
 import CheckupResultDetailScreen from "../screens/checkupRecord/CheckupResultDetailScreen";
@@ -71,6 +72,11 @@ const AppNavigator = () => {
         <Stack.Screen
           name="AllPackagesScreen"
           component={AllPackagesScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PackageDetailScreen"
+          component={PackageDetailScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen

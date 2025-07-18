@@ -29,6 +29,7 @@ const PaymentScreen = ({
   setStep,
   setAppointment, // Thêm prop này để truyền dữ liệu appointment lên cha
 }) => {
+  
   useEffect(() => {
     // ✅ Hàm parse query chuẩn, xử lý + thành space
     const parseQueryParams = (url) => {
@@ -54,14 +55,19 @@ const PaymentScreen = ({
           // Lấy lại thông tin appointment từ code
           if (result.isSuccess) {
             const appointmentData = await getAppointmentByCode(appointmentCode);
-            if (appointmentData?.isSuccess) {
+            console.log("Appointment code:", appointmentCode);
+            console.log("Appointment data from code:", appointmentData);
+            if (appointmentData.value) {
               setAppointment(appointmentData.value);
             }
           }
           console.log("Payment successful, appointment data:", appointment);
           setStep && setStep(5); // Chuyển bước khi thanh toán thành công
         } catch (err) {
-          console.error("[VNPay] Error fetching payment result:", err.response.data);
+          console.error(
+            "[VNPay] Error fetching payment result:",
+            err.response.data
+          );
         }
       } else if (params.vnp_ResponseCode) {
         console.log(
@@ -91,47 +97,75 @@ const PaymentScreen = ({
   }, []);
 
   // Gộp logic thanh toán vào một hàm duy nhất
-  const handlePay = async () => {
-    if (paymentMethod === "VNPay") {
-      // 1. Gọi API tạo appointment, lấy code
-      const code = await handlePayment();
-      if (!code) return; // Nếu lỗi thì dừng lại
-      // 2. Gọi getPaymentUrl và mở VNPay
-      try {
-        const paymentData = await getPaymentAppointmentUrl(code);
-        const paymentUrl = paymentData?.value;
-        if (!paymentUrl) {
-          console.warn("Không lấy được URL thanh toán từ server!");
-          return;
-        }
-        VnpayMerchant.show({
-          isSandbox: true,
-          scheme: "com.hospital.app",
-          backAlert: "Bạn có chắc chắn trở lại không?",
-          paymentUrl: paymentUrl,
-          title: "Thanh toán",
-          titleColor: "#E26F2C",
-          beginColor: "#F06744",
-          endColor: "#E26F2C",
-          iconBackName: "ion_back",
-          tmn_code: "OIL8C48D",
-        });
-      } catch (error) {
-        console.error("Lỗi khi lấy URL thanh toán:", error);
-      }
-    } else if (paymentMethod === "Cash") {
-      // Gọi API tạo appointment, sau đó chuyển sang bước xác nhận
-      const code = await handlePayment();
-      if (code) {
-        setStep(5);
-      }
-    } else {
-      // Các phương thức khác (MoMo, ...)
-      // Có thể bổ sung logic tương tự nếu cần
-      console.warn("Chưa hỗ trợ phương thức này");
-    }
-  };
+ const handlePay = async () => {
+   if (paymentMethod === "VNPay") {
+     // 1. Gọi API tạo appointment, lấy code
+     const code = await handlePayment();
+     if (!code) return; // Nếu lỗi thì dừng lại
 
+     // 2. Gọi getPaymentUrl và mở VNPay
+     try {
+       const paymentData = await getPaymentAppointmentUrl(code);
+       const paymentUrl = paymentData?.value;
+       if (!paymentUrl) {
+         console.warn("Không lấy được URL thanh toán từ server!");
+         return;
+       }
+       VnpayMerchant.show({
+         isSandbox: true,
+         scheme: "com.hospital.app",
+         backAlert: "Bạn có chắc chắn trở lại không?",
+         paymentUrl: paymentUrl,
+         title: "Thanh toán",
+         titleColor: "#E26F2C",
+         beginColor: "#F06744",
+         endColor: "#E26F2C",
+         iconBackName: "ion_back",
+         tmn_code: "OIL8C48D",
+       });
+     } catch (error) {
+       console.error("Lỗi khi lấy URL thanh toán:", error);
+     }
+   } else if (paymentMethod === "Cash") {
+     // 1. Gọi handlePayment() để tạo appointment
+     const code = await handlePayment();
+     if (!code) {
+       console.error("Không tạo được lịch hẹn!");
+       return;
+     }
+     console.log("Appointment created successfully, code:", code);
+
+     // 2. Lấy thông tin appointment từ code
+     try {
+       const appointmentData = await getAppointmentByCode(code);
+       console.log("Appointment data:", appointmentData);
+       if (appointmentData?.isSuccess) {
+         // Cập nhật appointment trước khi chuyển bước
+         await new Promise((resolve) => {
+           setAppointment(appointmentData.value);
+           resolve();
+         });
+         setStep(5); // Chuyển sang bước xác nhận sau khi appointment được cập nhật
+       } else {
+         console.error(
+           "Không lấy được thông tin appointment:",
+           appointmentData
+         );
+         Alert.alert(
+           "Lỗi",
+           "Không thể lấy thông tin lịch khám. Vui lòng thử lại."
+         );
+       }
+     } catch (error) {
+       console.error("Lỗi khi lấy thông tin appointment:", error);
+       Alert.alert("Lỗi", "Có lỗi xảy ra khi xử lý thông tin lịch khám.");
+     }
+   } else {
+     // Các phương thức khác (MoMo, ...)
+     console.warn("Chưa hỗ trợ phương thức này");
+     Alert.alert("Thông báo", "Phương thức thanh toán này chưa được hỗ trợ.");
+   }
+ };
   const totalFee = totalAmount || 0;
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

@@ -1,7 +1,5 @@
 import AppNavigator from "./src/navigation/AppNavigator";
 
-const App = () => {
-  return <AppNavigator />;
-};
+const App = () => <AppNavigator />;
 
 export default App;

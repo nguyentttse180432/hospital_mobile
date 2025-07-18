@@ -133,6 +133,7 @@ const AppointmentScreen = ({ navigation }) => {
       ) {
         code = response.value.code;
         setAppointmentCode(code);
+        setAppointment(response.value);
       } else if (
         response &&
         response.data &&
@@ -141,6 +142,10 @@ const AppointmentScreen = ({ navigation }) => {
       ) {
         code = response.data.value.code;
         setAppointmentCode(code);
+        setAppointment(response.data.value);
+      }
+      if(paymentMethod === "Cash") {
+        return code; // Nếu chọn thanh toán tại quầy, trả về code để hiển thị phiếu khám
       }
       // Nếu chọn VNPay, trả về code cho PaymentScreen để tiếp tục gọi getPaymentUrl
       if (paymentMethod === "VNPay") {
@@ -157,7 +162,7 @@ const AppointmentScreen = ({ navigation }) => {
       ) {
         Alert.alert(
           "Không thể đặt lịch",
-          "Bạn đã đặt lịch khám trong ngày này rồi. Mỗi bệnh nhân chỉ được đặt một lịch khám trong một ngày."
+          "Bạn đã đặt lịch khám trong ngày này rồi. Mỗi người chỉ được đặt một lịch khám trong một ngày."
         );
       } else {
         Alert.alert(

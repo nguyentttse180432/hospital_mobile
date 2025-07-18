@@ -96,6 +96,7 @@ const MedicalPackageSelection = ({
       setLoading(false);
     }
   };
+  
   const handleSelectPackage = (pkg) => {
     setCurrentPackage(pkg);
     setStep(2); // Return to main appointment selection screen instead of going directly to date selection
@@ -151,11 +152,6 @@ const MedicalPackageSelection = ({
       ]}
       onPress={() => handleSelectPackage(item)}
     >
-      {currentPackage?.id === item.id && (
-        <View style={styles.checkmark}>
-          <Icon name="checkmark-circle" size={24} color="#0071CE" />
-        </View>
-      )}
       <View style={styles.packageDetails}>
         <View style={styles.headerRow}>
           <Text style={styles.packageName}>{item.name}</Text>
@@ -360,7 +356,8 @@ const styles = StyleSheet.create({
   },
   selectedPackageItem: {
     borderWidth: 2,
-    borderColor: "#0071CE",
+    borderColor: "#0363b3ff",
+    backgroundColor: "#e6f0f9",
   },
   packageImageContainer: {
     width: 70,
@@ -404,12 +401,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "bold",
     color: "#0071CE",
-  },
-  checkmark: {
-    position: "absolute",
-    top: 0,
-    right: -1,
-    zIndex: 10,
   },
   viewDetailsButton: {
     flexDirection: "row",

@@ -24,8 +24,6 @@ import {
   useIsFocused,
 } from "@react-navigation/native";
 import { logout } from "../../services/authService";
-import PackageDetailModal from "../../components/common/PackageDetailModal";
-import { usePackageModal } from "../../hooks/usePackageModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getBottomTabSafeStyle } from "../../utils/safeAreaHelper";
 
@@ -47,9 +45,6 @@ const HomeScreen = (props) => {
   const [googleAvatar, setGoogleAvatar] = useState(null);
   const [googleUserName, setGoogleUserName] = useState(null);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
-
-  // Use our custom hook for package modal
-  const packageModal = usePackageModal(medicalPackages);
 
   // Calculate safe areas for better layout
   const getContainerStyle = () => ({
@@ -343,7 +338,15 @@ const HomeScreen = (props) => {
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.packageCard}
-                onPress={() => packageModal.showPackageDetails(item)}
+                onPress={() => {
+                  // Chuyển qua PackageDetailScreen với danh sách và index
+                  navigation.navigate("PackageDetailScreen", {
+                    packages: medicalPackages,
+                    initialIndex: medicalPackages.findIndex(
+                      (p) => p.id === item.id
+                    ),
+                  });
+                }}
               >
                 <View style={styles.packageCardContent}>
                   <Text style={styles.packageName}>{item.name}</Text>
@@ -355,10 +358,20 @@ const HomeScreen = (props) => {
                       {item.description}
                     </Text>
                   </View>
-                  <View style={styles.viewDetailsButton}>
+                  <TouchableOpacity
+                    style={styles.viewDetailsButton}
+                    onPress={() => {
+                      navigation.navigate("PackageDetailScreen", {
+                        packages: medicalPackages,
+                        initialIndex: medicalPackages.findIndex(
+                          (p) => p.id === item.id
+                        ),
+                      });
+                    }}
+                  >
                     <Icon name="eye-outline" size={18} color="#0071CE" />
                     <Text style={styles.viewDetailsText}>Xem chi tiết</Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             )}
@@ -425,27 +438,7 @@ const HomeScreen = (props) => {
         )}
       </ScrollView>
 
-      {/* Use our reusable Package Detail Modal */}
-      <PackageDetailModal
-        visible={packageModal.modalVisible}
-        onClose={packageModal.closeModal}
-        packageDetails={packageModal.selectedPackageDetails}
-        packages={medicalPackages}
-        currentIndex={packageModal.currentPackageIndex}
-        onNavigate={packageModal.handleNavigatePackage}
-        onBookPackage={(packageId) => {
-          packageModal.closeModal();
-          handleBookAppointment(packageId, false);
-        }}
-        swipeDistance={packageModal.swipeDistance}
-        fadeAnim={packageModal.fadeModalAnim}
-        scaleAnim={packageModal.scaleAnim}
-        indicatorAnim={packageModal.indicatorAnim}
-        isTransitioning={packageModal.isTransitioning}
-        canSwipe={packageModal.canSwipe}
-        panResponder={packageModal.panResponder}
-        showBookButton={false}
-      />
+      {/* Đã bỏ modal, chỉ chuyển screen khi nhấn card hoặc xem chi tiết */}
     </SafeAreaView>
   );
 };

@@ -24,7 +24,6 @@ export const getMedicalPackages = async (gender = null, age = null) => {
     }
 
     const response = await api.get(url);
-    console.log("Fetched medical packages:", response.data);
 
     // Return the entire response including isSuccess flag
     return {
