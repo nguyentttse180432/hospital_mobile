@@ -29,7 +29,9 @@ const PaymentScreen = ({
   setStep,
   setAppointment, // Thêm prop này để truyền dữ liệu appointment lên cha
 }) => {
-  
+  console.log("[PaymentScreen] Rendering with appointment:", appointment);
+  const queue = appointment?.numericalOrder || "Chưa có số thứ tự";
+
   useEffect(() => {
     // ✅ Hàm parse query chuẩn, xử lý + thành space
     const parseQueryParams = (url) => {
@@ -41,6 +43,24 @@ const PaymentScreen = ({
       });
       return params;
     };
+
+    const fetchAppointmentWithRetry = async (
+      code,
+      retries = 3,
+      delay = 500
+    ) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const data = await getAppointmentByCode(code);
+          if (data.value) return data;
+        } catch (err) {
+          if (i === retries - 1) throw err;
+          await new Promise((res) => setTimeout(res, delay));
+        }
+      }
+      return null;
+    };
+
 
     const handleDeepLink = async (event) => {
       console.log("[DEEP LINK] App opened with URL:", event.url);
@@ -54,9 +74,13 @@ const PaymentScreen = ({
           console.log("[VNPay] Payment result from server:", result);
           // Lấy lại thông tin appointment từ code
           if (result.isSuccess) {
-            const appointmentData = await getAppointmentByCode(appointmentCode);
+            const appointmentData = await fetchAppointmentWithRetry(
+              appointmentCode
+            );
             console.log("Appointment code:", appointmentCode);
             console.log("Appointment data from code:", appointmentData);
+
+            // Merge dữ liệu
             if (appointmentData.value) {
               setAppointment(appointmentData.value);
             }

@@ -1,7 +1,17 @@
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import Icon from "react-native-vector-icons/Ionicons";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Linking,
+  Animated,
+  Alert,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import Button from "../../common/Button";
 import QRCode from "react-native-qrcode-svg";
+import * as FileUtils from "../../../utils/fileUtils";
 
 const AppointmentConfirmation = ({
   appointment,
@@ -9,31 +19,45 @@ const AppointmentConfirmation = ({
   navigation,
   resetAppointment,
   appointmentCode,
+  appointmentQueue,
+  appointmentQueueUrl,
 }) => {
   console.log(
     "[AppointmentConfirmation] Rendering with appointment:",
     appointment
   );
+  console.log("[AppointmentConfirmation] Appointment queue:", appointmentQueue);
+  console.log(
+    "[AppointmentConfirmation] Appointment queue URL:",
+    appointmentQueueUrl
+  );
 
-  // Calculate total price for an appointment
-  const calculateAppointmentPrice = (appt) => {
-    if (!appt) return 0;
-    let total = 0;
-    if (appt.package) {
-      total += appt.package.price;
+  const [processedFile, setProcessedFile] = useState(null);
+  const [fadeAnim] = useState(new Animated.Value(0)); // For fade-in animation
+
+  useEffect(() => {
+    // Process appointmentQueueUrl if available
+    if (appointmentQueueUrl) {
+      const fileItem = {
+        resultFieldLink: appointmentQueueUrl,
+        fileName: "stt.pdf",
+      };
+      const processed = FileUtils.processTestResults([fileItem])[0];
+      setProcessedFile(processed);
     }
-    if (appt.services && appt.services.length > 0) {
-      total += appt.services.reduce((sum, service) => sum + service.price, 0);
-    }
-    return total;
-  };
+
+    // Trigger fade-in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, [appointmentQueueUrl]);
+
   const generateQueueNumber = () => {
-    // Sử dụng mã code từ API nếu có
     if (appointmentCode) {
       return appointmentCode;
     }
-
-    // Nếu không có mã code từ API, tạo mã tạm thời
     if (!appointment?.date) return "N/A";
     const [day, month, year] = appointment.date.split("/");
     const dateStr = `${year.substr(-2)}${month}${day}`;
@@ -41,7 +65,36 @@ const AppointmentConfirmation = ({
     return `${dateStr}${randomNum.toString().padStart(3, "0")}`;
   };
 
-  // Nếu không có appointment, hiển thị thông báo
+  const openFile = async (fileItem) => {
+    try {
+      const fileUrl = FileUtils.getFileUrl(fileItem.resultFieldLink);
+
+      if (FileUtils.isImageFile(fileItem.resultFieldLink)) {
+        navigation.navigate("ImageViewer", {
+          imageUrl: fileUrl,
+          title: fileItem.fileName || "Hình ảnh lịch khám",
+        });
+      } else if (FileUtils.isPdfFile(fileItem.resultFieldLink)) {
+        const canOpen = await Linking.canOpenURL(fileUrl);
+        if (canOpen) {
+          await Linking.openURL(fileUrl);
+        } else {
+          Alert.alert("Lỗi", "Không thể mở file PDF");
+        }
+      } else {
+        const canOpen = await Linking.canOpenURL(fileUrl);
+        if (canOpen) {
+          await Linking.openURL(fileUrl);
+        } else {
+          Alert.alert("Lỗi", "Không thể mở file này");
+        }
+      }
+    } catch (error) {
+      console.error("Error opening file:", error);
+      Alert.alert("Lỗi", "Không thể mở file");
+    }
+  };
+
   if (!appointment) {
     return (
       <View
@@ -90,7 +143,6 @@ const AppointmentConfirmation = ({
     phone: patientProfile?.phone,
   });
 
-  // Tính tổng chi phí
   const totalFee = (() => {
     const pkg = appointment?.packagePrice || 0;
     const add =
@@ -101,11 +153,9 @@ const AppointmentConfirmation = ({
     return pkg + add;
   })();
 
-  // Hàm format ngày giờ Việt Nam
   const formatVietnamTime = (isoString) => {
     if (!isoString) return "-";
     const date = new Date(isoString);
-    // Cộng thêm 7 tiếng cho UTC+7
     const vietnamTime = new Date(date.getTime() + 7 * 60 * 60 * 1000);
     const pad = (n) => n.toString().padStart(2, "0");
     const hours = pad(vietnamTime.getHours());
@@ -127,7 +177,28 @@ const AppointmentConfirmation = ({
           <View style={styles.queueInfo}>
             <Text style={styles.queueLabel}>Mã đặt lịch:</Text>
             <Text style={styles.queueNumber}>{queueNumber}</Text>
-            <Text style={styles.queueNote}>Vui lòng đến sớm 15 phút</Text>
+            {(appointment?.numericalOrder || appointmentQueue) && (
+              <View>
+                <View style={styles.queueOrderRow}>
+                  <Text style={styles.queueLabel}>Số thứ tự:</Text>
+                  <View style={styles.queueOrderContainer}>
+                    <Text style={styles.queueOrder}>
+                      {appointment?.numericalOrder || appointmentQueue}
+                    </Text>
+                  </View>
+                </View>
+                <View>
+                  {processedFile && (
+                    <Text
+                      style={styles.fileName}
+                      onPress={() => openFile(processedFile)}
+                    >
+                      stt.pdf
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
           </View>
           <View style={styles.qrCodeContainer}>
             <QRCode
@@ -163,7 +234,6 @@ const AppointmentConfirmation = ({
         </View>
         <Text style={styles.sectionTitle}>Chi tiết đặt khám</Text>
         <View style={styles.appointmentDetails}>
-          {/* Gói khám */}
           {appointment?.packageName && (
             <View>
               <View style={styles.detailRow}>
@@ -180,7 +250,6 @@ const AppointmentConfirmation = ({
               </View>
             </View>
           )}
-          {/* Dịch vụ bổ sung */}
           {appointment?.additionalServices &&
             appointment.additionalServices.length > 0 && (
               <View style={styles.servicesContainer}>
@@ -201,7 +270,6 @@ const AppointmentConfirmation = ({
                 ))}
               </View>
             )}
-          {/* Thời gian */}
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Thời gian:</Text>
             <Text style={styles.detailValue}>
@@ -212,7 +280,6 @@ const AppointmentConfirmation = ({
                 : "-"}
             </Text>
           </View>
-          {/* Tổng chi phí */}
           <View style={[styles.detailRow, styles.feeRow]}>
             <Text style={styles.detailLabel}>Tổng chi phí:</Text>
             <Text style={styles.feeValue}>
@@ -220,13 +287,13 @@ const AppointmentConfirmation = ({
             </Text>
           </View>
         </View>
+        <Text style={styles.queueNote}>Vui lòng đến sớm 15 phút</Text>
       </View>
       <View style={[styles.buttonContainer, { marginBottom: 0 }]}>
         <Button
           title="Về Trang Chủ"
           onPress={() => {
             resetAppointment();
-            // Navigate to the main Home tab in the BottomTabNavigator
             navigation.reset({
               index: 0,
               routes: [{ name: "Trang chủ" }],
@@ -247,26 +314,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 30,
   },
-  successHeader: {
-    alignItems: "center",
-    paddingVertical: 5,
-  },
-  successTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2ecc71",
-    marginTop: 12,
-  },
-  successSubtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 8,
-  },
   ticketContainer: {
     backgroundColor: "#fff",
     borderRadius: 12,
     marginTop: 10,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: "#ddd",
     shadowColor: "#000",
@@ -279,7 +331,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingBottom: 16,
+    paddingBottom: 10,
     marginBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
@@ -306,10 +358,32 @@ const styles = StyleSheet.create({
     color: "#1e88e5",
     marginBottom: 4,
   },
+  queueOrderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  queueOrderContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#f39c12",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+    marginRight: 8,
+  },
+  queueOrder: {
+    fontSize: 18,
+    color: "#fff",
+    fontWeight: "bold",
+  },
   queueNote: {
     fontSize: 12,
     color: "#f39c12",
     fontStyle: "italic",
+    marginTop: 8,
+    textAlign: "center",
   },
   sectionTitle: {
     fontSize: 16,
@@ -326,13 +400,13 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: "row",
     paddingVertical: 4,
-    alignItems: "flex-start", // Change from center to flex-start to align at the top
+    alignItems: "flex-start",
   },
   infoLabel: {
     fontSize: 14,
     color: "#555",
     fontWeight: "500",
-    width: 110, // Fixed width for labels
+    width: 110,
   },
   infoValue: {
     fontSize: 14,
@@ -343,12 +417,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9",
     borderRadius: 8,
     padding: 8,
-  },
-  appointmentTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1e88e5",
-    marginBottom: 8,
   },
   detailRow: {
     flexDirection: "row",
@@ -415,8 +483,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginVertical: 16,
   },
-  halfButton: {
-    flex: 0.48,
+  fileName: {
+    fontSize: 14,
+    color: "#1e88e5",
+    textDecorationLine: "underline",
   },
 });
 

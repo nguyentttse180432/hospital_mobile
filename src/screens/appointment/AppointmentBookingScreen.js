@@ -40,6 +40,9 @@ const AppointmentScreen = ({ navigation }) => {
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [appointmentCode, setAppointmentCode] = useState(null);
+  const [appointmentQueue, setAppointmentQueue] = useState(null);
+  const [appointmentQueueUrl, setAppointmentQueueUrl] = useState(null);
+
 
   // Tính tổng tiền thanh toán
   const calculateTotalAmount = () => {
@@ -59,32 +62,6 @@ const AppointmentScreen = ({ navigation }) => {
     }
 
     return total;
-  };
-
-  // Format the date and time for the API
-  const formatDateTimeForApi = () => {
-    if (!currentDate || !currentTime) return null;
-
-    try {
-      // Parse the date (DD/MM/YYYY) and time
-      const [day, month, year] = currentDate.split("/");
-      const [startTime] = currentTime.time.split(" - ");
-      const [hours, minutes] = startTime.split(":");
-
-      // Create Date object
-      const appointmentDate = new Date(
-        parseInt(year),
-        parseInt(month) - 1, // Month is 0-indexed in JavaScript
-        parseInt(day),
-        parseInt(hours),
-        parseInt(minutes)
-      );
-
-      return appointmentDate;
-    } catch (error) {
-      console.error("Date/time parsing error:", error);
-      return null;
-    }
   };
 
   // New: handle payment logic in step 4
@@ -134,6 +111,8 @@ const AppointmentScreen = ({ navigation }) => {
         code = response.value.code;
         setAppointmentCode(code);
         setAppointment(response.value);
+        setAppointmentQueue(response.value.numericalOrder);
+        setAppointmentQueueUrl(response.value.queueUrl);
       } else if (
         response &&
         response.data &&
@@ -143,6 +122,8 @@ const AppointmentScreen = ({ navigation }) => {
         code = response.data.value.code;
         setAppointmentCode(code);
         setAppointment(response.data.value);
+        setAppointmentQueue(response.data.value.numericalOrder);
+        setAppointmentQueueUrl(response.data.value.queueUrl);
       }
       if(paymentMethod === "Cash") {
         return code; // Nếu chọn thanh toán tại quầy, trả về code để hiển thị phiếu khám
@@ -444,6 +425,8 @@ const AppointmentScreen = ({ navigation }) => {
               navigation={navigation}
               resetAppointment={resetAppointment}
               appointmentCode={appointmentCode}
+              appointmentQueue={appointmentQueue} // Thêm prop này
+              appointmentQueueUrl={appointmentQueueUrl} // Thêm prop này
             />
           )}
         </View>
