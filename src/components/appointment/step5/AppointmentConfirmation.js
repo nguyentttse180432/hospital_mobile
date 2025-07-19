@@ -178,25 +178,13 @@ const AppointmentConfirmation = ({
             <Text style={styles.queueLabel}>Mã đặt lịch:</Text>
             <Text style={styles.queueNumber}>{queueNumber}</Text>
             {(appointment?.numericalOrder || appointmentQueue) && (
-              <View>
-                <View style={styles.queueOrderRow}>
-                  <Text style={styles.queueLabel}>Số thứ tự:</Text>
-                  <View style={styles.queueOrderContainer}>
-                    <Text style={styles.queueOrder}>
-                      {appointment?.numericalOrder || appointmentQueue}
-                    </Text>
-                  </View>
-                </View>
-                <View>
-                  {processedFile && (
-                    <Text
-                      style={styles.fileName}
-                      onPress={() => openFile(processedFile)}
-                    >
-                      stt.pdf
-                    </Text>
-                  )}
-                </View>
+              <View style={{ marginTop: 8 }}>
+                <Text style={styles.queueLabel}>Số thứ tự:</Text>
+                <Text style={styles.queueNumber}>
+                  {String(
+                    appointment?.numericalOrder || appointmentQueue
+                  ).padStart(3, "0")}
+                </Text>
               </View>
             )}
           </View>
@@ -211,6 +199,7 @@ const AppointmentConfirmation = ({
         </View>
         <Text style={styles.sectionTitle}>Thông tin người khám</Text>
         <View style={styles.infoSection}>
+          {/* ...existing code... */}
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Họ và tên:</Text>
             <Text style={styles.infoValue}>{patientProfile?.fullName}</Text>
@@ -234,6 +223,7 @@ const AppointmentConfirmation = ({
         </View>
         <Text style={styles.sectionTitle}>Chi tiết đặt khám</Text>
         <View style={styles.appointmentDetails}>
+          {/* ...existing code... */}
           {appointment?.packageName && (
             <View>
               <View style={styles.detailRow}>
@@ -299,14 +289,28 @@ const AppointmentConfirmation = ({
               routes: [{ name: "Trang chủ" }],
             });
           }}
-          style={{ width: "100%" }}
+          style={styles.actionButton}
         />
+        {processedFile && (
+          <Button
+            title="Tải file"
+            onPress={() => openFile(processedFile)}
+            style={styles.actionButton}
+          />
+        )}
       </View>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
+  actionButton: {
+    minWidth: 140,
+    maxWidth: 180,
+    flexGrow: 1,
+    alignSelf: "center",
+    paddingHorizontal: 0,
+  },
   container: {
     flex: 1,
     paddingHorizontal: 16,
@@ -318,7 +322,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     marginTop: 10,
-    padding: 14,
+    padding: 10,
     borderWidth: 1,
     borderColor: "#ddd",
     shadowColor: "#000",
@@ -354,6 +358,7 @@ const styles = StyleSheet.create({
   },
   queueNumber: {
     fontSize: 28,
+    textAlign: "center",
     fontWeight: "bold",
     color: "#1e88e5",
     marginBottom: 4,
@@ -482,11 +487,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginVertical: 16,
-  },
-  fileName: {
-    fontSize: 14,
-    color: "#1e88e5",
-    textDecorationLine: "underline",
+    gap: 8,
   },
 });
 

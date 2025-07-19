@@ -47,7 +47,7 @@ const PaymentScreen = ({
     const fetchAppointmentWithRetry = async (
       code,
       retries = 3,
-      delay = 500
+      delay = 800
     ) => {
       for (let i = 0; i < retries; i++) {
         try {
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     borderLeftColor: "#1e88e5",
   },
   totalLabel: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
     color: "#333",
   },
