@@ -6,6 +6,7 @@ import { timeSlots } from "../../data/appointmentData";
 import {
   createAppointment,
   formatAppointmentData,
+  getAppointmentByCode
 } from "../../services/appointmentService";
 
 // Import các components đã tách
@@ -43,7 +44,6 @@ const AppointmentScreen = ({ navigation }) => {
   const [appointmentQueue, setAppointmentQueue] = useState(null);
   const [appointmentQueueUrl, setAppointmentQueueUrl] = useState(null);
 
-
   // Tính tổng tiền thanh toán
   const calculateTotalAmount = () => {
     let total = 0;
@@ -65,6 +65,7 @@ const AppointmentScreen = ({ navigation }) => {
   };
 
   // New: handle payment logic in step 4
+  // New: handle payment logic in step 4
   const handlePayment = async () => {
     if (
       !selectedProfile ||
@@ -81,6 +82,7 @@ const AppointmentScreen = ({ navigation }) => {
     if (!paymentMethod) {
       return Alert.alert("Lỗi", "Vui lòng chọn phương thức thanh toán.");
     }
+
     setIsSubmitting(true);
     try {
       // Format the appointment datetime
@@ -94,14 +96,18 @@ const AppointmentScreen = ({ navigation }) => {
         parseInt(hours),
         parseInt(minutes)
       );
+
       const appointmentData = formatAppointmentData(
         selectedProfile.id,
         appointmentDate,
         currentPackage,
         selectedServices
       );
+
       const response = await createAppointment(appointmentData);
       let code = null;
+
+      // Lấy appointment code từ response
       if (
         response &&
         response.isSuccess &&
@@ -109,10 +115,6 @@ const AppointmentScreen = ({ navigation }) => {
         response.value.code
       ) {
         code = response.value.code;
-        setAppointmentCode(code);
-        setAppointment(response.value);
-        setAppointmentQueue(response.value.numericalOrder);
-        setAppointmentQueueUrl(response.value.queueUrl);
       } else if (
         response &&
         response.data &&
@@ -120,23 +122,54 @@ const AppointmentScreen = ({ navigation }) => {
         response.data.value.code
       ) {
         code = response.data.value.code;
-        setAppointmentCode(code);
-        setAppointment(response.data.value);
-        setAppointmentQueue(response.data.value.numericalOrder);
-        setAppointmentQueueUrl(response.data.value.queueUrl);
       }
-      if(paymentMethod === "Cash") {
-        return code; // Nếu chọn thanh toán tại quầy, trả về code để hiển thị phiếu khám
+
+      if (!code) {
+        throw new Error("Không thể lấy mã appointment từ server");
       }
+
+      // Sau khi tạo thành công, gọi getAppointmentByCode để lấy thông tin chi tiết
+      console.log("Fetching appointment details with code:", code);
+      const appointmentDetails = await getAppointmentByCode(code);
+
+      // Lấy queue và queueUrl từ response của createAppointment
+      const createResponseData = response.isSuccess
+        ? response.value
+        : response.data.value;
+      setAppointmentCode(code);
+      setAppointmentQueue(createResponseData.numericalOrder);
+      setAppointmentQueueUrl(createResponseData.queueUrl);
+
+      if (
+        appointmentDetails &&
+        appointmentDetails.isSuccess &&
+        appointmentDetails.value
+      ) {
+        // Chỉ set appointment từ getAppointmentByCode
+        setAppointment(appointmentDetails.value);
+        console.log("Appointment details loaded:", appointmentDetails.value);
+      } else {
+        // Fallback: sử dụng thông tin từ createAppointment nếu getAppointmentByCode thất bại
+        console.warn(
+          "getAppointmentByCode failed, using createAppointment response"
+        );
+        setAppointment(createResponseData);
+      }
+
+      if (paymentMethod === "Cash") {
+        // Nếu chọn thanh toán tại quầy, chuyển sang bước xác nhận
+        setStep(5);
+        return code;
+      }
+
       // Nếu chọn VNPay, trả về code cho PaymentScreen để tiếp tục gọi getPaymentUrl
       if (paymentMethod === "VNPay") {
         return code;
-      } else {
-        // Nếu chọn tại quầy, chuyển sang bước xác nhận
-        setStep(5);
       }
     } catch (error) {
       console.error("Appointment creation error:", error);
+
+      // Xử lý các lỗi cụ thể
       if (
         error.response?.data?.detail ===
         "This patient had enough booking in one day."
@@ -144,6 +177,11 @@ const AppointmentScreen = ({ navigation }) => {
         Alert.alert(
           "Không thể đặt lịch",
           "Bạn đã đặt lịch khám trong ngày này rồi. Mỗi người chỉ được đặt một lịch khám trong một ngày."
+        );
+      } else if (error.message === "Không thể lấy mã appointment từ server") {
+        Alert.alert(
+          "Lỗi",
+          "Tạo lịch khám thành công nhưng không thể lấy mã xác nhận. Vui lòng kiểm tra lại trong lịch sử đặt khám."
         );
       } else {
         Alert.alert(
@@ -161,7 +199,7 @@ const AppointmentScreen = ({ navigation }) => {
       setIsSubmitting(false);
     }
   };
-
+  
   const handleNext = () => {
     if (step === 1) {
       // Kiểm tra xem đã chọn profile có sẵn hoặc đã điền đủ thông tin profile mới

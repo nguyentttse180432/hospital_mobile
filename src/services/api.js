@@ -1,9 +1,12 @@
-// api.js
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const api = axios.create({
   baseURL: "https://hair-salon-fpt.io.vn/api",
+  // baseURL: "https://67c1408c62be.ngrok-free.app",
+  // headers: {
+  //   "ngrok-skip-browser-warning": "true",
+  // },
 });
 
 // Thêm interceptor để tự động gắn accessToken
