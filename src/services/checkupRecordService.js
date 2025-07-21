@@ -97,3 +97,14 @@ export const getMedicationsByCheckupRecord = async (code) => {
     throw error;
   }
 };
+
+//lấy đo sinh hiệu
+export const getVitalSignsByCheckupRecord = async (code) => {
+  try {
+    const response = await api.get(`/CheckupRecords/${code}/vital-signs`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching vital signs by checkup record:", error);
+    throw error;
+  }
+};  

@@ -208,36 +208,55 @@ const PrescriptionScreen = ({ route, navigation }) => {
         selectedIds.includes(item.id)
       );
 
-      await Promise.all([
-        ...notBuyItems.map((item) =>
-          UpdatePrescriptionDetails(item.id, {
+      // Cập nhật tuần tự thay vì song song để tránh race condition
+      // Xử lý các item không mua trước
+      for (const item of notBuyItems) {
+        try {
+          await UpdatePrescriptionDetails(item.id, {
             id: item.id,
             quantityByPatient: 0,
             reasonChange:
               item.quantity > item.medicineInventory
                 ? "Hết hàng"
                 : "Không mua tại bệnh viện",
-          })
-        ),
-        ...buyItems.map((item) =>
-          UpdatePrescriptionDetails(item.id, {
+          });
+          console.log(`Updated not-buy item ${item.id} successfully`);
+        } catch (error) {
+          console.error(`Failed to update not-buy item ${item.id}:`, error);
+          throw new Error(`Không thể cập nhật thuốc ${item.medicineName}`);
+        }
+      }
+
+      // Sau đó xử lý các item mua
+      for (const item of buyItems) {
+        try {
+          await UpdatePrescriptionDetails(item.id, {
             id: item.id,
             quantityByPatient: item.quantity,
             reasonChange: null,
-          })
-        ),
-      ]);
+          });
+          console.log(`Updated buy item ${item.id} successfully`);
+        } catch (error) {
+          console.error(`Failed to update buy item ${item.id}:`, error);
+          throw new Error(`Không thể cập nhật thuốc ${item.medicineName}`);
+        }
+      }
 
+      console.log("All prescription details updated successfully");
+
+      // Sau khi tất cả update xong mới gọi payment
       const paymentData = await getPaymentPrescriptionUrl(prescription.code);
       console.log(
         "[VNPay] Payment data:",
         JSON.stringify(paymentData.value, null, 2)
       );
+
       const paymentUrl = paymentData?.value;
       if (!paymentUrl) {
         Alert.alert("Lỗi", "Không lấy được URL thanh toán từ server!");
         return;
       }
+
       VnpayMerchant.show({
         isSandbox: true,
         scheme: "com.hospital.app",
@@ -257,10 +276,6 @@ const PrescriptionScreen = ({ route, navigation }) => {
       setLoading(false);
     }
   };
-
-  const hasOutOfStock = prescription?.prescriptionDetails?.some(
-    (item) => item.quantity > item.medicineInventory
-  );
 
   const allOutOfStock = prescription?.prescriptionDetails?.every(
     (item) => item.quantity > item.medicineInventory
@@ -389,7 +404,7 @@ const PrescriptionScreen = ({ route, navigation }) => {
                         >
                           {isBoughtAtHospital
                             ? "*Mua tại bệnh viện"
-                            : "*Khách hàng chọn mua ngoài"}
+                            : "*Khách hàng mua ngoài"}
                         </Text>
                       )}
                     </View>
