@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import ViewField from "../../common/ViewField";
 import Button from "../../common/Button";
+import ScreenContainer from "../../common/ScreenContainer";
 
 const AppointmentSelection = ({
   currentPackage,
@@ -53,10 +54,9 @@ const AppointmentSelection = ({
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScreenContainer>
       <View style={styles.selectionSection}>
         <Text style={styles.sectionTitle}>Chọn dịch vụ </Text>
-
         <ViewField
           label="Gói khám"
           value={currentPackage?.name || "Chưa chọn gói khám"}
@@ -65,7 +65,6 @@ const AppointmentSelection = ({
           onPress={() => setStep(2.1)}
           showArrow={true}
         />
-
         <ViewField
           label="Dịch vụ bổ sung"
           value={getServicesDisplayText()}
@@ -75,10 +74,8 @@ const AppointmentSelection = ({
           showArrow={true}
         />
       </View>
-
       <View style={styles.selectionSection}>
         <Text style={styles.sectionTitle}>Thời gian khám</Text>
-
         <ViewField
           label="Ngày khám"
           value={currentDate || "Chưa chọn ngày"}
@@ -90,7 +87,6 @@ const AppointmentSelection = ({
           }
           showArrow={true}
         />
-
         <ViewField
           label="Giờ khám"
           value={currentTime?.time || "Chưa chọn giờ"}
@@ -100,7 +96,6 @@ const AppointmentSelection = ({
           showArrow={true}
         />
       </View>
-
       {/* Price Summary */}
       {(currentPackage ||
         (selectedServices && selectedServices.length > 0)) && (
@@ -109,7 +104,6 @@ const AppointmentSelection = ({
             <Icon name="receipt-outline" size={20} color="#0071CE" />
             <Text style={styles.priceSectionTitle}>Tổng chi phí</Text>
           </View>
-
           {currentPackage && (
             <View style={styles.priceItem}>
               <Text style={styles.priceItemLabel}>
@@ -120,7 +114,6 @@ const AppointmentSelection = ({
               </Text>
             </View>
           )}
-
           {selectedServices &&
             selectedServices.length > 0 &&
             selectedServices.map((service, index) => (
@@ -133,9 +126,7 @@ const AppointmentSelection = ({
                 </Text>
               </View>
             ))}
-
           <View style={styles.priceDivider} />
-
           <View style={styles.totalPriceContainer}>
             <Text style={styles.totalPriceLabel}>Tổng cộng:</Text>
             <Text style={styles.totalPriceValue}>
@@ -144,7 +135,6 @@ const AppointmentSelection = ({
           </View>
         </View>
       )}
-
       {/* Incomplete Selection Warning */}
       {!canProceed() && (
         <View style={styles.warningContainer}>
@@ -154,7 +144,6 @@ const AppointmentSelection = ({
           </Text>
         </View>
       )}
-
       <View style={styles.footer}>
         <Button
           title={canProceed() ? "Xác Nhận" : "Hoàn Tất Thông Tin"}
@@ -162,7 +151,7 @@ const AppointmentSelection = ({
           disabled={!canProceed()}
         />
       </View>
-    </ScrollView>
+    </ScreenContainer>
   );
 };
 

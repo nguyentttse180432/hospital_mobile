@@ -217,7 +217,6 @@ const LoginScreen = ({ navigation }) => {
       // Call the backend API for authentication
       try {
         setLoadingMessage("Đang xác thực với máy chủ...");
-        console.log("Calling backend API with ID Token:", idToken);
         
         const backendResponse = await loginWithGoogle(idToken);
         // console.log("Backend response:", backendResponse);
@@ -229,6 +228,8 @@ const LoginScreen = ({ navigation }) => {
 
           // Store user data in AsyncStorage
           await AsyncStorage.setItem("user", JSON.stringify(user));
+          console.log("User data saved to AsyncStorage:", user);
+          
 
           // For requiredOtp flow, tokens might not be provided until OTP verification
           if (accessToken) {
@@ -239,18 +240,8 @@ const LoginScreen = ({ navigation }) => {
             await AsyncStorage.setItem("refreshToken", refreshToken);
           }
 
-          // console.log("User data saved to AsyncStorage:", user);
-          // console.log("Required OTP:", requiredOtp);
-          // console.log("Access Token available:", !!accessToken);
-          // console.log("Refresh Token available:", !!refreshToken);
-
           // Determine navigation based on requiredOtp and phoneNumber
           if (requiredOtp) {
-            // If OTP is required, navigate to OTP verification screen
-            // console.log("OTP verification required. Navigating to EnterOtpScreen");
-
-            // Set a flag to indicate that an OTP is already being sent by the backend
-            // This prevents EnterOtpScreen from automatically sending another OTP
             await AsyncStorage.setItem("otpAlreadySent", "true");
             // console.log("Set flag to prevent duplicate OTP sending");
 
@@ -293,43 +284,6 @@ const LoginScreen = ({ navigation }) => {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Hàm xóa hoàn toàn phiên đăng nhập Google
-  const clearGoogleSession = async () => {
-    try {
-      setLoading(true);
-      setLoadingMessage("Đang xóa dữ liệu đăng nhập Google...");
-
-      // Xóa dữ liệu AsyncStorage
-      await AsyncStorage.removeItem("googleUserAvatar");
-      await AsyncStorage.removeItem("googleUserName");
-
-      // Thu hồi quyền truy cập Google
-      await googleSignInHelper.revokeGoogleAccess();
-
-      // Đặt lại state
-      setUserAvatar(null);
-      setUserName(null);
-
-      console.log("Google session cleared successfully");
-      setLoading(false);
-      setLoadingMessage("");
-
-      Alert.alert(
-        "Thành công",
-        "Đã xóa dữ liệu đăng nhập Google. Bạn có thể đăng nhập lại với tài khoản khác."
-      );
-    } catch (error) {
-      console.log("Error clearing Google session:", error);
-      setLoading(false);
-      setLoadingMessage("");
-
-      Alert.alert(
-        "Lỗi",
-        "Không thể xóa hoàn toàn dữ liệu đăng nhập. Vui lòng thử lại sau."
-      );
     }
   };
 

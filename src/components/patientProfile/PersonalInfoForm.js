@@ -84,7 +84,6 @@ const PersonalInfoForm = ({
           label="Nghề nghiệp"
           value={occupation}
           placeholder="Chọn nghề nghiệp"
-          required={true}
           onPress={setShowOccupationModal}
           editable={false}
         />
