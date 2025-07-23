@@ -26,6 +26,14 @@
       "edgeToEdgeEnabled": true,
       "package": "com.hsms.app"
     },
+    "plugins": [
+          [
+            "@react-native-google-signin/google-signin",
+            {
+              "iosUrlScheme": "com.googleusercontent.apps.607079346722-qbme72625oiq2ca54281pt2k3v7cnn7f"
+            }
+          ]
+        ],
     "web": {},
     "extra": {
       "eas": {
