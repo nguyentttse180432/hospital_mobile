@@ -27,6 +27,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="com.hsms.app"/>
+        <data android:scheme="exp+hsms"/>
       </intent-filter>
     </activity>
   </application>

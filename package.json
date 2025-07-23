@@ -33,7 +33,8 @@
     "react-native-vector-icons": "^10.2.0",
     "react-native-vnpay-merchant": "file:react-native-vnpay-merchant",
     "react-native-websocket": "^1.0.2",
-    "web-streams-polyfill": "^4.1.0"
+    "web-streams-polyfill": "^4.1.0",
+    "expo-dev-client": "~5.2.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
