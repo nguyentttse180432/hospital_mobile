@@ -217,6 +217,8 @@ const LoginScreen = ({ navigation }) => {
       // Call the backend API for authentication
       try {
         setLoadingMessage("Đang xác thực với máy chủ...");
+        console.log("Calling backend API with ID Token:", idToken);
+        
         const backendResponse = await loginWithGoogle(idToken);
         // console.log("Backend response:", backendResponse);
 

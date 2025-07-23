@@ -116,7 +116,7 @@ const PaymentScreen = ({
         }
         VnpayMerchant.show({
           isSandbox: true,
-          scheme: "com.hospital.app",
+          scheme: "com.hsms.app",
           backAlert: "Bạn có chắc chắn trở lại không?",
           paymentUrl: paymentUrl,
           title: "Thanh toán",

@@ -1,4 +1,4 @@
-package com.hospital.app
+package com.hsms.app
 
 import android.os.Build
 import android.os.Bundle

@@ -24,7 +24,7 @@ export const initGoogleSignIn = () => {
         "879263326241-q390su58qmmkcvhrkk69r59pvqt4smot.apps.googleusercontent.com",
       scopes: ["profile", "email"],
       iosClientId:
-        "879263326241-lgtn5qc4ict46et8636211k37hiuunl8.apps.googleusercontent.com",
+        "607079346722-qbme72625oiq2ca54281pt2k3v7cnn7f.apps.googleusercontent.com",
       forceCodeForRefreshToken: true,
       offlineAccess: true,
       accountName: "", // Thêm tham số này có thể giúp trong một số trường hợp
