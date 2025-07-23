@@ -87,7 +87,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.hospital.app'
+    namespace "com.hsms"
     defaultConfig {
         applicationId 'com.hospital.app'
         minSdkVersion rootProject.ext.minSdkVersion
