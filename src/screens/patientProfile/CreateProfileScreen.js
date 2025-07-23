@@ -16,7 +16,6 @@ import {
   createPatientProfile,
 } from "../../services/patientService";
 import ScreenContainer from "../../components/common/ScreenContainer";
-import DateTimePicker from "@react-native-community/datetimepicker";
 
 // Import custom components
 import IdCardStep from "../../components/patientProfile/IdCardStep";
