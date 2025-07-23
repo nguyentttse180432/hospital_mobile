@@ -21,7 +21,6 @@ import {
 
 const PaymentScreen = ({
   appointment,
-  appointmentCode,
   paymentMethod,
   setPaymentMethod,
   handleBack,
@@ -30,66 +29,99 @@ const PaymentScreen = ({
   isSubmitting,
   handlePayment,
   setStep,
-  setAppointment,
 }) => {
   console.log("[PaymentScreen] Rendering with appointment:", appointment);
-  const queue = appointment?.numericalOrder || "Chưa có số thứ tự";
 
   useEffect(() => {
-    // ✅ Hàm parse query chuẩn, xử lý + thành space
     const parseQueryParams = (url) => {
+      // Bỏ qua URL không hợp lệ hoặc từ Expo
+      if (
+        !url ||
+        !url.startsWith("com.hsms.app") ||
+        url.includes("expo-development-client")
+      ) {
+        console.log("[DEEP LINK] Invalid or Expo URL, ignoring:", url);
+        return {};
+      }
       const query = url.split("?")[1];
+      if (!query) {
+        console.log("[DEEP LINK] No query params in URL:", url);
+        return {};
+      }
       const params = {};
       query.split("&").forEach((pair) => {
         const [key, value] = pair.split("=");
         params[key] = decodeURIComponent((value || "").replace(/\+/g, " "));
       });
+      if (!params.vnp_ResponseCode) {
+        console.log("[DEEP LINK] No vnp_ResponseCode, ignoring:", params);
+        return {};
+      }
       return params;
     };
 
-    const handleDeepLink = async (event) => {
-      console.log("[DEEP LINK] App opened with URL:", event.url);
-
-      const params = parseQueryParams(event.url);
+    const handleDeepLink = async ({ url }) => {
+      if (!url) {
+        console.log("[DEEP LINK] No URL provided");
+        return;
+      }
+      console.log("[DEEP LINK] Handling URL:", url);
+      const params = parseQueryParams(url);
+      if (Object.keys(params).length === 0) {
+        console.log("[DEEP LINK] No valid params parsed");
+        return;
+      }
       console.log("[DEEP LINK] Parsed params:", params);
 
       if (params.vnp_ResponseCode === "00") {
         try {
           const result = await getPaymentAppointmentResult(params);
-          console.log("[VNPay] Payment result from server:", result);
-
-          // Thanh toán thành công, chuyển sang bước 5 với appointment hiện tại
+          console.log("[VNPay] Payment result:", result);
           if (result.isSuccess) {
-            console.log(
-              "Payment successful, using existing appointment data:",
-              appointment
+            console.log("Payment successful, moving to step 5");
+            setStep(5);
+          } else {
+            Alert.alert(
+              "Lỗi",
+              "Thanh toán thành công nhưng không thể xác nhận."
             );
-            setStep && setStep(5); // Chuyển bước khi thanh toán thành công
           }
         } catch (err) {
-          console.error(
-            "[VNPay] Error fetching payment result:",
-            err.response.data
+          console.error("[VNPay] Error:", err);
+          Alert.alert(
+            "Lỗi",
+            "Không thể xác nhận thanh toán. Vui lòng thử lại."
           );
         }
       } else if (params.vnp_ResponseCode) {
-        console.log(
-          "[DEEP LINK] Payment failed, code:",
-          params.vnp_ResponseCode
+        Alert.alert(
+          "Thanh toán thất bại",
+          `Mã lỗi: ${params.vnp_ResponseCode}`
         );
       }
     };
 
+    // Kiểm tra URL ban đầu khi ứng dụng khởi động
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+
+    // Lắng nghe sự kiện deep link
     const linkingSubscription = Linking.addEventListener("url", handleDeepLink);
 
-    // Native event listener (nếu có)
-    let listener;
+    // Lắng nghe sự kiện VNPay SDK
     const vnpayModule = NativeModules.VnpayMerchantModule;
+    let listener;
     if (vnpayModule) {
       const eventEmitter = new NativeEventEmitter(vnpayModule);
       listener = eventEmitter.addListener("PaymentBack", (e) => {
-        console.log("Sdk back! Full event data:", e);
-        // Optional: xử lý SDK back
+        console.log("[VNPay SDK] PaymentBack:", JSON.stringify(e, null, 2));
+        // Tự tạo deep link nếu SDK trả về responseCode
+        if (e?.responseCode) {
+          handleDeepLink({
+            url: `com.hsms.app://payment?vnp_ResponseCode=${e.responseCode}`,
+          });
+        }
       });
     }
 
@@ -97,23 +129,23 @@ const PaymentScreen = ({
       linkingSubscription.remove();
       if (listener) listener.remove();
     };
-  }, [appointment, setStep]);
+  }, [setStep]);
 
   // Gộp logic thanh toán vào một hàm duy nhất
   const handlePay = async () => {
     if (paymentMethod === "VNPay") {
-      // 1. Gọi API tạo appointment, lấy code
       const code = await handlePayment();
-      if (!code) return; // Nếu lỗi thì dừng lại
+      if (!code) return;
 
-      // 2. Gọi getPaymentUrl và mở VNPay
       try {
         const paymentData = await getPaymentAppointmentUrl(code);
+        console.log("[VNPay] Payment URL:", paymentData?.value);
         const paymentUrl = paymentData?.value;
         if (!paymentUrl) {
-          console.warn("Không lấy được URL thanh toán từ server!");
+          Alert.alert("Lỗi", "Không lấy được URL thanh toán từ server!");
           return;
         }
+
         VnpayMerchant.show({
           isSandbox: true,
           scheme: "com.hsms.app",
@@ -124,29 +156,16 @@ const PaymentScreen = ({
           beginColor: "#F06744",
           endColor: "#E26F2C",
           iconBackName: "ion_back",
-          tmn_code: "OIL8C48D",
         });
       } catch (error) {
         console.error("Lỗi khi lấy URL thanh toán:", error);
+        Alert.alert("Lỗi", "Không thể thực hiện thanh toán. Vui lòng thử lại.");
       }
     } else if (paymentMethod === "Cash") {
-      // 1. Gọi handlePayment() để tạo appointment
       const code = await handlePayment();
-      if (!code) {
-        console.error("Không tạo được lịch hẹn!");
-        return;
-      }
-      console.log("Appointment created successfully, code:", code);
-
-      // 2. Chuyển trực tiếp sang bước 5 với appointment hiện tại
-      console.log(
-        "Cash payment, using existing appointment data:",
-        appointment
-      );
-      setStep(5); // Chuyển sang bước xác nhận với appointment đã có
+      if (!code) return;
+      setStep(5);
     } else {
-      // Các phương thức khác (MoMo, ...)
-      console.warn("Chưa hỗ trợ phương thức này");
       Alert.alert("Thông báo", "Phương thức thanh toán này chưa được hỗ trợ.");
     }
   };

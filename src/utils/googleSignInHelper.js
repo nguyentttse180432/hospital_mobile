@@ -27,7 +27,7 @@ export const initGoogleSignIn = () => {
         "607079346722-qbme72625oiq2ca54281pt2k3v7cnn7f.apps.googleusercontent.com",
       forceCodeForRefreshToken: true,
       offlineAccess: true,
-      accountName: "", // Thêm tham số này có thể giúp trong một số trường hợp
+      accountName: "", 
     });
 
     return true;
