@@ -9,7 +9,6 @@ buildscript {
     classpath('com.android.tools.build:gradle')
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
-    classpath 'com.android.tools.build.jetifier:jetifier-processor:1.0.0-beta09'
   }
 }
 
@@ -23,10 +22,10 @@ def reactNativeAndroidDir = new File(
 
 allprojects {
   repositories {
-   maven { 
-    url("$rootDir/../node_modules/react-native-vnpay-merchant/android/repo") 
-    //ex: $rootDir/../node_modules/react-native-vnpay-merchant/android/repo 
-} 
+    maven {
+      // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
+      url(reactNativeAndroidDir)
+    }
 
     google()
     mavenCentral()
