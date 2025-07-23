@@ -27,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.hospital.app</string>
+          <string>com.hsms.app</string>
           <string>com.hsms.app</string>
         </array>
       </dict>
