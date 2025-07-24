@@ -184,7 +184,7 @@ const LoginScreen = ({ navigation }) => {
         console.log("Missing user data or idToken");
         Alert.alert(
           "Thông báo",
-          "Đăng nhập Google không trả về đầy đủ thông tin. Vui lòng thử lại."
+          "Bạn đã hủy đăng nhập với Google. Vui lòng thử lại."
         );
         setLoading(false);
         return;
