@@ -21,7 +21,7 @@ export const initGoogleSignIn = () => {
     // Đặt cấu hình
     GoogleSignin.configure({
       webClientId:
-        "879263326241-q390su58qmmkcvhrkk69r59pvqt4smot.apps.googleusercontent.com",
+        "607079346722-tl15f52a0gff761mp75uirolb3deu6h2.apps.googleusercontent.com",
       scopes: ["profile", "email"],
       iosClientId:
         "607079346722-qbme72625oiq2ca54281pt2k3v7cnn7f.apps.googleusercontent.com",
