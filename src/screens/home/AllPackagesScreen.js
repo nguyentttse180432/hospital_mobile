@@ -8,12 +8,14 @@ import {
   ActivityIndicator,
   TextInput,
   StatusBar,
+  Modal,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getMedicalPackages } from "../../services/medicalPackageService";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
-import { usePackageModal } from "../../hooks/usePackageModal";
 import ScreenContainer from "../../components/common/ScreenContainer";
+import { getPatients } from "../../services/patientService";
 
 const AllPackagesScreen = () => {
   const navigation = useNavigation();
@@ -22,20 +24,55 @@ const AllPackagesScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Use our custom hook for package modal
-  const packageModal = usePackageModal(filteredPackages);
+  const [defaultPatient, setDefaultPatient] = useState(null);
+  const [patients, setPatients] = useState([]);
+  const [showPatientModal, setShowPatientModal] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
 
   useEffect(() => {
-    fetchMedicalPackages();
+    fetchDefaultPatient();
+    fetchPatients();
   }, []);
 
-  const fetchMedicalPackages = async () => {
+  const fetchDefaultPatient = async () => {
+    try {
+      const patientJSON = await AsyncStorage.getItem("defaultPatient");
+      if (patientJSON) {
+        const patient = JSON.parse(patientJSON);
+        console.log("Default patient loaded:", patient);
+        setDefaultPatient(patient);
+        const age = calculateAge(patient.dob);
+        fetchMedicalPackages(patient.gender, age);
+      } else {
+        console.log("No default patient found in AsyncStorage");
+        fetchMedicalPackages();
+      }
+    } catch (error) {
+      console.error("Error fetching default patient:", error);
+      fetchMedicalPackages();
+    }
+  };
+
+  const fetchPatients = async () => {
+    try {
+      const response = await getPatients();
+      if (response.isSuccess) {
+        setPatients(response.value);
+        console.log("Fetched patients:", response.value);
+      } else {
+        console.error("Failed to fetch patients:", response.error?.message);
+      }
+    } catch (error) {
+      console.error("Error fetching patients:", error);
+    }
+  };
+
+  const fetchMedicalPackages = async (gender = null, age = null) => {
     try {
       setLoading(true);
-      setSearchQuery(""); // Reset search query when fetching new packages
-
-      const response = await getMedicalPackages();
+      setSearchQuery("");
+      console.log(`Fetching packages with gender: ${gender}, age: ${age}`);
+      const response = await getMedicalPackages(gender, age);
 
       if (response.isSuccess) {
         setPackages(response.value);
@@ -51,15 +88,51 @@ const AllPackagesScreen = () => {
     }
   };
 
+  const calculateAge = (dob) => {
+    try {
+      if (!dob) {
+        console.error("No dob provided");
+        return 0;
+      }
+      const dateObj = typeof dob === "string" ? new Date(dob) : dob;
+      if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+        console.error("Invalid dob format:", dob);
+        return 0;
+      }
+      const today = new Date();
+      let age = today.getFullYear() - dateObj.getFullYear();
+      const monthDiff = today.getMonth() - dateObj.getMonth();
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < dateObj.getDate())
+      ) {
+        age--;
+      }
+      return age;
+    } catch (error) {
+      console.error("Error calculating age:", error);
+      return 0;
+    }
+  };
+
+  const handleSelectPatient = (patient) => {
+    console.log("Selected patient:", patient);
+    setSelectedPatient(patient);
+    setShowPatientModal(false);
+    const age = calculateAge(patient.dob);
+    fetchMedicalPackages(patient.gender, age);
+  };
+
   const handleSelectPackage = (pkg) => {
-    // Truyền toàn bộ danh sách và index hiện tại
     navigation.navigate("PackageDetailScreen", {
       packages: filteredPackages,
       initialIndex: filteredPackages.findIndex((p) => p.id === pkg.id),
+      selectedPatient: selectedPatient || defaultPatient,
+      defaultPatient,
+      showBookButton: true, // Enable book button
     });
   };
 
-  // Không dùng modal nữa, chỉ chuyển screen
   const showPackageDetails = (pkg) => {
     handleSelectPackage(pkg);
   };
@@ -67,39 +140,49 @@ const AllPackagesScreen = () => {
   const handleSearch = (text) => {
     setSearchQuery(text);
     if (!text.trim()) {
-      // If search is empty, show all packages
       setFilteredPackages(packages);
       return;
     }
 
     const searchTerms = text.toLowerCase().trim().split(/\s+/);
 
-    // Filter packages based on search terms
     const results = packages.filter((pkg) => {
       const nameMatch =
         pkg.name &&
         searchTerms.some((term) => pkg.name.toLowerCase().includes(term));
-
       const descriptionMatch =
         pkg.description &&
         searchTerms.some((term) =>
           pkg.description.toLowerCase().includes(term)
         );
-
       const typeMatch =
         pkg.type &&
         searchTerms.some((term) => pkg.type.toLowerCase().includes(term));
-
       const targetGroupMatch =
         pkg.targetGroup &&
         searchTerms.some((term) =>
           pkg.targetGroup.toLowerCase().includes(term)
         );
-
       return nameMatch || descriptionMatch || typeMatch || targetGroupMatch;
     });
 
     setFilteredPackages(results);
+  };
+
+  const renderPatientItem = ({ item }) => {
+    const dobValue = item.dob || item.dateOfBirth;
+    const age = calculateAge(dobValue);
+    return (
+      <TouchableOpacity
+        style={styles.patientItem}
+        onPress={() => handleSelectPatient(item)}
+      >
+        <Text style={styles.patientText}>
+          {item.firstName} {item.lastName} - {age} tuổi -{" "}
+          {item.gender === "Male" ? "Nam" : "Nữ"}
+        </Text>
+      </TouchableOpacity>
+    );
   };
 
   const renderPackageItem = ({ item }) => (
@@ -147,7 +230,12 @@ const AllPackagesScreen = () => {
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={fetchMedicalPackages}
+            onPress={() =>
+              fetchMedicalPackages(
+                selectedPatient?.gender,
+                selectedPatient ? calculateAge(selectedPatient.dob) : null
+              )
+            }
           >
             <Text style={styles.retryButtonText}>Thử lại</Text>
           </TouchableOpacity>
@@ -161,7 +249,34 @@ const AllPackagesScreen = () => {
       <View style={styles.container}>
         <StatusBar backgroundColor="#f8f9fa" barStyle="dark-content" />
 
-        {/* Search input */}
+        {patients.length > 0 && (
+          <TouchableOpacity
+            style={styles.selectPatientButton}
+            onPress={() => setShowPatientModal(true)}
+          >
+            <Icon name="person-outline" size={20} color="#0071CE" />
+            <Text style={styles.selectPatientText}>
+              Xem gói theo người khám
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {(defaultPatient || selectedPatient) && (
+          <View style={styles.defaultPatientContainer}>
+            <Text style={styles.defaultPatientText}>
+              Các gói khám dành cho{" "}
+              {selectedPatient
+                ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
+                : `${defaultPatient.firstName} ${defaultPatient.lastName}`}{" "}
+              (
+              {(selectedPatient || defaultPatient).gender === "Male"
+                ? "Nam"
+                : "Nữ"}
+              , {calculateAge((selectedPatient || defaultPatient).dob)} tuổi)
+            </Text>
+          </View>
+        )}
+
         <View style={styles.searchContainer}>
           <Icon
             name="search"
@@ -213,7 +328,29 @@ const AllPackagesScreen = () => {
           }
         />
 
-        {/* Đã bỏ modal, chỉ chuyển screen khi nhấn */}
+        <Modal
+          visible={showPatientModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowPatientModal(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Chọn người khám</Text>
+                <TouchableOpacity onPress={() => setShowPatientModal(false)}>
+                  <Icon name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={patients}
+                renderItem={renderPatientItem}
+                keyExtractor={(item) => item.identityNumber}
+                contentContainerStyle={styles.patientList}
+              />
+            </View>
+          </View>
+        </Modal>
       </View>
     </ScreenContainer>
   );
@@ -224,14 +361,79 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f7fa",
   },
-  // ...existing code...
+  defaultPatientContainer: {
+    padding: 16,
+    backgroundColor: "#e3f2fd",
+    marginHorizontal: 16,
+    borderRadius: 8,
+  },
+  defaultPatientText: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "500",
+  },
+  selectPatientButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  selectPatientText: {
+    fontSize: 15,
+    color: "#0071CE",
+    marginLeft: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    width: "80%",
+    maxHeight: "80%",
+    paddingBottom: 16,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  patientList: {
+    padding: 16,
+  },
+  patientItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  patientText: {
+    fontSize: 16,
+    color: "#333",
+  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 12,
     paddingHorizontal: 12,
-    margin: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: "#e0e0e0",
     height: 46,

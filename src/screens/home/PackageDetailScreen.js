@@ -46,7 +46,9 @@ const PackageDetailScreen = ({ navigation, route }) => {
     initialIndex = 0,
     onBookPackage,
     showBookButton = false,
-    bookButtonText = "Đặt lịch gói này",
+    bookButtonText = "Đặt gói",
+    selectedPatient,
+    defaultPatient,
   } = route.params;
 
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -57,20 +59,17 @@ const PackageDetailScreen = ({ navigation, route }) => {
   const scrollViewRefs = useRef([]);
   const currentIndexRef = useRef(initialIndex);
 
-  // Initialize
   useEffect(() => {
     const validIndex = Math.max(0, Math.min(initialIndex, packages.length - 1));
     setCurrentIndex(validIndex);
     currentIndexRef.current = validIndex;
     translateX.setValue(-validIndex * width);
 
-    // Initialize scrollViewRefs array
     scrollViewRefs.current = Array(packages.length)
       .fill()
       .map(() => null);
   }, [initialIndex, packages.length]);
 
-  // Sync currentIndexRef with currentIndex
   useEffect(() => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
@@ -81,14 +80,12 @@ const PackageDetailScreen = ({ navigation, route }) => {
     }
   }, [currentIndex]);
 
-  // Function to animate to a specific index
   const animateToIndex = (targetIndex, withVibration = true) => {
     if (targetIndex < 0 || targetIndex >= packages.length || isTransitioning) {
       return;
     }
 
     if (targetIndex === currentIndexRef.current) {
-      // Same index, just animate to correct position
       Animated.spring(translateX, {
         toValue: -targetIndex * width,
         useNativeDriver: true,
@@ -103,11 +100,9 @@ const PackageDetailScreen = ({ navigation, route }) => {
       Vibration.vibrate(20);
     }
 
-    // Update state immediately
     setCurrentIndex(targetIndex);
     currentIndexRef.current = targetIndex;
 
-    // Animate to target position
     Animated.spring(translateX, {
       toValue: -targetIndex * width,
       useNativeDriver: true,
@@ -133,7 +128,6 @@ const PackageDetailScreen = ({ navigation, route }) => {
         const currentPos = -currentIndexRef.current * width;
         let newPos = currentPos + dx;
 
-        // Apply resistance at boundaries
         if (newPos > 0) {
           newPos = dx * 0.3;
         } else if (newPos < -(packages.length - 1) * width) {
@@ -149,17 +143,14 @@ const PackageDetailScreen = ({ navigation, route }) => {
 
         let targetIndex = currentIndexRef.current;
 
-        // Determine direction based on swipe
         const shouldNavigate =
           Math.abs(dx) > SWIPE_THRESHOLD ||
           Math.abs(vx) > SWIPE_VELOCITY_THRESHOLD;
 
         if (shouldNavigate) {
           if (dx < 0 && currentIndexRef.current < packages.length - 1) {
-            // Swipe left - go to next
             targetIndex = currentIndexRef.current + 1;
           } else if (dx > 0 && currentIndexRef.current > 0) {
-            // Swipe right - go to previous
             targetIndex = currentIndexRef.current - 1;
           }
         }
@@ -168,7 +159,6 @@ const PackageDetailScreen = ({ navigation, route }) => {
       },
       onPanResponderTerminate: () => {
         setScrollEnabled(true);
-        // Return to current position
         animateToIndex(currentIndexRef.current, false);
       },
     })
@@ -182,17 +172,24 @@ const PackageDetailScreen = ({ navigation, route }) => {
   };
 
   const handleBookPackage = () => {
-    if (onBookPackage && packages[currentIndex]) {
-      onBookPackage(packages[currentIndex].id);
+    if (packages[currentIndex]) {
+      navigation.navigate("AppointmentScreen", {
+        selectedProfile: selectedPatient || defaultPatient,
+        currentPackage: packages[currentIndex],
+        initialStep: 2,
+      });
     }
   };
+
+  const shouldShowBookButton =
+    showBookButton && (selectedPatient || defaultPatient);
 
   if (!packages || packages.length === 0) {
     return (
       <ScreenContainer
         title="Chi tiết gói khám"
-        onBack={handleGoBack}
-        headerBackgroundColor="#0071CE"
+        onBack={() => navigation.goBack()}
+        hasBottomTabs={true}
       >
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
@@ -205,11 +202,10 @@ const PackageDetailScreen = ({ navigation, route }) => {
 
   return (
     <ScreenContainer
-      scrollable={false}
       title="Chi tiết gói khám"
       onBack={() => navigation.goBack()}
+      scrollable={false}
     >
-      {/* Main Content Container */}
       <View style={styles.mainContainer} {...panResponder.panHandlers}>
         <Animated.View
           style={[
@@ -239,7 +235,6 @@ const PackageDetailScreen = ({ navigation, route }) => {
           ))}
         </Animated.View>
 
-        {/* Swipe Hint */}
         {packages.length > 1 && (
           <View style={styles.swipeHintContainer}>
             <Text style={styles.swipeHintText}>
@@ -249,9 +244,26 @@ const PackageDetailScreen = ({ navigation, route }) => {
           </View>
         )}
 
-        {/* Book Button */}
-        {showBookButton && packages[currentIndex] && (
-          <View style={styles.bookButtonContainer}>
+        <View style={styles.controlContainer}>
+          {packages.length > 1 && (
+            <TouchableOpacity
+              style={[
+                styles.navButton,
+                styles.navButtonLeft,
+                currentIndex === 0 && styles.navButtonDisabled,
+              ]}
+              onPress={() => navigateToPackage(-1)}
+              disabled={currentIndex === 0 || isTransitioning}
+            >
+              <Icon
+                name="chevron-back"
+                size={20}
+                color={currentIndex === 0 ? "#ccc" : "#0071CE"}
+              />
+            </TouchableOpacity>
+          )}
+
+          {shouldShowBookButton && packages[currentIndex] && (
             <TouchableOpacity
               style={styles.bookButton}
               onPress={handleBookPackage}
@@ -260,75 +272,41 @@ const PackageDetailScreen = ({ navigation, route }) => {
               <Text style={styles.bookButtonText}>{bookButtonText}</Text>
               <Icon
                 name="calendar-outline"
-                size={20}
+                size={16}
                 color="#fff"
                 style={styles.bookButtonIcon}
               />
             </TouchableOpacity>
-          </View>
-        )}
-      </View>
+          )}
 
-      {/* Navigation Buttons */}
-      {packages.length > 1 && (
-        <View style={styles.navigationContainer}>
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              styles.navButtonLeft,
-              currentIndex === 0 && styles.navButtonDisabled,
-            ]}
-            onPress={() => navigateToPackage(-1)}
-            disabled={currentIndex === 0 || isTransitioning}
-          >
-            <Icon
-              name="chevron-back"
-              size={24}
-              color={currentIndex === 0 ? "#ccc" : "#0071CE"}
-            />
-            <Text
+          {packages.length > 1 && (
+            <TouchableOpacity
               style={[
-                styles.navButtonText,
-                currentIndex === 0 && styles.navButtonTextDisabled,
-              ]}
-            >
-              Gói trước
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              styles.navButtonRight,
-              currentIndex === packages.length - 1 && styles.navButtonDisabled,
-            ]}
-            onPress={() => navigateToPackage(1)}
-            disabled={currentIndex === packages.length - 1 || isTransitioning}
-          >
-            <Text
-              style={[
-                styles.navButtonText,
+                styles.navButton,
+                styles.navButtonRight,
                 currentIndex === packages.length - 1 &&
-                  styles.navButtonTextDisabled,
+                  styles.navButtonDisabled,
               ]}
+              onPress={() => navigateToPackage(1)}
+              disabled={currentIndex === packages.length - 1 || isTransitioning}
             >
-              Gói tiếp
-            </Text>
-            <Icon
-              name="chevron-forward"
-              size={24}
-              color={currentIndex === packages.length - 1 ? "#ccc" : "#0071CE"}
-            />
-          </TouchableOpacity>
+              <Icon
+                name="chevron-forward"
+                size={20}
+                color={
+                  currentIndex === packages.length - 1 ? "#ccc" : "#0071CE"
+                }
+              />
+            </TouchableOpacity>
+          )}
         </View>
-      )}
+      </View>
     </ScreenContainer>
   );
 
   function renderPackageContent(packageItem) {
     return (
       <>
-        {/* Package Header */}
         <View style={styles.packageHeader}>
           <Text style={styles.packageTitle}>{packageItem.name}</Text>
           <Text style={styles.packagePrice}>
@@ -336,7 +314,6 @@ const PackageDetailScreen = ({ navigation, route }) => {
           </Text>
         </View>
 
-        {/* Description Section */}
         <View style={styles.descriptionSection}>
           <Text style={styles.packageDescription}>
             <Text style={styles.sectionLabel}>Mô tả: </Text>
@@ -344,7 +321,6 @@ const PackageDetailScreen = ({ navigation, route }) => {
           </Text>
         </View>
 
-        {/* Tests Section */}
         <View style={styles.testsSection}>
           <Text style={styles.sectionTitle}>Các xét nghiệm bao gồm:</Text>
 
@@ -421,7 +397,6 @@ const PackageDetailScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-
   errorContainer: {
     flex: 1,
     justifyContent: "center",
@@ -435,6 +410,8 @@ const styles = StyleSheet.create({
   },
   mainContainer: {
     flex: 1,
+    backgroundColor: "#f8f9fa",
+    paddingBottom: 50,
   },
   packagesContainer: {
     flexDirection: "row",
@@ -448,7 +425,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 20,
   },
   packageHeader: {
     backgroundColor: "#fff",
@@ -533,64 +509,36 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
-  navigationContainer: {
+  controlContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-  },
-  navButton: {
-    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    backgroundColor: "#f0f0f0",
-  },
-  navButtonLeft: {
-    marginRight: 10,
-  },
-  navButtonRight: {
-    marginLeft: 10,
-  },
-  navButtonDisabled: {
-    backgroundColor: "#f5f5f5",
-  },
-  navButtonText: {
-    fontSize: 14,
-    color: "#0071CE",
-    fontWeight: "500",
-    marginHorizontal: 4,
-  },
-  navButtonTextDisabled: {
-    color: "#ccc",
-  },
-  swipeHintContainer: {
-    alignItems: "center",
+    paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#f0f0f0",
+    left: 0,
+    right: 0,
   },
-  swipeHintText: {
-    fontSize: 12,
-    color: "#888",
-    fontStyle: "italic",
+  navButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: "#f0f0f0",
   },
-  bookButtonContainer: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+  navButtonLeft: {
+    marginRight: 8,
+  },
+  navButtonRight: {
+    marginLeft: 8,
+  },
+  navButtonDisabled: {
+    backgroundColor: "#f5f5f5",
   },
   bookButton: {
     backgroundColor: "#0071CE",
-    padding: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 8,
     flexDirection: "row",
     justifyContent: "center",
@@ -600,15 +548,29 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    flex: 1,
+    marginHorizontal: 8,
   },
   bookButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
-    marginRight: 8,
+    marginRight: 6,
   },
   bookButtonIcon: {
-    marginLeft: 4,
+    marginLeft: 2,
+  },
+  swipeHintContainer: {
+    alignItems: "center",
+    paddingVertical: 8,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  swipeHintText: {
+    fontSize: 12,
+    color: "#888",
+    fontStyle: "italic",
   },
 });
 

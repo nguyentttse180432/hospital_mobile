@@ -3,9 +3,6 @@ import {
   GoogleSignin,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
-import * as WebBrowser from "expo-web-browser";
-
-WebBrowser.maybeCompleteAuthSession();
 
 /**
  * Khởi tạo Google Sign-In với các cấu hình chính xác
@@ -72,17 +69,6 @@ export const signOutGoogle = async () => {
 
     // Thử xóa mọi dữ liệu đăng nhập hiện có
     await GoogleSignin.signOut();
-
-    // Thử xóa dữ liệu WebView nếu expo-web-browser có sẵn
-    try {
-      // Nếu đang sử dụng expo
-      if (WebBrowser && typeof WebBrowser.clearAllCookies === "function") {
-        await WebBrowser.clearAllCookies();
-        console.log("Cleared all WebView cookies");
-      }
-    } catch (cookieError) {
-      console.log("Error clearing cookies:", cookieError);
-    }
 
     // Đặt lại cấu hình sau khi đăng xuất
     initGoogleSignIn();

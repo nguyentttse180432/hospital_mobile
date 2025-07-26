@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import Header from "../../components/common/Header";
 import ScreenContainer from "../../components/common/ScreenContainer";
@@ -6,10 +6,9 @@ import { timeSlots } from "../../data/appointmentData";
 import {
   createAppointment,
   formatAppointmentData,
-  getAppointmentByCode
+  getAppointmentByCode,
 } from "../../services/appointmentService";
 
-// Import các components đã tách
 import ProfileSelection from "../../components/appointment/step1/ProfileSelection";
 import AppointmentSelection from "../../components/appointment/step2/AppointmentSelection";
 import MedicalPackageSelection from "../../components/appointment/step2/MedicalPackageSelection";
@@ -20,9 +19,17 @@ import AppointmentReview from "../../components/appointment/step3/AppointmentRev
 import PaymentScreen from "../../components/appointment/step4/PaymentScreen";
 import AppointmentConfirmation from "../../components/appointment/step5/AppointmentConfirmation";
 
-const AppointmentScreen = ({ navigation }) => {
-  const [step, setStep] = useState(1);
-  const [selectedProfile, setSelectedProfile] = useState(null);
+const AppointmentScreen = ({ navigation, route }) => {
+  const {
+    selectedProfile: initialProfile,
+    currentPackage: initialPackage,
+    initialStep,
+  } = route.params || {};
+
+  const [step, setStep] = useState(initialStep || 1);
+  const [selectedProfile, setSelectedProfile] = useState(
+    initialProfile || null
+  );
   const [newProfile, setNewProfile] = useState({
     fullName: "",
     gender: "",
@@ -34,7 +41,7 @@ const AppointmentScreen = ({ navigation }) => {
     dob: "",
   });
   const [appointment, setAppointment] = useState(null);
-  const [currentPackage, setCurrentPackage] = useState(null);
+  const [currentPackage, setCurrentPackage] = useState(initialPackage || null);
   const [selectedServices, setSelectedServices] = useState([]);
   const [currentDate, setCurrentDate] = useState(null);
   const [currentTime, setCurrentTime] = useState(null);
@@ -44,28 +51,29 @@ const AppointmentScreen = ({ navigation }) => {
   const [appointmentQueue, setAppointmentQueue] = useState(null);
   const [appointmentQueueUrl, setAppointmentQueueUrl] = useState(null);
 
-  // Tính tổng tiền thanh toán
+  // Initialize step based on pre-selected profile and package
+  useEffect(() => {
+    if (initialProfile && initialPackage && initialStep === 2.2) {
+      setStep(2.2); // Skip to Service Selection
+      setSelectedProfile(initialProfile);
+      setCurrentPackage(initialPackage);
+    }
+  }, [initialProfile, initialPackage, initialStep]);
+
   const calculateTotalAmount = () => {
     let total = 0;
-
-    // Tính giá của gói khám
     if (currentPackage) {
       total += currentPackage.price || 0;
     }
-
-    // Tính giá của các dịch vụ
     if (selectedServices && selectedServices.length > 0) {
       total += selectedServices.reduce(
         (sum, service) => sum + (service.price || 0),
         0
       );
     }
-
     return total;
   };
 
-  // New: handle payment logic in step 4
-  // New: handle payment logic in step 4
   const handlePayment = async () => {
     if (
       !selectedProfile ||
@@ -85,7 +93,6 @@ const AppointmentScreen = ({ navigation }) => {
 
     setIsSubmitting(true);
     try {
-      // Format the appointment datetime
       const [day, month, year] = currentDate.split("/");
       const [startTime] = currentTime.time.split(" - ");
       const [hours, minutes] = startTime.split(":");
@@ -107,7 +114,6 @@ const AppointmentScreen = ({ navigation }) => {
       const response = await createAppointment(appointmentData);
       let code = null;
 
-      // Lấy appointment code từ response
       if (
         response &&
         response.isSuccess &&
@@ -128,11 +134,9 @@ const AppointmentScreen = ({ navigation }) => {
         throw new Error("Không thể lấy mã appointment từ server");
       }
 
-      // Sau khi tạo thành công, gọi getAppointmentByCode để lấy thông tin chi tiết
       console.log("Fetching appointment details with code:", code);
       const appointmentDetails = await getAppointmentByCode(code);
 
-      // Lấy queue và queueUrl từ response của createAppointment
       const createResponseData = response.isSuccess
         ? response.value
         : response.data.value;
@@ -145,11 +149,9 @@ const AppointmentScreen = ({ navigation }) => {
         appointmentDetails.isSuccess &&
         appointmentDetails.value
       ) {
-        // Chỉ set appointment từ getAppointmentByCode
         setAppointment(appointmentDetails.value);
         console.log("Appointment details loaded:", appointmentDetails.value);
       } else {
-        // Fallback: sử dụng thông tin từ createAppointment nếu getAppointmentByCode thất bại
         console.warn(
           "getAppointmentByCode failed, using createAppointment response"
         );
@@ -157,19 +159,15 @@ const AppointmentScreen = ({ navigation }) => {
       }
 
       if (paymentMethod === "Cash") {
-        // Nếu chọn thanh toán tại quầy, chuyển sang bước xác nhận
         setStep(5);
         return code;
       }
 
-      // Nếu chọn VNPay, trả về code cho PaymentScreen để tiếp tục gọi getPaymentUrl
       if (paymentMethod === "VNPay") {
         return code;
       }
     } catch (error) {
       console.error("Appointment creation error:", error);
-
-      // Xử lý các lỗi cụ thể
       if (
         error.response?.data?.detail ===
         "This patient had enough booking in one day."
@@ -199,10 +197,9 @@ const AppointmentScreen = ({ navigation }) => {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleNext = () => {
     if (step === 1) {
-      // Kiểm tra xem đã chọn profile có sẵn hoặc đã điền đủ thông tin profile mới
       const hasValidNewProfile =
         newProfile.fullName.trim() &&
         newProfile.gender.trim() &&
@@ -216,14 +213,12 @@ const AppointmentScreen = ({ navigation }) => {
         );
       }
 
-      // Nếu có profile mới được điền, sử dụng nó
       if (hasValidNewProfile && !selectedProfile) {
         setSelectedProfile(newProfile);
       }
 
-      setStep(2);
+      setStep(currentPackage ? 2.2 : 2); // Skip to Service Selection if package is pre-selected
     } else if (step === 2) {
-      // Kiểm tra đã chọn gói khám hoặc ít nhất một dịch vụ
       if (!currentPackage && selectedServices.length === 0) {
         return Alert.alert(
           "Lỗi",
@@ -239,8 +234,24 @@ const AppointmentScreen = ({ navigation }) => {
         return Alert.alert("Lỗi", "Vui lòng chọn giờ khám.");
       }
       setStep(3);
+    } else if (step === 2.1) {
+      if (!currentPackage) {
+        return Alert.alert("Lỗi", "Vui lòng chọn gói khám.");
+      }
+      setStep(2.2);
+    } else if (step === 2.2) {
+      setStep(2.3);
+    } else if (step === 2.3) {
+      if (!currentDate) {
+        return Alert.alert("Lỗi", "Vui lòng chọn ngày khám.");
+      }
+      setStep(2.4);
+    } else if (step === 2.4) {
+      if (!currentTime) {
+        return Alert.alert("Lỗi", "Vui lòng chọn giờ khám.");
+      }
+      setStep(3);
     } else if (step === 3) {
-      // Save the current appointment and move directly to payment step
       if (
         (!currentPackage && selectedServices.length === 0) ||
         !currentDate ||
@@ -248,27 +259,27 @@ const AppointmentScreen = ({ navigation }) => {
       ) {
         return Alert.alert("Lỗi", "Thông tin lịch khám chưa hoàn chỉnh.");
       }
-      // Chuyển sang bước thanh toán, không gọi submitAppointment nữa
       setStep(4);
     } else if (step === 4) {
-      if (!paymentMethod)
+      if (!paymentMethod) {
         return Alert.alert("Lỗi", "Vui lòng chọn phương thức thanh toán.");
-      // KHÔNG gọi submitAppointment ở đây nữa
-      // Chỉ xử lý thanh toán nếu cần
+      }
     }
   };
+
   const handleBack = () => {
-    // Handle back navigation with proper step transitions
-    if (
-      step === 2.1 ||
-      step === 2.2 ||
-      step === 2.3 ||
-      step === 2.4 ||
-      step === 3
-    ) {
-      setStep(2); // Return to main appointment selection
+    if (step === 2.1) {
+      setStep(2);
+    } else if (step === 2.2) {
+      setStep(currentPackage ? 2 : 2.1); // Go back to AppointmentSelection or PackageSelection
+    } else if (step === 2.3) {
+      setStep(2.2);
+    } else if (step === 2.4) {
+      setStep(2.3);
+    } else if (step === 3) {
+      setStep(currentPackage ? 2.4 : 2); // Go back to TimeSelection or AppointmentSelection
     } else if (step === 4) {
-      setStep(3); // Go back to appointment review from payment
+      setStep(3);
     } else if (step > 1) {
       setStep(step - 1);
     } else {
@@ -278,7 +289,6 @@ const AppointmentScreen = ({ navigation }) => {
 
   const canProceed = () => {
     if (step === 1) {
-      // Có thể tiếp tục nếu đã chọn profile có sẵn hoặc đã điền đủ thông tin profile mới
       const hasValidNewProfile =
         newProfile.fullName.trim() &&
         newProfile.gender.trim() &&
@@ -294,11 +304,21 @@ const AppointmentScreen = ({ navigation }) => {
         currentTime
       );
     }
+    if (step === 2.1) {
+      return !!currentPackage;
+    }
+    if (step === 2.3) {
+      return !!currentDate;
+    }
+    if (step === 2.4) {
+      return !!currentTime;
+    }
     if (step === 4) {
-      return paymentMethod;
+      return !!paymentMethod;
     }
     return true;
   };
+
   const resetAppointment = () => {
     setStep(1);
     setSelectedProfile(null);
@@ -318,10 +338,12 @@ const AppointmentScreen = ({ navigation }) => {
     setCurrentDate(null);
     setCurrentTime(null);
     setAppointmentCode(null);
+    setAppointmentQueue(null);
+    setAppointmentQueueUrl(null);
   };
+
   const getActiveStep = () => {
-    // Map the step values to the correct icon index (0-4)
-    if (step === 1) return 0; // Hồ sơ người khám (Person)
+    if (step === 1) return 0;
     if (
       step === 2 ||
       step === 2.1 ||
@@ -329,11 +351,11 @@ const AppointmentScreen = ({ navigation }) => {
       step === 2.3 ||
       step === 2.4
     )
-      return 1; // Thông tin khám (Medical)
-    if (step === 3) return 2; // Xác nhận thông tin (Clipboard)
-    if (step === 4) return 3; // Thanh toán (Wallet)
-    if (step === 5) return 4; // Phiếu khám bệnh (Document)
-    return 0; // Mặc định là bước đầu tiên
+      return 1;
+    if (step === 3) return 2;
+    if (step === 4) return 3;
+    if (step === 5) return 4;
+    return 0;
   };
 
   const getHeaderTitle = () => {
@@ -453,7 +475,7 @@ const AppointmentScreen = ({ navigation }) => {
               isSubmitting={isSubmitting}
               handlePayment={handlePayment}
               setStep={setStep}
-              setAppointment={setAppointment} // Thêm prop này
+              setAppointment={setAppointment}
             />
           )}
           {step === 5 && (
@@ -463,8 +485,8 @@ const AppointmentScreen = ({ navigation }) => {
               navigation={navigation}
               resetAppointment={resetAppointment}
               appointmentCode={appointmentCode}
-              appointmentQueue={appointmentQueue} // Thêm prop này
-              appointmentQueueUrl={appointmentQueueUrl} // Thêm prop này
+              appointmentQueue={appointmentQueue}
+              appointmentQueueUrl={appointmentQueueUrl}
             />
           )}
         </View>

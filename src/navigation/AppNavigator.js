@@ -17,6 +17,7 @@ import CheckupResultsScreen from "../screens/checkupRecord/CheckupResultsScreen"
 import CheckupResultDetailScreen from "../screens/checkupRecord/CheckupResultDetailScreen";
 import ImageViewerScreen from "../screens/checkupRecord/ImageViewerScreen";
 import PrescriptionScreen from "../screens/checkupRecord/PrescriptionScreen";
+import AppointmentScreen from "../screens/appointment/AppointmentBookingScreen";
 
 const Stack = createStackNavigator();
 
@@ -102,6 +103,11 @@ const AppNavigator = () => {
         <Stack.Screen
           name="PrescriptionScreen"
           component={PrescriptionScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AppointmentScreen"
+          component={AppointmentScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

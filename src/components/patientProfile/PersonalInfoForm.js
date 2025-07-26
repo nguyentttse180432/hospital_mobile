@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,22 +9,20 @@ import {
 } from "react-native";
 import FormField from "./FormField";
 import PhoneField from "./PhoneField";
-import DateGenderRow from "./DateGenderRow";
-import Button from "../common/Button";
+import DatePicker from "react-native-date-picker";
 
 const PersonalInfoForm = ({
   name,
   setName,
   dateOfBirth,
-  setDateOfBirth,
-  showDatePickerModal,
+  setShowDatePicker,
   gender,
   setShowGenderModal,
   idCard,
   insuranceNumber,
   setInsuranceNumber,
   occupation,
-  setShowOccupationModal, // Thêm setShowOccupationModal
+  setShowOccupationModal,
   email,
   setEmail,
   phoneNumber,
@@ -32,10 +30,21 @@ const PersonalInfoForm = ({
   loading,
   proceedToAddressInfo,
   goBack,
+  disabledFields = {},
 }) => {
+  const [showDatePickerModal, setShowDatePickerModal] = useState(false);
+
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  };
+
+  const handleDateConfirm = (selectedDate) => {
+    setShowDatePickerModal(false);
+    const day = String(selectedDate.getDate()).padStart(2, "0");
+    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+    const year = selectedDate.getFullYear();
+    setShowDatePicker(`${day}/${month}/${year}`);
   };
 
   return (
@@ -53,14 +62,25 @@ const PersonalInfoForm = ({
           placeholder="Nhập họ và tên"
           required={true}
           onChangeText={setName}
-          editable={true}
+          editable={!disabledFields.name}
         />
 
-        <DateGenderRow
-          dateValue={dateOfBirth}
-          onChangeDateValue={setDateOfBirth}
-          genderValue={gender}
-          onPressGender={setShowGenderModal}
+        <FormField
+          label="Ngày sinh (DD/MM/YYYY)"
+          value={dateOfBirth}
+          placeholder="Chọn ngày sinh"
+          onPress={() => setShowDatePickerModal(true)}
+          editable={false}
+          disabled={disabledFields.dateOfBirth}
+        />
+
+        <FormField
+          label="Giới tính"
+          value={gender}
+          placeholder="Chọn giới tính"
+          onPress={setShowGenderModal}
+          editable={false}
+          disabled={disabledFields.gender}
         />
 
         <FormField
@@ -69,7 +89,7 @@ const PersonalInfoForm = ({
           placeholder="Vui lòng nhập Mã định danh/CCCD/Passport"
           required={true}
           editable={false}
-          iconName="none" // Hide the chevron icon
+          iconName="none"
         />
 
         <FormField
@@ -84,7 +104,6 @@ const PersonalInfoForm = ({
           label="Nghề nghiệp"
           value={occupation}
           placeholder="Chọn nghề nghiệp"
-          required={true}
           onPress={setShowOccupationModal}
           editable={false}
         />
@@ -101,7 +120,7 @@ const PersonalInfoForm = ({
       </View>
 
       <TouchableOpacity
-        style={styles.submitButton}
+        style={[styles.submitButton, loading && styles.disabledButton]}
         onPress={proceedToAddressInfo}
         disabled={loading}
       >
@@ -111,6 +130,33 @@ const PersonalInfoForm = ({
           <Text style={styles.submitButtonText}>Tiếp tục</Text>
         )}
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.backButton, loading && styles.disabledButton]}
+        onPress={goBack}
+        disabled={loading}
+      >
+        <Text style={styles.backButtonText}>Quay lại</Text>
+      </TouchableOpacity>
+
+      <DatePicker
+        modal
+        open={showDatePickerModal}
+        date={
+          dateOfBirth
+            ? new Date(dateOfBirth.split("/").reverse().join("-"))
+            : new Date()
+        }
+        mode="date"
+        maximumDate={new Date()}
+        locale="vi"
+        onConfirm={handleDateConfirm}
+        onCancel={() => setShowDatePickerModal(false)}
+        confirmText="Xác nhận"
+        cancelText="Hủy"
+        title="Chọn ngày sinh"
+        disabled={disabledFields.dateOfBirth}
+      />
     </ScrollView>
   );
 };
@@ -119,11 +165,11 @@ const styles = StyleSheet.create({
   formContainer: {
     flex: 1,
     paddingHorizontal: 15,
-    paddingTop: 5, // Giảm khoảng cách từ trên xuống
+    paddingTop: 5,
   },
   instructions: {
     fontSize: 14,
-    marginBottom: 10, // Giảm khoảng cách xuống phần dưới
+    marginBottom: 10,
     color: "#666",
     textAlign: "center",
   },
@@ -150,7 +196,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
+    marginBottom: 10,
   },
   submitButtonText: {
     color: "#fff",
@@ -158,7 +204,20 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   backButton: {
-    marginVertical: 10,
+    backgroundColor: "#ccc",
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  backButtonText: {
+    color: "#333",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  disabledButton: {
+    backgroundColor: "#aaa",
   },
 });
 

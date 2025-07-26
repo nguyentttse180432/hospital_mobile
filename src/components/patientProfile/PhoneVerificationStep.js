@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import Input from "../common/Input";
 import Button from "../common/Button";
 
-const PhoneVerificationStep = ({
+const   PhoneVerificationStep = ({
   otpSent,
   phoneNumber,
   setPhoneNumber,

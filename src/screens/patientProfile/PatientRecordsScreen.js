@@ -231,12 +231,7 @@ const PatientRecordsScreen = () => {
   }
 
   return (
-    <ScreenContainer
-      scrollable={false}
-      header={customHeader}
-      style={{ padding: 0 }}
-      hasBottomTabs={true}
-    >
+    <ScreenContainer header={customHeader} hasBottomTabs={true}>
       <View style={[styles.container]}>
         <ScrollView
           refreshControl={
@@ -283,7 +278,7 @@ const PatientRecordsScreen = () => {
                   onPress={handleScanId}
                 >
                   <Icon name="scan-outline" size={20} color="#4299e1" />
-                  <Text style={styles.scanButtonText}>QUÉT MÃ BHYT/CCCD</Text>
+                  <Text style={styles.scanButtonText}>QUÉT MÃ CCCD</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -379,23 +374,16 @@ const PatientRecordsScreen = () => {
             style={styles.camera}
             facing={facing}
             barcodeScannerSettings={{
-              barcodeTypes: [
-                "qr",
-                "ean13",
-                "ean8",
-                "upc_a",
-                "upc_e",
-                "code39",
-                "code128",
-                "pdf417",
-              ],
+              barcodeTypes: ["qr"],
             }}
             onBarcodeScanned={handleBarcodeScanned}
+            // enableTorch={torchEnabled?}
+            autofocus="on"
           >
             <View style={styles.overlay}>
               <View style={styles.scanArea}>
                 <Text style={styles.scanInstruction}>
-                  Đặt mã QR, barcode CCCD/CMND hoặc thẻ BHYT vào khung quét
+                  {/* Đặt mã QR, barcode CCCD/CMND vào khung quét */}
                 </Text>
               </View>
             </View>
@@ -661,8 +649,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   scanArea: {
-    width: 250,
-    height: 250,
+    width: 100,
+    height: 100,
     borderWidth: 2,
     borderColor: "#4CAF50",
     borderRadius: 12,
@@ -670,15 +658,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  scanInstruction: {
-    color: "#fff",
-    fontSize: 16,
-    textAlign: "center",
-    backgroundColor: "rgba(0,0,0,0.7)",
-    padding: 10,
-    borderRadius: 8,
-    margin: 20,
-  },
+  // scanInstruction: {
+  //   color: "#fff",
+  //   fontSize: 16,
+  //   textAlign: "center",
+  //   backgroundColor: "rgba(0,0,0,0.7)",
+  //   padding: 10,
+  //   borderRadius: 8,
+  //   margin: 20,
+  // },
   cameraButtonContainer: {
     position: "absolute",
     bottom: 50,
