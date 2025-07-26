@@ -4,8 +4,26 @@ import {
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 
+// Environment variables
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+const GOOGLE_SCOPES = process.env.EXPO_PUBLIC_GOOGLE_SCOPES?.split(",") || [
+  "profile",
+  "email",
+];
+const GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN =
+  process.env.EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN === "true";
+const GOOGLE_OFFLINE_ACCESS =
+  process.env.EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS === "true";
+const GOOGLE_INIT_DELAY =
+  parseInt(process.env.EXPO_PUBLIC_GOOGLE_INIT_DELAY) || 500;
+const GOOGLE_SIGNIN_DELAY =
+  parseInt(process.env.EXPO_PUBLIC_GOOGLE_SIGNIN_DELAY) || 1000;
+const GOOGLE_RETRY_DELAY =
+  parseInt(process.env.EXPO_PUBLIC_GOOGLE_RETRY_DELAY) || 1000;
+
 /**
- * Khởi tạo Google Sign-In với các cấu hình chính xác
+ * Khởi tạo Google Sign-In với các cấu hình từ environment variables
  */
 export const initGoogleSignIn = () => {
   try {
@@ -15,15 +33,13 @@ export const initGoogleSignIn = () => {
       return false;
     }
 
-    // Đặt cấu hình
+    // Đặt cấu hình từ environment variables
     GoogleSignin.configure({
-      webClientId:
-        "607079346722-tl15f52a0gff761mp75uirolb3deu6h2.apps.googleusercontent.com",
-      scopes: ["profile", "email"],
-      iosClientId:
-        "607079346722-qbme72625oiq2ca54281pt2k3v7cnn7f.apps.googleusercontent.com",
-      forceCodeForRefreshToken: true,
-      offlineAccess: true,
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      scopes: GOOGLE_SCOPES,
+      iosClientId: GOOGLE_IOS_CLIENT_ID,
+      forceCodeForRefreshToken: GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN,
+      offlineAccess: GOOGLE_OFFLINE_ACCESS,
       accountName: "", // Thêm tham số này có thể giúp trong một số trường hợp
     });
 
@@ -40,8 +56,8 @@ export const initGoogleSignIn = () => {
  */
 export const checkPlayServices = async () => {
   try {
-    // Thêm timeout để đảm bảo activity đã sẵn sàng
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Thêm timeout từ environment variable
+    await new Promise((resolve) => setTimeout(resolve, GOOGLE_INIT_DELAY));
 
     await GoogleSignin.hasPlayServices({
       showPlayServicesUpdateDialog: true,
@@ -64,8 +80,8 @@ export const checkPlayServices = async () => {
  */
 export const signOutGoogle = async () => {
   try {
-    // Thêm timeout để đảm bảo activity đã sẵn sàng
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Thêm timeout từ environment variable
+    await new Promise((resolve) => setTimeout(resolve, GOOGLE_INIT_DELAY));
 
     // Thử xóa mọi dữ liệu đăng nhập hiện có
     await GoogleSignin.signOut();
@@ -92,8 +108,8 @@ export const performGoogleSignIn = async () => {
     // Khởi tạo lại GoogleSignin trước khi sử dụng
     initGoogleSignIn();
 
-    // Thêm timeout để đảm bảo GoogleSignin đã được khởi tạo đầy đủ
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Thêm timeout từ environment variable
+    await new Promise((resolve) => setTimeout(resolve, GOOGLE_SIGNIN_DELAY));
 
     // Đảm bảo Google Play Services khả dụng
     const playServicesAvailable = await checkPlayServices();
@@ -113,8 +129,8 @@ export const performGoogleSignIn = async () => {
       // Tiếp tục ngay cả khi đăng xuất thất bại
     }
 
-    // Thêm timeout trước khi thực hiện đăng nhập
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Thêm timeout từ environment variable
+    await new Promise((resolve) => setTimeout(resolve, GOOGLE_SIGNIN_DELAY));
 
     // Kiểm tra nếu người dùng đã đăng nhập
     let userAlreadySignedIn = false;
@@ -163,7 +179,9 @@ export const performGoogleSignIn = async () => {
       if (!GoogleSignin || typeof GoogleSignin.signIn !== "function") {
         // Khởi tạo lại một lần nữa nếu cần
         initGoogleSignIn();
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) =>
+          setTimeout(resolve, GOOGLE_SIGNIN_DELAY)
+        );
 
         if (!GoogleSignin || typeof GoogleSignin.signIn !== "function") {
           return {
@@ -210,7 +228,9 @@ export const performGoogleSignIn = async () => {
         case statusCodes.IN_PROGRESS:
           // Nếu đang trong quá trình đăng nhập, đợi một lát và thử lại
           try {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) =>
+              setTimeout(resolve, GOOGLE_RETRY_DELAY)
+            );
             const currentUser = await GoogleSignin.getCurrentUser();
             if (currentUser) {
               return {
@@ -253,7 +273,7 @@ export const performGoogleSignIn = async () => {
     if (error.message && error.message.includes("activity is null")) {
       // Thử sử dụng getCurrentUser nếu có lỗi activity is null
       try {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, GOOGLE_RETRY_DELAY));
 
         // Kiểm tra xem GoogleSignin và các phương thức có tồn tại không
         if (GoogleSignin && typeof GoogleSignin.isSignedIn === "function") {
@@ -299,14 +319,14 @@ export const performGoogleSignIn = async () => {
  */
 export const getCurrentGoogleUser = async () => {
   try {
-    // Thêm timeout dài hơn để đảm bảo GoogleSignin đã được khởi tạo đầy đủ
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Thêm timeout từ environment variable
+    await new Promise((resolve) => setTimeout(resolve, GOOGLE_SIGNIN_DELAY));
 
     // Khởi tạo lại GoogleSignin trước khi sử dụng để đảm bảo đã được cấu hình
     const configSuccess = initGoogleSignIn();
 
     // Thêm timeout sau khi khởi tạo
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, GOOGLE_INIT_DELAY));
 
     // Kiểm tra kỹ xem GoogleSignin có tồn tại không
     if (!GoogleSignin) {
@@ -358,19 +378,17 @@ export const getCurrentGoogleUser = async () => {
 
     // Thử phương pháp cuối cùng: tái khởi tạo và thử lại
     try {
-      // Tái khởi tạo GoogleSignin
+      // Tái khởi tạo GoogleSignin với config từ env
       GoogleSignin.configure({
-        webClientId:
-          "879263326241-q390su58qmmkcvhrkk69r59pvqt4smot.apps.googleusercontent.com",
-        scopes: ["profile", "email"],
-        iosClientId:
-          "879263326241-lgtn5qc4ict46et8636211k37hiuunl8.apps.googleusercontent.com",
-        forceCodeForRefreshToken: true,
-        offlineAccess: true,
+        webClientId: GOOGLE_WEB_CLIENT_ID,
+        scopes: GOOGLE_SCOPES,
+        iosClientId: GOOGLE_IOS_CLIENT_ID,
+        forceCodeForRefreshToken: GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN,
+        offlineAccess: GOOGLE_OFFLINE_ACCESS,
       });
 
       // Đợi thêm để đảm bảo khởi tạo hoàn tất
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, GOOGLE_SIGNIN_DELAY));
 
       // Thử lại lần cuối
       if (typeof GoogleSignin.getCurrentUser === "function") {
@@ -400,15 +418,12 @@ export const getCurrentGoogleUser = async () => {
   }
 };
 
-/**
- * Xóa hoàn toàn quyền truy cập của ứng dụng vào tài khoản Google
- * Sử dụng hàm này khi muốn xóa hoàn toàn liên kết giữa ứng dụng và tài khoản Google
- */
+// ... Phần còn lại của code giữ nguyên như cũ
 export const revokeGoogleAccess = async () => {
   try {
     // Kiểm tra xem GoogleSignin có sẵn và đã được khởi tạo chưa
     initGoogleSignIn();
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, GOOGLE_INIT_DELAY));
 
     // Kiểm tra xem người dùng có đăng nhập không
     const isSignedIn = await GoogleSignin.isSignedIn();
@@ -427,17 +442,6 @@ export const revokeGoogleAccess = async () => {
 
     // Đăng xuất sau khi thu hồi quyền truy cập
     await signOutGoogle();
-
-    // Xóa cookies và dữ liệu WebView nếu có thể
-    if (WebBrowser) {
-      if (typeof WebBrowser.clearAllCookies === "function") {
-        await WebBrowser.clearAllCookies();
-      }
-
-      if (typeof WebBrowser.maybeCompleteAuthSession === "function") {
-        WebBrowser.maybeCompleteAuthSession();
-      }
-    }
 
     console.log("Complete Google account revocation and logout");
     return true;

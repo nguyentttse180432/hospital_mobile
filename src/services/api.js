@@ -1,9 +1,24 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// Import environment variables
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL;
+const AUTH_REFRESH_TOKEN_ENDPOINT =
+  process.env.EXPO_PUBLIC_AUTH_REFRESH_TOKEN_ENDPOINT || "/Auth/refresh-token";
+const API_TIMEOUT = parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT) || 10000;
+const STORAGE_ACCESS_TOKEN_KEY =
+  process.env.EXPO_PUBLIC_STORAGE_ACCESS_TOKEN_KEY || "accessToken";
+const STORAGE_REFRESH_TOKEN_KEY =
+  process.env.EXPO_PUBLIC_STORAGE_REFRESH_TOKEN_KEY || "refreshToken";
+const STORAGE_USER_KEY = process.env.EXPO_PUBLIC_STORAGE_USER_KEY || "user";
+const STORAGE_PHONE_VERIFIED_KEY =
+  process.env.EXPO_PUBLIC_STORAGE_PHONE_VERIFIED_KEY || "phoneVerified";
+
 const api = axios.create({
-  baseURL: "https://hair-salon-fpt.io.vn/api",
-  // baseURL: "https://67c1408c62be.ngrok-free.app",
+  baseURL: API_BASE_URL,
+  timeout: API_TIMEOUT,
+  // Uncomment for development with ngrok
   // headers: {
   //   "ngrok-skip-browser-warning": "true",
   // },
@@ -12,7 +27,7 @@ const api = axios.create({
 // Thêm interceptor để tự động gắn accessToken
 api.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem("accessToken");
+    const token = await AsyncStorage.getItem(STORAGE_ACCESS_TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -39,16 +54,18 @@ api.interceptors.response.use(
 
       try {
         // Lấy refresh token từ AsyncStorage
-        const refreshToken = await AsyncStorage.getItem("refreshToken");
+        const refreshToken = await AsyncStorage.getItem(
+          STORAGE_REFRESH_TOKEN_KEY
+        );
 
         if (refreshToken) {
           // Lấy thông tin user từ AsyncStorage
-          const userString = await AsyncStorage.getItem("user");
+          const userString = await AsyncStorage.getItem(STORAGE_USER_KEY);
           const user = userString ? JSON.parse(userString) : {};
 
           // Gọi API để lấy access token mới với body đúng format
           const response = await axios.post(
-            "https://hair-salon-fpt.io.vn/api/Auth/refresh-token",
+            `${API_BASE_URL}${AUTH_REFRESH_TOKEN_ENDPOINT}`,
             {
               userId: user.id || "",
               role: user.role || "",
@@ -59,11 +76,11 @@ api.interceptors.response.use(
           if (response.data.isSuccess) {
             // Lưu token mới vào AsyncStorage
             await AsyncStorage.setItem(
-              "accessToken",
+              STORAGE_ACCESS_TOKEN_KEY,
               response.data.value.accessToken
             );
             await AsyncStorage.setItem(
-              "refreshToken",
+              STORAGE_REFRESH_TOKEN_KEY,
               response.data.value.refreshToken
             );
 
@@ -73,15 +90,17 @@ api.interceptors.response.use(
           }
         }
       } catch (refreshError) {
-        // Bỏ console.error để tránh cảnh báo
-        // console.error("Refresh token error:", refreshError);
+        // Log error in development mode only
+        if (process.env.EXPO_PUBLIC_DEBUG_MODE === "true") {
+          console.error("Refresh token error:", refreshError);
+        }
       }
 
       // Xóa token và chuyển về màn hình đăng nhập nếu refresh token thất bại
-      await AsyncStorage.removeItem("accessToken");
-      await AsyncStorage.removeItem("refreshToken");
-      await AsyncStorage.removeItem("user");
-      await AsyncStorage.removeItem("phoneVerified");
+      await AsyncStorage.removeItem(STORAGE_ACCESS_TOKEN_KEY);
+      await AsyncStorage.removeItem(STORAGE_REFRESH_TOKEN_KEY);
+      await AsyncStorage.removeItem(STORAGE_USER_KEY);
+      await AsyncStorage.removeItem(STORAGE_PHONE_VERIFIED_KEY);
 
       // Tùy chọn: Redirect về màn hình đăng nhập (cần xử lý thêm)
     }
