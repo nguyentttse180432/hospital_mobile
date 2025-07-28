@@ -1,9 +1,10 @@
+import React from "react";
 import { View, Text, StyleSheet, TextInput, ScrollView } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import ViewField from "../../common/ViewField";
 import Button from "../../common/Button";
 
-const DoctorAppointmentSelection = ({
+const DateAppointmentSelection = ({
   selectedDepartment,
   selectedDoctor,
   currentDate,
@@ -16,43 +17,42 @@ const DoctorAppointmentSelection = ({
   return (
     <ScrollView style={styles.container}>
       <View style={styles.selectionSection}>
+        <Text style={styles.sectionTitle}>Thời gian khám</Text>
+        <ViewField
+          label="Ngày khám"
+          value={currentDate || "Chưa chọn ngày"}
+          icon="calendar"
+          onPress={() => setStep(2.1)}
+          showArrow={true}
+        />
+        <ViewField
+          label="Giờ khám"
+          value={currentTime?.displayTime || "Chưa chọn giờ"}
+          icon="time"
+          onPress={() => setStep(2.2)}
+          disabled={!currentDate}
+          showArrow={true}
+        />
+      </View>
+      <View style={styles.selectionSection}>
         <Text style={styles.sectionTitle}>Chọn thông tin khám</Text>
         <ViewField
           label="Khoa"
           value={selectedDepartment?.name || "Chưa chọn khoa"}
           icon="medkit"
-          onPress={() => setStep(2.1)}
+          onPress={() => setStep(2.3)}
+          disabled={!currentTime}
           showArrow={true}
         />
         <ViewField
           label="Bác sĩ"
           value={selectedDoctor?.doctorName || "Chưa chọn bác sĩ"}
           icon="person"
-          onPress={() => setStep(2.2)}
+          onPress={() => setStep(2.4)}
           disabled={!selectedDepartment}
           showArrow={true}
         />
       </View>
-      <View style={styles.selectionSection}>
-        <Text style={styles.sectionTitle}>Thời gian khám</Text>
-        <ViewField
-          label="Ngày khám"
-          value={currentDate || "Chưa chọn ngày"}
-          icon="calendar"
-          onPress={() => setStep(2.3)}
-          disabled={!selectedDoctor}
-          showArrow={true}
-        />
-        <ViewField
-          label="Giờ khám"
-          value={currentTime?.time || "Chưa chọn giờ"}
-          icon="time"
-          onPress={() => setStep(2.4)}
-          disabled={!currentDate}
-          showArrow={true}
-        />
-      </View>
-      {/* Nhập triệu chứng */}
       <View style={styles.priceSection}>
         <View style={styles.priceHeader}>
           <Icon name="document-text-outline" size={20} color="#0071CE" />
@@ -69,12 +69,11 @@ const DoctorAppointmentSelection = ({
           />
         </View>
       </View>
-      {/* Incomplete Selection Warning */}
       {!canProceed() && (
         <View style={styles.warningContainer}>
           <Icon name="warning-outline" size={20} color="#ff9800" />
           <Text style={styles.warningText}>
-            Vui lòng hoàn tất chọn khoa, bác sĩ, ngày và giờ khám để tiếp tục
+            Vui lòng hoàn tất chọn ngày, giờ, khoa và bác sĩ để tiếp tục
           </Text>
         </View>
       )}
@@ -149,15 +148,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
   },
-  priceItemLabel: {
+  symptomInput: {
     flex: 1,
     fontSize: 14,
-    color: "#555",
-  },
-  priceItemValue: {
-    fontSize: 14,
-    fontWeight: "500",
     color: "#333",
+    backgroundColor: "#f7f7f7",
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#e3f2fd",
+    minHeight: 48,
+    textAlignVertical: "top",
   },
   warningContainer: {
     flexDirection: "row",
@@ -171,18 +172,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: "#ff9800",
   },
-  symptomInput: {
-    flex: 1,
-    fontSize: 14,
-    color: "#333",
-    backgroundColor: "#f7f7f7",
-    borderRadius: 8,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#e3f2fd",
-    minHeight: 48,
-    textAlignVertical: "top",
-  },
   warningText: {
     flex: 1,
     fontSize: 14,
@@ -193,8 +182,8 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: 16,
     paddingVertical: 20,
-    marginBottom: 50
+    marginBottom: 50,
   },
 });
 
-export default DoctorAppointmentSelection;
+export default DateAppointmentSelection;

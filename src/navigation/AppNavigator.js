@@ -20,6 +20,7 @@ import PrescriptionScreen from "../screens/checkupRecord/PrescriptionScreen";
 import PackageBookingScreen from "../screens/booking/package/PackageBookingScreen";
 import ServiceBookingTypeScreen from "../screens/booking/service/ServiceBookingTypeScreen ";
 import DoctorBookingScreen from "../screens/booking/service/DoctorBookingScreen";
+import DateBookingScreen from "../screens/booking/service/DateBookingScreen";
 import GeneralServiceBookingTypeScreen from "../screens/booking/service/GeneralServiceBookingTypeScreen";
 
 const Stack = createStackNavigator();
@@ -126,6 +127,11 @@ const AppNavigator = () => {
         <Stack.Screen
           name="GeneralServiceBookingTypeScreen"
           component={GeneralServiceBookingTypeScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BookByDate"
+          component={DateBookingScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

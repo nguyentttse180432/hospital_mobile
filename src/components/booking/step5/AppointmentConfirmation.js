@@ -77,12 +77,11 @@ const AppointmentConfirmation = ({
   };
 
   // Format date and time
-  const formatDateTime = (dateString, timeString) => {
-    if (!dateString || !timeString?.time) return "-";
+  const formatDateTime = (dateString, timeObj) => {
+    if (!dateString || !timeObj?.displayTime) return "-";
     try {
       const [day, month, year] = dateString.split("/");
-      const [startTime] = timeString.time.split(" - ");
-      return `${startTime}, ${day}/${month}/${year}`;
+      return `${timeObj.displayTime}, ${day}/${month}/${year}`;
     } catch {
       return "-";
     }
@@ -117,7 +116,7 @@ const AppointmentConfirmation = ({
             resetAppointment();
             navigation.reset({
               index: 0,
-              routes: [{ name: "Trang chủ" }],
+              routes: [{ name: "Home" }],
             });
           }}
           style={{ width: 200 }}
@@ -207,7 +206,7 @@ const AppointmentConfirmation = ({
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Bác sĩ:</Text>
             <Text style={styles.infoValue}>
-              {selectedDoctor?.fullName || "Chưa chọn"}
+              {selectedDoctor?.doctorName || "Chưa chọn"}
             </Text>
           </View>
           <View style={styles.infoRow}>

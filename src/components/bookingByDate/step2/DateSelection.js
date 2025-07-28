@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import Button from "../../common/Button";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { getDoctorAvailableDates } from "../../../services/appointmentService";
 import colors from "../../../constant/colors";
 
 const DateSelection = ({
@@ -16,17 +15,10 @@ const DateSelection = ({
   setCurrentDate,
   setCurrentTime,
   setStep,
-  selectedDoctor,
 }) => {
-  // State cho thời gian hệ thống
   const [systemTime, setSystemTime] = React.useState(null);
   const [systemTimeLoading, setSystemTimeLoading] = React.useState(true);
   const [systemTimeError, setSystemTimeError] = React.useState(null);
-
-  // State cho ngày khả dụng
-  const [availableDates, setAvailableDates] = React.useState([]);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState(null);
 
   // Lấy thời gian hệ thống khi component được mount
   React.useEffect(() => {
@@ -34,8 +26,7 @@ const DateSelection = ({
       setSystemTimeLoading(true);
       setSystemTimeError(null);
       try {
-        // Cập nhật thời gian hệ thống thành 07:26 AM +07, 28/07/2025
-        const today = new Date("2025-07-28T07:26:00+07:00");
+        const today = new Date("2025-07-29T02:47:00+07:00"); // Current date and time
         setSystemTime(today);
       } catch (err) {
         setSystemTimeError("Lỗi khi lấy thời gian hệ thống.");
@@ -46,51 +37,32 @@ const DateSelection = ({
     fetchSystemTime();
   }, []);
 
-  // Lấy danh sách ngày khả dụng khi component mount hoặc selectedDoctor thay đổi
-  React.useEffect(() => {
-    const fetchAvailableDates = async () => {
-      if (!selectedDoctor?.doctorId) return;
-
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await getDoctorAvailableDates(selectedDoctor.doctorId);
-        console.log("Fetched Available Dates:", response);
-
-        if (response && response.isSuccess && response.value) {
-          // Chuyển đổi từ ISO string sang Date object
-          const dates = response.value.map((dateStr) => new Date(dateStr));
-          setAvailableDates(dates);
-        } else {
-          setError("Không lấy được danh sách ngày khả dụng.");
-        }
-      } catch (err) {
-        setError("Lỗi khi lấy danh sách ngày khả dụng.");
-        console.error("Error fetching available dates:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAvailableDates();
-  }, [selectedDoctor?.doctorId]);
-
-  // Sử dụng systemTime thay cho today
-  const today = systemTime || new Date("2025-07-28T07:26:00+07:00");
-
+  const today = systemTime || new Date("2025-07-29T02:47:00+07:00");
   const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth(); // 0-based (0 = Tháng 1)
+  const currentMonth = today.getMonth();
   const currentDay = today.getDate();
 
   // Cài đặt hiển thị lịch
   const [displayMonth, setDisplayMonth] = React.useState(currentMonth);
   const [displayYear, setDisplayYear] = React.useState(currentYear);
 
-  // Hàm kiểm tra ngày có trong danh sách ngày khả dụng không
+  // Tạo danh sách 3 ngày tiếp theo
+  const getNextThreeDays = () => {
+    const dates = [];
+    for (let i = 0; i < 3; i++) {
+      const date = new Date(today);
+      date.setDate(currentDay + i);
+      dates.push(date);
+    }
+    return dates;
+  };
+
+  const availableDates = getNextThreeDays();
+
+  // Kiểm tra ngày có trong danh sách 3 ngày tiếp theo không
   const isDateAvailable = (year, month, day) => {
     const dateToCheck = new Date(year, month, day);
     dateToCheck.setHours(0, 0, 0, 0);
-
     return availableDates.some((availableDate) => {
       const checkDate = new Date(availableDate);
       checkDate.setHours(0, 0, 0, 0);
@@ -98,12 +70,10 @@ const DateSelection = ({
     });
   };
 
-  // Hàm kiểm tra ngày có khả dụng không (cải tiến với kiểm tra thời gian)
+  // Kiểm tra ngày có khả dụng không
   const isDayAvailable = (year, month, day) => {
     const dateToCheck = new Date(year, month, day);
     const todayDate = new Date(today);
-
-    // Reset thời gian về 00:00:00 để so sánh chỉ ngày
     dateToCheck.setHours(0, 0, 0, 0);
     todayDate.setHours(0, 0, 0, 0);
 
@@ -112,34 +82,12 @@ const DateSelection = ({
       return false;
     }
 
-    // Kiểm tra có trong danh sách ngày khả dụng không
-    if (!isDateAvailable(year, month, day)) {
-      return false;
-    }
-
-    // Nếu là ngày hôm nay, cần kiểm tra xem còn thời gian để đặt không
-    // (ít nhất 1 tiếng từ bây giờ)
-    if (dateToCheck.getTime() === todayDate.getTime()) {
-      const currentHour = today.getHours();
-      const currentMinute = today.getMinutes();
-      const currentTimeInMinutes = currentHour * 60 + currentMinute;
-      const minimumTimeInMinutes = currentTimeInMinutes + 60; // Sau 1 tiếng
-
-      // Kiểm tra xem có slot nào sau minimumTime không (trong khung 7:00-17:00)
-      // Giả sử có slot từ 7:00 đến 17:00, mỗi 15 phút
-      const maxWorkingTime = 17 * 60; // 17:00
-
-      return minimumTimeInMinutes < maxWorkingTime;
-    }
-
-    return true;
+    return isDateAvailable(year, month, day);
   };
 
-  // Tính số ngày trong tháng được chọn
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(displayYear, displayMonth, 1).getDay();
 
-  // Hàm chuyển đến tháng trước/sau
   const goToPreviousMonth = () => {
     if (displayMonth === 0) {
       setDisplayMonth(11);
@@ -171,7 +119,7 @@ const DateSelection = ({
 
   const handleContinue = () => {
     if (currentDate) {
-      setStep(2.4); // Chuyển sang chọn thời gian
+      setStep(2.2); // Chuyển sang chọn thời gian
     }
   };
 
@@ -191,8 +139,6 @@ const DateSelection = ({
         ? parseInt(currentDate.split("/")[0])
         : null;
       const isSelected = selectedDay === day;
-
-      // Sử dụng hàm kiểm tra mới
       const isAvailable = isDayAvailable(displayYear, displayMonth, day);
 
       days.push(
@@ -245,85 +191,70 @@ const DateSelection = ({
 
   return (
     <View style={styles.container}>
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primaryBlue} />
-          <Text style={styles.loadingText}>
-            Đang tải thông tin ngày làm việc...
+      <View style={styles.calendar}>
+        <View style={styles.monthNavigation}>
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={goToPreviousMonth}
+          >
+            <Ionicons
+              name="chevron-back"
+              size={20}
+              color={colors.primaryBlue}
+            />
+          </TouchableOpacity>
+          <Text style={styles.monthTitle}>
+            Tháng {displayMonth + 1} - {displayYear}
           </Text>
+          <TouchableOpacity style={styles.navButton} onPress={goToNextMonth}>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={colors.primaryBlue}
+            />
+          </TouchableOpacity>
         </View>
-      ) : (
-        <View style={styles.calendar}>
-          <View style={styles.monthNavigation}>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={goToPreviousMonth}
-            >
-              <Ionicons
-                name="chevron-back"
-                size={20}
-                color={colors.primaryBlue}
-              />
-            </TouchableOpacity>
 
-            <Text style={styles.monthTitle}>
-              Tháng {displayMonth + 1} - {displayYear}
-            </Text>
-
-            <TouchableOpacity style={styles.navButton} onPress={goToNextMonth}>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={colors.primaryBlue}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.weekDaysContainer}>
-            {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((day, index) => (
-              <View key={day} style={styles.weekDayItem}>
-                <Text
-                  style={[
-                    styles.weekDayText,
-                    (index === 0 || index === 6) && styles.weekendText,
-                  ]}
-                >
-                  {day}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.calendarGrid}>{renderCalendarDays()}</View>
-
-          <View style={styles.legendContainer}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, styles.selectedLegendDot]} />
-              <Text style={styles.legendText}>Đã chọn</Text>
+        <View style={styles.weekDaysContainer}>
+          {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((day, index) => (
+            <View key={day} style={styles.weekDayItem}>
+              <Text
+                style={[
+                  styles.weekDayText,
+                  (index === 0 || index === 6) && styles.weekendText,
+                ]}
+              >
+                {day}
+              </Text>
             </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, styles.unavailableLegendDot]} />
-              <Text style={styles.legendText}>Không khả dụng</Text>
-            </View>
+          ))}
+        </View>
+
+        <View style={styles.calendarGrid}>{renderCalendarDays()}</View>
+
+        <View style={styles.legendContainer}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, styles.selectedLegendDot]} />
+            <Text style={styles.legendText}>Đã chọn</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, styles.unavailableLegendDot]} />
+            <Text style={styles.legendText}>Không khả dụng</Text>
           </View>
         </View>
-      )}
+      </View>
 
       <Button
         title="Tiếp Tục"
         onPress={handleContinue}
         disabled={!currentDate}
-        style={[
-          styles.continueButton,
-          {
-            opacity: currentDate ? 1 : 0.5,
-          },
-        ]}
+        style={[styles.continueButton, { opacity: currentDate ? 1 : 0.5 }]}
       />
     </View>
   );
 };
 
+// Styles remain the same as provided in the original DateSelection component
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -452,18 +383,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textLight,
     fontWeight: "500",
-  },
-  infoContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.background,
-  },
-  infoText: {
-    fontSize: 12,
-    color: colors.textLight,
-    textAlign: "center",
-    fontStyle: "italic",
   },
   continueButton: {
     marginTop: 8,

@@ -173,7 +173,7 @@ const PackageDetailScreen = ({ navigation, route }) => {
 
   const handleBookPackage = () => {
     if (packages[currentIndex]) {
-      navigation.navigate("AppointmentScreen", {
+      navigation.navigate("BookAppointmentScreen", {
         selectedProfile: selectedPatient || defaultPatient,
         currentPackage: packages[currentIndex],
         initialStep: 2,

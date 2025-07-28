@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import Button from "../../common/Button";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { getDoctorSchedule } from "../../../services/appointmentService";
+import { getDoctorScheduleByDate } from "../../../services/appointmentService";
 import colors from "../../../constant/colors";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -19,39 +19,42 @@ const TimeSelection = ({
   currentTime,
   setCurrentTime,
   setStep,
-  selectedDoctor,
 }) => {
   const [schedule, setSchedule] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
-  const [systemTime] = React.useState(new Date("2025-07-29T03:19:00+07:00"));
+  const [systemTime] = React.useState(new Date("2025-07-29T03:13:00+07:00"));
 
-  // Fetch doctor schedule
+  // Fetch schedule by date
   React.useEffect(() => {
-    const fetchDoctorSchedule = async () => {
-      if (!selectedDoctor?.doctorId) return;
+    const fetchSchedule = async () => {
+      if (!currentDate) return;
 
       setLoading(true);
       setError(null);
       try {
-        const response = await getDoctorSchedule(selectedDoctor.doctorId);
-        console.log("Fetched Doctor Schedule:", response.value);
+        const [day, month, year] = currentDate.split("/").map(Number);
+        const dateString = `${year}-${month.toString().padStart(2, "0")}-${day
+          .toString()
+          .padStart(2, "0")}`;
+        const response = await getDoctorScheduleByDate(dateString);
+        console.log("Fetched Schedule:", response.value);
 
         if (response && response.isSuccess && response.value) {
           setSchedule(response.value);
         } else {
-          setError("Không lấy được lịch trình bác sĩ.");
+          setError("Không lấy được lịch trình.");
         }
       } catch (err) {
-        setError("Lỗi khi lấy lịch trình bác sĩ.");
+        setError("Lỗi khi lấy lịch trình.");
         console.error("Error fetching schedule:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDoctorSchedule();
-  }, [selectedDoctor?.doctorId]);
+    fetchSchedule();
+  }, [currentDate]);
 
   // Convert ISO time to HH:MM format
   const formatTimeFromISO = (isoString) => {
@@ -66,7 +69,7 @@ const TimeSelection = ({
   const isTimeSlotAvailable = (slot) => {
     if (!slot.isAvailable) return false;
 
-    const timeDate = new Date(slot.time);
+    const timeDate = new Date(slot.startBlock);
     const slotHour = timeDate.getUTCHours();
     const slotMinute = timeDate.getUTCMinutes();
     const slotTimeInMinutes = slotHour * 60 + slotMinute;
@@ -96,34 +99,31 @@ const TimeSelection = ({
     return slotTimeInMinutes >= minimumTimeInMinutes;
   };
 
-  // Handle time slot selection
   const handleTimeSelect = (timeSlot) => {
     if (isTimeSlotAvailable(timeSlot)) {
       const formattedSlot = {
         ...timeSlot,
-        displayTime: formatTimeFromISO(timeSlot.time),
+        displayTime: formatTimeFromISO(timeSlot.startBlock),
       };
       setCurrentTime(formattedSlot);
     }
   };
 
-  // Handle continue to next step
   const handleContinue = () => {
     if (currentTime) {
-      setStep(2); // Navigate to confirmation step
+      setStep(2.3); // Navigate to department selection
     }
   };
 
-  // Handle select another date
   const handleSelectAnotherDate = () => {
-    setStep(2.3); // Navigate back to date selection
+    setStep(2.1); // Navigate back to date selection
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primaryBlue} />
-        <Text style={styles.loadingText}>Đang tải lịch trình bác sĩ...</Text>
+        <Text style={styles.loadingText}>Đang tải lịch trình...</Text>
       </View>
     );
   }
@@ -134,11 +134,11 @@ const TimeSelection = ({
       </View>
     );
   }
-  if (!currentDate || !selectedDoctor?.doctorId) {
+  if (!currentDate) {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>
-          Vui lòng chọn ngày và bác sĩ trước khi chọn giờ.
+          Vui lòng chọn ngày trước khi chọn giờ.
         </Text>
       </View>
     );
@@ -146,15 +146,12 @@ const TimeSelection = ({
   if (!schedule) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>
-          Không có dữ liệu lịch trình bác sĩ.
-        </Text>
+        <Text style={styles.errorText}>Không có dữ liệu lịch trình.</Text>
       </View>
     );
   }
 
-  const filteredTimeSlots =
-    schedule.timeSlots?.filter((slot) => isTimeSlotAvailable(slot)) || [];
+  const filteredTimeSlots = schedule.blocks?.filter(isTimeSlotAvailable) || [];
   const isToday = (() => {
     const [day, month, year] = currentDate.split("/").map(Number);
     const selectedDate = new Date(year, month - 1, day);
@@ -170,22 +167,15 @@ const TimeSelection = ({
         <Text style={styles.headerText}>
           Chọn giờ khám cho ngày {currentDate}
         </Text>
-        {isToday && (
-          <View style={styles.noteContainer}>
-            <Ionicons name="information-circle-outline" size={16} color={colors.primaryOrange} />
-            <Text style={styles.noteText}>
-              Lịch phải được đặt trước ít nhất 1 tiếng (sau 04:19)
-            </Text>
-          </View>
-        )}
+       
       </View>
 
       <View style={styles.timeSlotsContainer}>
         {filteredTimeSlots.length > 0 ? (
           <View style={styles.timeSlotsGrid}>
             {filteredTimeSlots.map((slot, index) => {
-              const displayTime = formatTimeFromISO(slot.time);
-              const isSelected = currentTime?.time === slot.time;
+              const displayTime = formatTimeFromISO(slot.startBlock);
+              const isSelected = currentTime?.startBlock === slot.startBlock;
 
               return (
                 <TouchableOpacity
@@ -218,12 +208,10 @@ const TimeSelection = ({
               color={colors.textLight}
               style={styles.noSlotsIcon}
             />
-            <Text style={styles.noSlotsText}>
-              Không có khung giờ khả dụng
-            </Text>
+            <Text style={styles.noSlotsText}>Không có khung giờ khả dụng</Text>
             <Text style={styles.noSlotsSubText}>
               {isToday
-                ? "Hôm nay không còn khung giờ nào phù hợp (sau 04:19)."
+                ? "Hôm nay không còn khung giờ nào phù hợp (sau 04:13)."
                 : "Không có lịch trống cho ngày này."}
             </Text>
             <Button
@@ -287,24 +275,11 @@ const styles = StyleSheet.create({
     textAlign: "left",
     marginBottom: 8,
   },
-  noteContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: `${colors.primaryOrange}10`,
-    padding: 10,
-    borderRadius: 8,
-  },
-  noteText: {
-    fontSize: 14,
-    color: colors.primaryOrange,
-    marginLeft: 8,
-    fontWeight: "500",
-    flex: 1,
-  },
   timeSlotsContainer: {
     flex: 1,
     backgroundColor: colors.white,
     borderRadius: 12,
+    height: 200,
     padding: 20,
     marginBottom: 16,
     shadowColor: colors.textDark,
@@ -316,7 +291,6 @@ const styles = StyleSheet.create({
   timeSlotsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
   },
   timeSlot: {
     width: (screenWidth - 72) / 3 - 8, // 3 columns with spacing

@@ -20,6 +20,7 @@ const AppointmentReview = ({
     department: selectedDepartment,
     symptom: symptom,
   };
+  console.log("Appointment Data:", appointmentData);
 
   // Format date to Vietnamese format
   const formatDate = (dateString) => {
@@ -108,15 +109,15 @@ const AppointmentReview = ({
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Bác sĩ</Text>
               <Text style={styles.infoValue}>
-                {appointmentData.doctor?.fullName || "Chưa chọn"}
+                {appointmentData.doctor?.doctorName || "Chưa chọn"}
               </Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Thời gian khám</Text>
               <Text style={styles.infoValue}>
-                {appointmentData.date && appointmentData.time?.time
+                {appointmentData.date && appointmentData.time?.displayTime
                   ? `${formatDate(appointmentData.date)} - ${
-                      appointmentData.time.time
+                      appointmentData.time.displayTime
                     }`
                   : "Chưa chọn"}
               </Text>

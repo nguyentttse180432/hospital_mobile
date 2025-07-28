@@ -5,28 +5,36 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
+  Alert,
 } from "react-native";
-import { getDoctorsByDepartment } from "../../../services/appointmentService"; // Giả sử API từ service
+import { getDoctorsByDate } from "../../../services/appointmentService";
 
 const DoctorSelection = ({
+  selectedDepartment,
   selectedDoctor,
   setSelectedDoctor,
-  doctors,
-  setDoctors,
-  selectedDepartment,
+  currentDate,
   setStep,
-  canProceed,
 }) => {
+  console.log("Selected Department:", selectedDepartment);
+  
+  const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (selectedDepartment) {
+    if (selectedDepartment && currentDate) {
       const fetchDoctors = async () => {
         try {
-          const data = await getDoctorsByDepartment(selectedDepartment.id);
-          console.log(selectedDepartment.id);
+          const [day, month, year] = currentDate.split("/").map(Number);
+          const dateString = `${year}-${month.toString().padStart(2, "0")}-${day
+            .toString()
+            .padStart(2, "0")}`;
+          console.log("Fetching doctors for date:", dateString);
+          const data = await getDoctorsByDate(
+            selectedDepartment.id,
+            dateString
+          );
           console.log("Fetched Doctors:", data);
           setDoctors(data.value || []);
         } catch (error) {
@@ -40,11 +48,11 @@ const DoctorSelection = ({
       };
       fetchDoctors();
     }
-  }, [selectedDepartment]);
+  }, [selectedDepartment, currentDate]);
 
   const handleSelectDoctor = (doctor) => {
     setSelectedDoctor(doctor);
-    setStep(2.3); // Chuyển sang bước chọn ngày
+    setStep(2); // Chuyển sang xác nhận
   };
 
   const renderItem = ({ item }) => (
@@ -56,6 +64,9 @@ const DoctorSelection = ({
       onPress={() => handleSelectDoctor(item)}
     >
       <Text style={styles.doctorText}>{item.doctorName}</Text>
+      <Text style={styles.doctorInfo}>
+        Phòng: {item.roomNumber}, Tầng: {item.floor}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -70,12 +81,18 @@ const DoctorSelection = ({
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Chọn Bác Sĩ</Text>
-      <FlatList
-        data={doctors}
-        keyExtractor={(item) => item.doctorId}
-        renderItem={renderItem}
-        extraData={selectedDoctor}
-      />
+      {doctors.length > 0 ? (
+        <FlatList
+          data={doctors}
+          keyExtractor={(item) => item.doctorId}
+          renderItem={renderItem}
+          extraData={selectedDoctor}
+        />
+      ) : (
+        <Text style={styles.noDoctorsText}>
+          Không có bác sĩ nào khả dụng cho ngày và khoa đã chọn.
+        </Text>
+      )}
     </View>
   );
 };
@@ -104,6 +121,17 @@ const styles = StyleSheet.create({
   },
   doctorText: {
     fontSize: 16,
+    fontWeight: "600",
+  },
+  doctorInfo: {
+    fontSize: 14,
+    color: "#555",
+  },
+  noDoctorsText: {
+    fontSize: 16,
+    color: "#e65100",
+    textAlign: "center",
+    marginTop: 20,
   },
   loadingContainer: {
     flex: 1,
