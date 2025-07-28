@@ -21,6 +21,7 @@ import {
 import signalRConnect from "../../utils/signalR";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
+import colors from "../../constant/colors";
 
 const CheckupStepsScreen = () => {
   const navigation = useNavigation();
@@ -560,7 +561,6 @@ const CheckupStepsScreen = () => {
       scrollable={false}
       style={{ padding: 0 }}
       header={renderCustomHeader()}
-      headerBackgroundColor="#4299e1"
       hasBottomTabs={true}
     >
       <View style={styles.container}>
@@ -586,7 +586,7 @@ const CheckupStepsScreen = () => {
         {services.length === 0 ? (
           <View style={styles.emptyContainer}>
             {loading ? (
-              <ActivityIndicator size="large" color="#4299e1" />
+              <ActivityIndicator size="large" color={colors.primaryBlue} />
             ) : (
               <Text style={styles.emptyText}>
                 Không có dịch vụ xét nghiệm nào
@@ -603,8 +603,8 @@ const CheckupStepsScreen = () => {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor="#4299e1"
-                colors={["#4299e1"]}
+                tintColor={colors.primaryBlue}
+                colors={[colors.primaryBlue]}
               />
             }
             style={{ marginBottom: 0 }}
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     borderLeftWidth: 4,
-    borderLeftColor: "#4299e1",
+    borderLeftColor: colors.primaryBlue,
     elevation: 2,
     marginHorizontal: 12,
     marginTop: 12,
@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight + 10 : 10,
     paddingBottom: 10,
     paddingHorizontal: 16,

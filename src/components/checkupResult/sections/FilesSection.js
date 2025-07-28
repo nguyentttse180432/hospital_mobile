@@ -9,6 +9,7 @@ import {
 import Card from "../../common/Card";
 import Icon from "react-native-vector-icons/Ionicons";
 import * as FileUtils from "../../../utils/fileUtils";
+import colors from "../../../constant/colors"; // Import colors from your constants
 
 const FileItem = ({ item, onPress }) => (
   <TouchableOpacity style={styles.fileItem} onPress={() => onPress(item)}>
@@ -22,7 +23,7 @@ const FileItem = ({ item, onPress }) => (
             : "document"
         }
         size={24}
-        color="#4299e1"
+        color={colors.primaryBlue}
       />
     </View>
     <View style={styles.fileInfo}>

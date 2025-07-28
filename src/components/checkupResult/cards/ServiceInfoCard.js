@@ -2,13 +2,14 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Card from "../../common/Card";
 import Icon from "react-native-vector-icons/Ionicons";
+import colors from "../../../constant/colors"; // Import colors from your constants
 
 const ServiceInfoCard = ({ serviceResult }) => {
   return (
     <Card style={styles.serviceInfoCard}>
       <View style={styles.headerRow}>
         <View style={styles.iconContainer}>
-          <Icon name="document-text-outline" size={24} color="#4299e1" />
+          <Icon name="document-text-outline" size={24} color={colors.primaryBlue} />
         </View>
         <View style={styles.headerTextContainer}>
           <Text style={styles.serviceTitle}>{serviceResult.serviceName}</Text>
@@ -59,9 +60,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
-    backgroundColor: "#f8faff",
+    backgroundColor: colors.lightGray,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e6f5",
+    borderBottomColor: colors.borderGray,
   },
   iconContainer: {
     width: 40,
@@ -114,11 +115,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   descriptionBox: {
-    backgroundColor: "#f8faff",
+    backgroundColor: colors.lightGray,
     borderRadius: 8,
     padding: 12,
     borderLeftWidth: 3,
-    borderLeftColor: "#4299e1",
+    borderLeftColor: colors.primaryBlue,
   },
   descriptionText: {
     fontSize: 14,

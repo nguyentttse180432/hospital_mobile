@@ -16,6 +16,7 @@ import {
 } from "../../services/appointmentService";
 import Button from "../../components/common/Button";
 import ScreenContainer from "../../components/common/ScreenContainer";
+import colors from "../../constant/colors"; // Import file colors.js mới
 
 const AppointmentDetailScreen = ({ route, navigation }) => {
   const { appointmentCode, status, patientName } = route.params;
@@ -61,7 +62,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
     return unsubscribe;
   }, [navigation]);
 
-  // Function to fetch feedback status from API
+  // Hàm lấy trạng thái phản hồi từ API
   const fetchFeedbackStatus = async () => {
     if (!appointmentCode || status !== "Completed") {
       setFeedbackStatus({
@@ -81,9 +82,9 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
         hasFeedback,
         isLoading: false,
       });
-      console.log("Feedback status:", { hasFeedback });
+      console.log("Trạng thái phản hồi:", { hasFeedback });
     } catch (error) {
-      console.error("Error fetching feedback status:", error);
+      console.error("Lỗi khi lấy trạng thái phản hồi:", error);
       setFeedbackStatus({
         hasFeedback: false,
         isLoading: false,
@@ -109,7 +110,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
         setAppointment(appointmentData);
       }
 
-      // Fetch feedback status if appointment is completed
+      // Lấy trạng thái phản hồi nếu lịch hẹn đã hoàn thành
       if (
         status === "Completed" ||
         response?.value?.checkupRecordStatus === "Completed" ||
@@ -118,7 +119,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
         await fetchFeedbackStatus();
       }
     } catch (error) {
-      console.error("Error fetching appointment:", error);
+      console.error("Lỗi khi lấy thông tin lịch hẹn:", error);
       Alert.alert(
         "Lỗi",
         "Không thể tải thông tin lịch hẹn. Vui lòng thử lại sau."
@@ -151,18 +152,18 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
     switch (status) {
       case "Scheduled":
       case "Confirmed":
-        return "#4299e1";
+        return colors.primaryBlue; 
       case "Pending":
-        return "#f59e0b";
+        return colors.warningYellow; 
       case "InProgress":
       case "CheckedIn":
-        return "#7c3aed";
+        return colors.purple; 
       case "Completed":
-        return "#059669";
+        return colors.successGreen; 
       case "Cancelled":
-        return "#dc2626";
+        return colors.errorRed; 
       default:
-        return "#6b7280";
+        return colors.textGray;   
     }
   };
 
@@ -249,7 +250,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
           <Animated.View
             style={[styles.loadingSpinner, { transform: [{ rotate: spin }] }]}
           >
-            <Icon name="sync" size={48} color="#4299e1" />
+            <Icon name="sync" size={48} color={colors.primaryBlue} />
           </Animated.View>
           <Text style={styles.loadingText}>Đang tải thông tin...</Text>
         </View>
@@ -277,7 +278,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
             <Icon
               name={getStatusIcon(appointment?.checkupRecordStatus || status)}
               size={28}
-              color="#fff"
+              color={colors.white}
             />
           </View>
           <View style={styles.statusInfo}>
@@ -297,7 +298,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
               <Icon
                 name="calendar-outline"
                 size={20}
-                color="#4299e1"
+                color={colors.primaryBlue}
                 style={styles.infoIcon}
               />
               <View>
@@ -312,7 +313,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
               <Icon
                 name="person-outline"
                 size={20}
-                color="#4299e1"
+                color={colors.primaryBlue}
                 style={styles.infoIcon}
               />
               <View>
@@ -331,7 +332,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
               <Icon
                 name="card-outline"
                 size={20}
-                color="#4299e1"
+                color={colors.primaryBlue}
                 style={styles.infoIcon}
               />
               <View>
@@ -344,7 +345,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
                 <Icon
                   name="fitness-outline"
                   size={20}
-                  color="#4299e1"
+                  color={colors.primaryBlue}
                   style={styles.infoIcon}
                 />
                 <View>
@@ -368,7 +369,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
             <Icon
               name="medkit-outline"
               size={20}
-              color="#4299e1"
+              color={colors.primaryBlue}
               style={styles.serviceIcon}
             />
             <View style={styles.serviceNameContainer}>
@@ -399,7 +400,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
                       <Icon
                         name="add-circle-outline"
                         size={20}
-                        color="#4299e1"
+                        color={colors.primaryBlue}
                         style={styles.serviceIcon}
                       />
                       <View style={styles.serviceNameContainer}>
@@ -489,7 +490,7 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
                 }
                 style={[
                   styles.viewResultsButton,
-                  { backgroundColor: "#28a745", marginTop: 10 },
+                  { backgroundColor: colors.successGreen, marginTop: 10 },
                 ]}
               />
               <Button
@@ -541,14 +542,14 @@ const AppointmentDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.lightGray, 
     padding: 16,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.lightGray,
   },
   loadingSpinner: {
     marginBottom: 16,
@@ -556,23 +557,23 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#4299e1",
+    color: colors.primaryBlue,
     letterSpacing: 0.2,
   },
   statusCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.white,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",
     elevation: 3,
-    shadowColor: "#000",
+    shadowColor: colors.textDark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: colors.borderGray,
   },
   statusIndicator: {
     width: 48,
@@ -588,31 +589,31 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1f2937",
+    color: colors.textDarker,
     marginBottom: 4,
   },
   statusDescription: {
     fontSize: 14,
-    color: "#6b7280",
+    color: colors.textGray,
     lineHeight: 20,
   },
   detailCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.white,
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     elevation: 3,
-    shadowColor: "#000",
+    shadowColor: colors.textDark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: colors.borderGray,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1f2937",
+    color: colors.textDarker,
     letterSpacing: 0.2,
   },
   infoSection: {
@@ -628,18 +629,18 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 13,
-    color: "#6b7280",
+    color: colors.textGray,
     fontWeight: "500",
     marginBottom: 4,
   },
   infoValue: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#1f2937",
+    color: colors.textDarker,
   },
   infoSubValue: {
     fontSize: 13,
-    color: "#6b7280",
+    color: colors.textGray,
     marginTop: 4,
   },
   cardHeader: {
@@ -649,20 +650,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   serviceCount: {
-    backgroundColor: "#dbeafe",
+    backgroundColor: colors.lightBlue,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   serviceCountText: {
     fontSize: 12,
-    color: "#4299e1",
+    color: colors.primaryBlue,
     fontWeight: "500",
   },
   packageContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.lightGray, 
     borderRadius: 8,
     padding: 12,
   },
@@ -670,7 +671,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#ecfdf5",
+    backgroundColor: colors.successGreen,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -681,7 +682,7 @@ const styles = StyleSheet.create({
   packageName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1f2937",
+    color: colors.textDarker,
     marginBottom: 6,
   },
   packageMeta: {
@@ -690,21 +691,21 @@ const styles = StyleSheet.create({
   },
   packageCode: {
     fontSize: 13,
-    color: "#6b7280",
+    color: colors.textGray,
   },
   packagePrice: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#4299e1",
+    color: colors.primaryBlue,
   },
   packagePriceText: {
-    color: "#4299e1",
+    color: colors.primaryBlue,
     fontWeight: "700",
   },
   serviceGroupTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#374151",
+    color: colors.textMedium,
     marginBottom: 12,
   },
   serviceRow: {
@@ -721,26 +722,26 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#1f2937",
+    color: colors.textDarker,
   },
   packageName: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#1f2937",
+    color: colors.textDarker,
   },
   serviceCode: {
     fontSize: 12,
-    color: "#6b7280",
+    color: colors.textGray,
     marginTop: 4,
   },
   servicePrice: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#4299e1",
+    color: colors.primaryBlue,
   },
   serviceDivider: {
     height: 1,
-    backgroundColor: "#e5e7eb",
+    backgroundColor: colors.borderGray,
     marginVertical: 8,
   },
   totalPriceContainer: {
@@ -749,44 +750,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
+    borderTopColor: colors.borderGray,
     marginTop: 16,
   },
   totalPriceLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1f2937",
+    color: colors.textDarker,
   },
   totalPriceValue: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#4299e1",
+    color: colors.primaryBlue,
   },
   actionsContainer: {
     marginVertical: 24,
     gap: 12,
   },
   cancelButton: {
-    backgroundColor: "#dc2626",
+    backgroundColor: colors.errorRed,
     borderRadius: 8,
     paddingVertical: 14,
   },
   feedbackButton: {
-    backgroundColor: "#059669",
+    backgroundColor: colors.successGreen,
     borderRadius: 8,
     paddingVertical: 14,
   },
   disabledButton: {
-    backgroundColor: "#9ca3af",
+    backgroundColor: colors.gray,
     opacity: 0.7,
   },
   viewResultsButton: {
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     borderRadius: 8,
     paddingVertical: 14,
   },
   newAppointmentButton: {
-    backgroundColor: "#2563eb",
+    backgroundColor: colors.primaryDarkBlue,
     borderRadius: 8,
     paddingVertical: 14,
   },

@@ -26,6 +26,7 @@ import {
 import { logout } from "../../services/authService";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getBottomTabSafeStyle } from "../../utils/safeAreaHelper";
+import colors from "../../constant/colors"; // Import file colors.js mới
 
 const { width } = Dimensions.get("window");
 
@@ -46,23 +47,23 @@ const HomeScreen = (props) => {
   const [googleUserName, setGoogleUserName] = useState(null);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
 
-  // Calculate safe areas for better layout
+  // Tính toán kiểu dáng an toàn cho bố cục
   const getContainerStyle = () => ({
     ...styles.container,
-    // Remove bottom padding from container to avoid double padding
+    // Loại bỏ padding dưới để tránh padding kép
   });
 
   const getHeaderStyle = () => ({
     ...styles.header,
     paddingTop:
       Platform.OS === "android"
-        ? Math.max(insets.top + 15, 55) // Handle Android status bar better
+        ? Math.max(insets.top + 15, 55) // Xử lý thanh trạng thái Android tốt hơn
         : Math.max(insets.top + 10, 50),
   });
 
   const getScrollContentStyle = () => ({
     ...styles.scrollContent,
-    ...getBottomTabSafeStyle(insets, 20), // Additional 20px padding
+    ...getBottomTabSafeStyle(insets, 20), // Thêm padding 20px
   });
 
   useEffect(() => {
@@ -72,7 +73,7 @@ const HomeScreen = (props) => {
         const isPhoneVerified = JSON.parse(
           (await AsyncStorage.getItem("phoneVerified")) || "false"
         );
-        // Get Google avatar and name from AsyncStorage
+        // Lấy avatar và tên Google từ AsyncStorage
         const googleUserAvatar = await AsyncStorage.getItem("googleUserAvatar");
         const googleName = await AsyncStorage.getItem("googleUserName");
 
@@ -90,12 +91,12 @@ const HomeScreen = (props) => {
 
         setPhoneVerified(isPhoneVerified);
 
-        // Check if we're not in a tab navigator but should be
+        // Kiểm tra nếu không ở trong tab navigator nhưng cần phải ở đó
         if (
           route.name === "HomeScreen" ||
           route.name === "FullAccessHomeScreen"
         ) {
-          // If we're not in the tab navigator, we should redirect to Main
+          // Nếu không ở trong tab navigator, chuyển hướng sang Main
           if (isPhoneVerified) {
             navigation.reset({
               index: 0,
@@ -107,7 +108,7 @@ const HomeScreen = (props) => {
 
         setLoading(false);
 
-        // Animate content in
+        // Hiệu ứng chuyển động nội dung
         Animated.parallel([
           Animated.timing(fadeAnim, {
             toValue: 1,
@@ -121,7 +122,7 @@ const HomeScreen = (props) => {
           }),
         ]).start();
 
-        // Fetch medical packages and services
+        // Lấy danh sách gói khám và dịch vụ
         fetchMedicalPackages();
         fetchServices();
       } catch (error) {
@@ -140,7 +141,7 @@ const HomeScreen = (props) => {
         setMedicalPackages(response.value);
       }
     } catch (error) {
-      console.error("Error fetching medical packages:", error);
+      console.error("Lỗi khi lấy gói khám:", error);
     }
   };
 
@@ -151,12 +152,12 @@ const HomeScreen = (props) => {
         setServices(response.value);
       }
     } catch (error) {
-      console.error("Error fetching services:", error);
+      console.error("Lỗi khi lấy dịch vụ:", error);
     }
   };
 
   const handleBookAppointment = async (itemId, isService = false) => {
-    // Check if phone is verified
+    // Kiểm tra xem số điện thoại đã được xác minh chưa
     if (!phoneVerified) {
       Alert.alert(
         "Xác minh số điện thoại",
@@ -173,7 +174,7 @@ const HomeScreen = (props) => {
         ]
       );
     } else {
-      // Navigate to appointment booking screen with the appropriate ID
+      // Điều hướng sang màn hình đặt lịch khám với ID tương ứng
       if (isService) {
         navigation.navigate("AppointmentBookingScreen", { serviceId: itemId });
       } else {
@@ -183,25 +184,25 @@ const HomeScreen = (props) => {
   };
 
   const handleViewServiceDetail = (serviceId) => {
-    // Navigate to service detail screen
-    // This is allowed in ViewOnly mode
+    // Điều hướng sang màn hình chi tiết dịch vụ
+    // Được phép ở chế độ ViewOnly
     navigation.navigate("ServiceDetailScreen", { serviceId });
   };
 
   const handleLogout = async () => {
     setShowLogoutAlert(false);
     try {
-      // Call the logout service
+      // Gọi dịch vụ đăng xuất
       const result = await logout();
 
-      // Clear additional items not handled by the logout service
+      // Xóa các mục bổ sung không được xử lý bởi dịch vụ đăng xuất
       await AsyncStorage.removeItem("user");
       await AsyncStorage.removeItem("phoneVerified");
       await AsyncStorage.removeItem("googleUserAvatar");
       await AsyncStorage.removeItem("googleUserName");
       await AsyncStorage.removeItem("otpAlreadySent");
 
-      // Navigate to login screen
+      // Điều hướng sang màn hình đăng nhập
       navigation.reset({
         index: 0,
         routes: [{ name: "Login" }],
@@ -228,9 +229,9 @@ const HomeScreen = (props) => {
     }
   };
 
-  // Enhanced Default Avatar
+  // Avatar mặc định cải tiến
   const DefaultAvatar = ({ firstName }) => {
-    // If we have a firstName, use it, otherwise check if we have userData.name or googleUserName
+    // Sử dụng firstName nếu có, nếu không thì kiểm tra userData.name hoặc googleUserName
     const nameToUse =
       firstName || googleUserName || (userData && userData.name) || "U";
     const initials = nameToUse.charAt(0).toUpperCase();
@@ -254,9 +255,9 @@ const HomeScreen = (props) => {
 
   return (
     <SafeAreaView style={getContainerStyle()}>
-      <StatusBar backgroundColor="#f8f9fa" barStyle="dark-content" />
+      <StatusBar backgroundColor={colors.lightGray} barStyle="dark-content" />
 
-      {/* Header with user info */}
+      {/* Header với thông tin người dùng */}
       <View style={getHeaderStyle()}>
         <View style={styles.userInfo}>
           <TouchableOpacity onPress={showLogoutConfirmation}>
@@ -269,7 +270,7 @@ const HomeScreen = (props) => {
             )}
             {!phoneVerified && (
               <View style={styles.logoutIndicator}>
-                <Icon name="log-out-outline" size={12} color="#fff" />
+                <Icon name="log-out-outline" size={12} color={colors.white} />
               </View>
             )}
           </TouchableOpacity>
@@ -286,7 +287,11 @@ const HomeScreen = (props) => {
             style={styles.verifyButton}
             onPress={() => navigation.navigate("VerifyPhoneScreen")}
           >
-            <Icon name="alert-circle-outline" size={18} color="#ff6b6b" />
+            <Icon
+              name="alert-circle-outline"
+              size={18}
+              color={colors.alertRed}
+            />
           </TouchableOpacity>
         )}
       </View>
@@ -319,7 +324,7 @@ const HomeScreen = (props) => {
           </View>
         </Animated.View>
 
-        {/* Medical Packages Section */}
+        {/* Phần gói khám */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Gói khám</Text>
@@ -369,7 +374,11 @@ const HomeScreen = (props) => {
                       });
                     }}
                   >
-                    <Icon name="eye-outline" size={18} color="#0071CE" />
+                    <Icon
+                      name="eye-outline"
+                      size={18}
+                      color={colors.primaryBlue}
+                    />
                     <Text style={styles.viewDetailsText}>Xem chi tiết</Text>
                   </TouchableOpacity>
                 </View>
@@ -381,7 +390,7 @@ const HomeScreen = (props) => {
           />
         </View>
 
-        {/* Services Section */}
+        {/* Phần dịch vụ */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Dịch vụ</Text>
@@ -421,10 +430,14 @@ const HomeScreen = (props) => {
           />
         </View>
 
-        {/* Verification Banner */}
+        {/* Banner xác minh */}
         {!phoneVerified && (
           <View style={styles.verifyBanner}>
-            <Icon name="information-circle-outline" size={24} color="#fff" />
+            <Icon
+              name="information-circle-outline"
+              size={24}
+              color={colors.white}
+            />
             <Text style={styles.verifyBannerText}>
               Vui lòng xác minh số điện thoại để sử dụng đầy đủ tính năng
             </Text>
@@ -437,8 +450,6 @@ const HomeScreen = (props) => {
           </View>
         )}
       </ScrollView>
-
-      {/* Đã bỏ modal, chỉ chuyển screen khi nhấn card hoặc xem chi tiết */}
     </SafeAreaView>
   );
 };
@@ -446,15 +457,15 @@ const HomeScreen = (props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
-    marginBottom: 20, // Thêm margin bottom
+    backgroundColor: colors.lightGray,
+    marginBottom: 20,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
-    marginBottom: 20, // Thêm margin bottom
+    backgroundColor: colors.lightGray,
+    marginBottom: 20,
   },
   loadingContent: {
     alignItems: "center",
@@ -465,7 +476,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 18,
-    color: "#667eea",
+    color: colors.primaryBlue,
     fontWeight: "600",
   },
   header: {
@@ -474,9 +485,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
     elevation: 2,
-    shadowColor: "#000",
+    shadowColor: colors.textDark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -494,12 +505,12 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
-    color: "#fff",
+    color: colors.white,
     fontSize: 20,
     fontWeight: "bold",
   },
@@ -507,42 +518,37 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
     right: 0,
-    backgroundColor: "#ff6b6b",
+    backgroundColor: colors.alertRed,
     width: 18,
     height: 18,
     borderRadius: 9,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#fff",
+    borderColor: colors.white,
   },
   userDetails: {
     marginLeft: 12,
   },
   greeting: {
     fontSize: 14,
-    color: "#666",
+    color: colors.textLight,
   },
   userName: {
     fontSize: 18,
     fontWeight: "bold",
+    color: colors.textDark,
   },
   verifyButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffe5e5",
+    backgroundColor: colors.alertBackground,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
   },
-  verifyText: {
-    color: "#ff6b6b",
-    fontSize: 14,
-    fontWeight: "bold",
-    marginLeft: 4,
-  },
   scrollContent: {
-    paddingBottom: 20, // Much more padding for bottom navigation and system bars
+    paddingBottom: 20, // Padding lớn hơn cho thanh điều hướng dưới và thanh hệ thống
   },
   bannerContainer: {
     marginHorizontal: 16,
@@ -557,7 +563,7 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   bannerTextContainer: {
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: colors.bannerOverlay,
     padding: 16,
     position: "absolute",
     bottom: 0,
@@ -565,12 +571,12 @@ const styles = StyleSheet.create({
     right: 0,
   },
   bannerTitle: {
-    color: "#fff",
+    color: colors.white,
     fontSize: 20,
     fontWeight: "bold",
   },
   bannerSubtitle: {
-    color: "#fff",
+    color: colors.white,
     fontSize: 14,
     marginTop: 4,
   },
@@ -587,9 +593,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
+    color: colors.textDark,
   },
   seeAllText: {
-    color: "#4299e1",
+    color: colors.primaryBlue,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -597,14 +604,14 @@ const styles = StyleSheet.create({
     width: width * 0.7,
     marginRight: 12,
     borderRadius: 12,
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
     elevation: 2,
     overflow: "hidden",
     marginBottom: 16,
   },
   packageCardContent: {
     padding: 16,
-    height: 200, // Đặt chiều cao cố định cho card content
+    height: 200, // Chiều cao cố định cho nội dung card
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -612,21 +619,22 @@ const styles = StyleSheet.create({
   packageName: {
     fontSize: 18,
     fontWeight: "bold",
+    color: colors.textDark,
     marginBottom: 8,
   },
   packagePrice: {
     fontSize: 16,
-    color: "#4299e1",
+    color: colors.primaryBlue,
     fontWeight: "bold",
     marginBottom: 8,
   },
   packageDescriptionContainer: {
-    minHeight: 40, // Đặt chiều cao tối thiểu cho phần mô tả
+    minHeight: 40, // Chiều cao tối thiểu cho phần mô tả
     marginBottom: 12,
   },
   packageDescription: {
     fontSize: 14,
-    color: "#666",
+    color: colors.textLight,
   },
   viewDetailsButton: {
     flexDirection: "row",
@@ -635,21 +643,21 @@ const styles = StyleSheet.create({
   },
   viewDetailsText: {
     fontSize: 14,
-    color: "#0071CE",
+    color: colors.primaryBlue,
     marginLeft: 4,
   },
   serviceCard: {
     width: width * 0.6,
     marginRight: 12,
     borderRadius: 12,
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
     elevation: 2,
     marginBottom: 10,
     overflow: "hidden",
   },
   serviceCardContent: {
     padding: 16,
-    height: 160, // Increased height to accommodate the button
+    height: 160, // Tăng chiều cao để chứa nội dung
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -657,29 +665,30 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 16,
     fontWeight: "bold",
+    color: colors.textDark,
     marginBottom: 8,
   },
   servicePrice: {
     fontSize: 14,
-    color: "#4299e1",
+    color: colors.primaryBlue,
     fontWeight: "bold",
     marginBottom: 8,
   },
   serviceDescriptionContainer: {
-    minHeight: 40, // Đặt chiều cao tối thiểu cho phần mô tả
+    minHeight: 40, // Chiều cao tối thiểu cho phần mô tả
   },
   serviceDescription: {
     fontSize: 14,
-    color: "#666",
+    color: colors.textLight,
   },
   emptyText: {
     fontSize: 16,
-    color: "#999",
+    color: colors.textEmpty,
     textAlign: "center",
     marginTop: 20,
   },
   verifyBanner: {
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     marginHorizontal: 16,
     marginTop: 24,
     borderRadius: 12,
@@ -688,20 +697,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   verifyBannerText: {
-    color: "#fff",
+    color: colors.white,
     fontSize: 16,
     textAlign: "center",
     marginVertical: 8,
   },
   verifyBannerButton: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
     marginTop: 8,
   },
   verifyBannerButtonText: {
-    color: "#4299e1",
+    color: colors.primaryBlue,
     fontWeight: "bold",
   },
 });

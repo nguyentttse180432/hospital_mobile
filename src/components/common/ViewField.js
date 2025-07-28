@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
   viewContainer: {
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 12,
+    padding: 10,
     marginBottom: 12,
     elevation: 2,
   },

@@ -5,7 +5,7 @@ import { Platform, SafeAreaView, StyleSheet, View, Text } from "react-native";
 
 // Screens
 import HomeScreen from "../screens/home/HomeScreen";
-import BookAppointmentScreen from "../screens/appointment/AppointmentBookingScreen";
+import MainBookingTypeScreen from "../screens/booking/MainBookingTypeScreen";
 import ProfileNavigator from "./ProfileNavigator";
 import PatientRecordsScreen from "../screens/patientProfile/PatientRecordsScreen";
 import ExaminationNavigator from "./ExaminationNavigator";
@@ -72,7 +72,7 @@ const BottomTabNavigator = () => {
         })}
       >
         <Tab.Screen name="Trang chủ" component={HomeScreen} />
-        <Tab.Screen name="Đặt lịch" component={BookAppointmentScreen} />
+        <Tab.Screen name="Đặt lịch" component={MainBookingTypeScreen} />
         <Tab.Screen
           name="Hồ sơ bệnh án"
           component={PatientRecordsScreen}

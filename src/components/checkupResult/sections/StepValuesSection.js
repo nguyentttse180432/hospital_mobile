@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, FlatList } from "react-native";
 import Card from "../../common/Card";
 import Icon from "react-native-vector-icons/Ionicons";
+import colors from "../../../constant/colors"; // Import colors from your constants
 
 const StepValueItem = ({ item }) => (
   <View style={styles.valueItem}>
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
   valueText: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#4299e1",
+    color: colors.primaryBlue,
   },
   maxValueText: {
     fontSize: 14,

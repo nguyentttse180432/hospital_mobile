@@ -1,11 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import colors from "../../../constant/colors"; // Import colors from your constants
 
 const LoadingState = () => {
   return (
     <View style={styles.loadingContainer}>
       <View style={styles.loadingCard}>
-        <ActivityIndicator size="large" color="#4299e1" />
+        <ActivityIndicator size="large" color={colors.primaryBlue} />
         <Text style={styles.loadingText}>Đang tải kết quả...</Text>
         <Text style={styles.loadingSubText}>Vui lòng chờ trong giây lát</Text>
       </View>

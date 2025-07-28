@@ -8,6 +8,7 @@ import {
   StatusBar,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import colors from "../../../constant/colors"; // Import colors from your constants
 
 const ResultHeader = ({ title, onBack }) => {
   return (
@@ -33,7 +34,7 @@ const ResultHeader = ({ title, onBack }) => {
 
 const styles = StyleSheet.create({
   customHeader: {
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     flexDirection: "column",
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 10,
     elevation: 6,
@@ -52,7 +53,7 @@ const styles = StyleSheet.create({
   },
   waveSpacer: {
     height: 15,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.lightGray,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },

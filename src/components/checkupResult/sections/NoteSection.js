@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import colors from "../../../constant/colors"; // Import colors from your constants
 
 const NoteSection = ({ note }) => {
   if (!note) return null;
@@ -23,7 +24,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 16,
     borderLeftWidth: 3,
-    borderLeftColor: "#4299e1",
+    borderLeftColor: colors.primaryBlue,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },

@@ -16,6 +16,7 @@ import ScreenContainer from "../../components/common/ScreenContainer";
 import { getPatientAppointments } from "../../services/appointmentService";
 import { getSystemTime } from "../../services/workingDateService";
 import signalRConnect from "../../utils/signalR";
+import colors from "../../constant/colors";
 
 const ExaminationRecordsScreen = () => {
   const navigation = useNavigation();
@@ -515,7 +516,7 @@ const ExaminationRecordsScreen = () => {
         <View style={styles.appointmentDetails}>
           {/* Hiển thị tên bệnh nhân */}
           <View style={styles.detailRow}>
-            <Icon name="person" size={20} color="#4299e1" />
+            <Icon name="person" size={20} color={colors.primaryBlue} />
             <Text
               style={styles.detailText}
               numberOfLines={1}
@@ -528,7 +529,7 @@ const ExaminationRecordsScreen = () => {
           </View>
 
           <View style={styles.detailRow}>
-            <Icon name="medical" size={20} color="#4299e1" />
+            <Icon name="medical" size={20} color={colors.primaryBlue} />
             <Text
               style={styles.detailText}
               numberOfLines={1}
@@ -538,7 +539,7 @@ const ExaminationRecordsScreen = () => {
             </Text>
           </View>
           <View style={styles.detailRow}>
-            <Icon name="barcode" size={20} color="#4299e1" />
+            <Icon name="barcode" size={20} color={colors.primaryBlue} />
             <Text style={styles.detailText}>
               Mã phiếu: {item.code || "Không có mã"}
             </Text>
@@ -644,7 +645,7 @@ const ExaminationRecordsScreen = () => {
       scrollable={false}
       style={{ padding: 0 }}
       title="Danh sách phiếu khám"
-      headerBackgroundColor="#4299e1"
+      headerBackgroundColor={colors.primaryBlue}
     >
       <View style={styles.container}>
         <View style={styles.tabContainer}>
@@ -832,15 +833,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   activeTab: {
-    borderBottomColor: "#4299e1",
+    borderBottomColor: colors.primaryBlue,
   },
   tabText: {
     fontSize: 15,
-    color: "#666",
+    color: colors.textSecondary,
     textAlign: "center",
   },
   activeTabText: {
-    color: "#4299e1",
+    color: colors.primaryBlue,
     fontWeight: "600",
   },
   listContainer: {
@@ -982,7 +983,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   refreshButton: {
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,

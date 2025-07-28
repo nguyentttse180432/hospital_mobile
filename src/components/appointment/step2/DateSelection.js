@@ -11,6 +11,7 @@ import Button from "../../common/Button";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { getCurrentMonthDate } from "../../../services/workingDateService";
 import { getSystemTime } from "../../../services/workingDateService";
+import colors from "../../../constant/colors"; // Cập nhật import để sử dụng file colors.js mới
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -20,12 +21,12 @@ const DateSelection = ({
   setCurrentTime,
   setStep,
 }) => {
-  // State for system time
+  // State cho thời gian hệ thống
   const [systemTime, setSystemTime] = React.useState(null);
   const [systemTimeLoading, setSystemTimeLoading] = React.useState(true);
   const [systemTimeError, setSystemTimeError] = React.useState(null);
 
-  // Fetch system time on mount
+  // Lấy thời gian hệ thống khi component được mount
   React.useEffect(() => {
     const fetchSystemTime = async () => {
       setSystemTimeLoading(true);
@@ -46,89 +47,89 @@ const DateSelection = ({
     fetchSystemTime();
   }, []);
 
-  // Use systemTime instead of today
+  // Sử dụng systemTime thay cho today
   const today = systemTime || new Date();
-  console.log("Current system time:", today);
+  console.log("Thời gian hệ thống hiện tại:", today);
 
   const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth(); // 0-based (0 = January)
+  const currentMonth = today.getMonth(); // 0-based (0 = Tháng 1)
   const currentDay = today.getDate();
 
-  // Calculate tomorrow's date
+  // Tính ngày mai
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
 
-  // Calculate the next valid date (tomorrow, or Monday if tomorrow is Sunday)
+  // Tính ngày hợp lệ tiếp theo (ngày mai, hoặc thứ Hai nếu ngày mai là Chủ nhật)
   const nextValidDate = new Date(tomorrow);
   if (nextValidDate.getDay() === 0) {
-    // 0 = Sunday
-    nextValidDate.setDate(nextValidDate.getDate() + 1); // Move to Monday
+    // 0 = Chủ nhật
+    nextValidDate.setDate(nextValidDate.getDate() + 1); // Chuyển sang thứ Hai
   }
 
-  // Calendar display settings
-  // Show the current month by default
+  // Cài đặt hiển thị lịch
+  // Hiển thị tháng hiện tại theo mặc định
   const [displayMonth, setDisplayMonth] = React.useState(currentMonth);
   const [displayYear, setDisplayYear] = React.useState(currentYear);
   const [workingDates, setWorkingDates] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
 
-  // Fetch working dates from API
+  // Lấy danh sách ngày làm việc từ API
   const fetchWorkingDates = React.useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // The API doesn't accept parameters - it returns all working dates for the current month
+      // API không nhận tham số - trả về tất cả ngày làm việc trong tháng hiện tại
       const response = await getCurrentMonthDate();
-      console.log("API response:", response);
+      console.log("Phản hồi API:", response);
 
       if (response && response.isSuccess) {
-        console.log("Working dates data:", response.value);
+        console.log("Dữ liệu ngày làm việc:", response.value);
         setWorkingDates(response.value || []);
       } else {
-        console.log("API returned no data, using fallback dates");
-        setError(null); // Clear error since we're using fallback data
-        // Use fallback dates if API doesn't return expected data
+        console.log("API không trả dữ liệu, sử dụng dữ liệu dự phòng");
+        setError(null); // Xóa lỗi vì đang sử dụng dữ liệu dự phòng
+        // Sử dụng dữ liệu dự phòng nếu API không trả dữ liệu mong muốn
         setWorkingDates(generateFallbackWorkingDates());
       }
     } catch (err) {
-      console.error("Error fetching working dates:", err);
-      console.log("Using fallback dates due to API error");
-      setError(null); // Clear error since we're using fallback data
-      // Use fallback dates if API call fails
+      console.error("Lỗi khi lấy ngày làm việc:", err);
+      console.log("Sử dụng dữ liệu dự phòng do lỗi API");
+      setError(null); // Xóa lỗi vì đang sử dụng dữ liệu dự phòng
+      // Sử dụng dữ liệu dự phòng nếu gọi API thất bại
       setWorkingDates(generateFallbackWorkingDates());
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Load working dates when component mounts and refresh when display month/year changes
+  // Tải ngày làm việc khi component mount và làm mới khi tháng/năm hiển thị thay đổi
   React.useEffect(() => {
     fetchWorkingDates();
-    // We've removed displayMonth and displayYear from dependencies since the API doesn't support filtering by month
+    // Đã loại bỏ displayMonth và displayYear khỏi dependencies vì API không hỗ trợ lọc theo tháng
   }, [fetchWorkingDates]);
 
-  // Add debugging to inspect the received data
+  // Gỡ lỗi để kiểm tra dữ liệu nhận được
   React.useEffect(() => {
     if (workingDates && workingDates.length > 0) {
-      console.log("Working dates loaded:", workingDates.length);
+      console.log("Đã tải ngày làm việc:", workingDates.length);
     }
   }, [workingDates]);
 
-  // Helper function to check if a date is a working day
+  // Hàm hỗ trợ kiểm tra xem một ngày có phải là ngày làm việc không
   const isWorkingDay = (year, month, day) => {
     const dateToCheck = new Date(year, month, day);
     dateToCheck.setHours(0, 0, 0, 0);
 
-    // If API data is not loaded yet, do not allow selection
+    // Nếu dữ liệu API chưa tải, không cho phép chọn
     if (!workingDates || workingDates.length === 0) {
       return false;
     }
 
-    // Try to match with API data if available
+    // Kiểm tra khớp với dữ liệu API nếu có
     return workingDates.some((workingDate) => {
-      // Handle different possible formats from the API
+      // Xử lý các định dạng khác nhau từ API
       if (workingDate.workDate) {
         const apiDate = new Date(workingDate.workDate);
         apiDate.setHours(0, 0, 0, 0);
@@ -137,13 +138,13 @@ const DateSelection = ({
           workingDate.isWorkingDay
         );
       } else if (workingDate.date) {
-        // Handle DD/MM/YYYY format if that's what the API returns
+        // Xử lý định dạng DD/MM/YYYY nếu API trả về
         const [apiDay, apiMonth, apiYear] = workingDate.date
           .split("/")
           .map(Number);
         return (
           day === apiDay &&
-          month + 1 === apiMonth && // +1 because month is 0-based in JS
+          month + 1 === apiMonth && // +1 vì tháng trong JS là 0-based
           year === apiYear &&
           workingDate.isWorkingDay
         );
@@ -152,13 +153,13 @@ const DateSelection = ({
     });
   };
 
-  // Calculate days in selected month
+  // Tính số ngày trong tháng được chọn
   const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
-  const firstDayOfMonth = new Date(displayYear, displayMonth, 1).getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const firstDayOfMonth = new Date(displayYear, displayMonth, 1).getDay(); // 0 = Chủ nhật, 1 = Thứ Hai, v.v.
 
-  // Function to move to previous/next month
+  // Hàm chuyển đến tháng trước/sau
   const goToPreviousMonth = () => {
-    // Only allow navigation to the current month
+    // Chỉ cho phép điều hướng đến tháng hiện tại
     if (displayMonth === currentMonth && displayYear === currentYear) {
       return;
     }
@@ -169,11 +170,11 @@ const DateSelection = ({
     } else {
       setDisplayMonth(displayMonth - 1);
     }
-    setCurrentDate(null); // Clear date selection when changing month
+    setCurrentDate(null); // Xóa lựa chọn ngày khi đổi tháng
   };
 
   const goToNextMonth = () => {
-    // Only allow navigation to the next month if the next valid date is in that month
+    // Chỉ cho phép điều hướng đến tháng tiếp theo nếu ngày hợp lệ nằm trong tháng đó
     const nextValidMonth = nextValidDate.getMonth();
     const nextValidYear = nextValidDate.getFullYear();
 
@@ -191,32 +192,32 @@ const DateSelection = ({
     } else {
       setDisplayMonth(displayMonth + 1);
     }
-    setCurrentDate(null); // Clear date selection when changing month
+    setCurrentDate(null); // Xóa lựa chọn ngày khi đổi tháng
   };
 
   const handleDateSelect = (day) => {
-    // Format date as DD/MM/YYYY
-    const month = displayMonth + 1; // Convert 0-based month to 1-based
+    // Định dạng ngày thành DD/MM/YYYY
+    const month = displayMonth + 1; // Chuyển tháng 0-based thành 1-based
     const selectedDate = `${day.toString().padStart(2, "0")}/${month
       .toString()
       .padStart(2, "0")}/${displayYear}`;
     setCurrentDate(selectedDate);
-    setCurrentTime(null); // Clear time selection when date changes
+    setCurrentTime(null); // Xóa lựa chọn thời gian khi ngày thay đổi
   };
 
-  // Handle continuing to next step
+  // Xử lý tiếp tục đến bước tiếp theo
   const handleContinue = () => {
     if (currentDate) {
-      // Use the step value provided in props (2.4) instead of hardcoded value
-      setStep(2.4); // Move to time selection
+      // Sử dụng giá trị step từ props (2.4) thay vì hardcode
+      setStep(2.4); // Chuyển sang chọn thời gian
     }
   };
 
-  // Check if a specific date is within the allowed booking window (24 hours or next valid day)
+  // Kiểm tra xem một ngày cụ thể có nằm trong khoảng thời gian đặt lịch cho phép không (24 giờ hoặc ngày hợp lệ tiếp theo)
   const isWithinBookingWindow = (year, month, day) => {
     const dateToCheck = new Date(year, month, day);
 
-    // Set time to 00:00:00 for date-only comparison
+    // Đặt thời gian về 00:00:00 để so sánh chỉ ngày
     dateToCheck.setHours(0, 0, 0, 0);
 
     const todayDateOnly = new Date(today);
@@ -225,18 +226,18 @@ const DateSelection = ({
     const nextValidDateOnly = new Date(nextValidDate);
     nextValidDateOnly.setHours(0, 0, 0, 0);
 
-    // Check if the date matches today or the next valid date
+    // Kiểm tra xem ngày có khớp với hôm nay hoặc ngày hợp lệ tiếp theo không
     return (
       dateToCheck.getTime() === todayDateOnly.getTime() ||
       dateToCheck.getTime() === nextValidDateOnly.getTime()
     );
   };
 
-  // Create calendar grid with proper layout
+  // Tạo lưới lịch với bố cục phù hợp
   const renderCalendarDays = () => {
     const days = [];
 
-    // Add empty cells for days before the first day of the month
+    // Thêm các ô trống cho các ngày trước ngày đầu tiên của tháng
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(
         <View key={`empty-${i}`} style={styles.day}>
@@ -245,7 +246,7 @@ const DateSelection = ({
       );
     }
 
-    // Add actual days
+    // Thêm các ngày thực tế
     for (let day = 1; day <= daysInMonth; day++) {
       const selectedDay = currentDate
         ? parseInt(currentDate.split("/")[0])
@@ -305,18 +306,18 @@ const DateSelection = ({
     return days;
   };
 
-  // Function to generate dummy working dates for testing or fallback
+  // Hàm tạo dữ liệu ngày làm việc giả lập để thử nghiệm hoặc dự phòng
   const generateFallbackWorkingDates = () => {
     const dates = [];
     const today = new Date();
 
-    // Add today
+    // Thêm hôm nay
     dates.push({
       workDate: today.toISOString(),
       isWorkingDay: true,
     });
 
-    // Add tomorrow or next valid day (Monday if tomorrow is Sunday)
+    // Thêm ngày mai hoặc ngày hợp lệ tiếp theo (Thứ Hai nếu ngày mai là Chủ nhật)
     dates.push({
       workDate: nextValidDate.toISOString(),
       isWorkingDay: true,
@@ -325,11 +326,11 @@ const DateSelection = ({
     return dates;
   };
 
-  // Show loading/error if system time is not ready
+  // Hiển thị loading/error nếu thời gian hệ thống chưa sẵn sàng
   if (systemTimeLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
+        <ActivityIndicator size="large" color={colors.primaryBlue} />
         <Text style={styles.loadingText}>Đang lấy thời gian hệ thống...</Text>
       </View>
     );
@@ -346,14 +347,14 @@ const DateSelection = ({
     <View style={styles.container}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2196F3" />
+          <ActivityIndicator size="large" color={colors.primaryBlue} />
           <Text style={styles.loadingText}>
             Đang tải thông tin ngày làm việc...
           </Text>
         </View>
       ) : (
         <View style={styles.calendar}>
-          {/* Month navigation */}
+          {/* Điều hướng tháng */}
           <View style={styles.monthNavigation}>
             <TouchableOpacity
               style={[
@@ -375,8 +376,8 @@ const DateSelection = ({
                 color={
                   displayYear < currentYear ||
                   (displayYear === currentYear && displayMonth < currentMonth)
-                    ? "#BDBDBD"
-                    : "#2196F3"
+                    ? colors.gray
+                    : colors.primaryBlue
                 }
               />
             </TouchableOpacity>
@@ -407,16 +408,20 @@ const DateSelection = ({
                   (displayYear === nextValidDate.getFullYear() &&
                     displayMonth >= nextValidDate.getMonth()) ||
                   displayYear > nextValidDate.getFullYear()
-                    ? "#BDBDBD"
-                    : "#2196F3"
+                    ? colors.gray
+                    : colors.primaryBlue
                 }
               />
             </TouchableOpacity>
           </View>
 
-          {/* Booking window notice */}
+          {/* Thông báo khung thời gian đặt lịch */}
           <View style={styles.noticeContainer}>
-            <Ionicons name="information-circle" size={18} color="#2196F3" />
+            <Ionicons
+              name="information-circle"
+              size={18}
+              color={colors.primaryBlue}
+            />
             <Text style={styles.noticeText}>
               {nextValidDate.getDate() === tomorrow.getDate()
                 ? "Bạn chỉ có thể đặt lịch cho hôm nay hoặc ngày mai"
@@ -424,7 +429,7 @@ const DateSelection = ({
             </Text>
           </View>
 
-          {/* Week days header */}
+          {/* Tiêu đề ngày trong tuần */}
           <View style={styles.weekDaysContainer}>
             {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((day, index) => (
               <View key={day} style={styles.weekDayItem}>
@@ -440,10 +445,10 @@ const DateSelection = ({
             ))}
           </View>
 
-          {/* Calendar grid */}
+          {/* Lưới lịch */}
           <View style={styles.calendarGrid}>{renderCalendarDays()}</View>
 
-          {/* Legend */}
+          {/* Chú thích */}
           <View style={styles.legendContainer}>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, styles.selectedLegendDot]} />
@@ -475,15 +480,15 @@ const DateSelection = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: colors.background, // Thay "#F5F7FA" bằng colors.background
     padding: 16,
   },
   calendar: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.white, // Thay "#FFFFFF" bằng colors.white
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
-    shadowColor: "#000",
+    shadowColor: colors.textDark, // Thay "#000" bằng colors.textDark
     shadowOffset: {
       width: 0,
       height: 2,
@@ -499,40 +504,40 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E8EDF3",
+    borderBottomColor: colors.background, // Thay "#E8EDF3" bằng colors.background
   },
   navButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.white, // Thay "#F8FAFC" bằng colors.white
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E8EDF3",
+    borderColor: colors.background, // Thay "#E8EDF3" bằng colors.background
   },
   navButtonDisabled: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: colors.background, // Thay "#F5F5F5" bằng colors.background
   },
   monthTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#2196F3",
+    color: colors.primaryBlue, // Thay "#2196F3" bằng colors.primaryBlue
     textAlign: "center",
   },
   noticeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E3F2FD",
+    backgroundColor: colors.background, // Thay "#E3F2FD" bằng colors.background
     padding: 10,
     borderRadius: 12,
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: "#2196F3",
+    borderLeftColor: colors.primaryBlue, // Thay "#2196F3" bằng colors.primaryBlue
   },
   noticeText: {
     fontSize: 12,
-    color: "#1976D2",
+    color: colors.primaryBlue, // Thay "#1976D2" bằng colors.primaryBlue
     marginLeft: 8,
     flex: 1,
     lineHeight: 20,
@@ -550,10 +555,10 @@ const styles = StyleSheet.create({
   weekDayText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#64748B",
+    color: colors.textLight, // Thay "#64748B" bằng colors.textLight
   },
   weekendText: {
-    color: "#EF4444",
+    color: colors.primaryOrange, // Thay "#EF4444" bằng colors.primaryOrange
   },
   calendarGrid: {
     flexDirection: "row",
@@ -572,11 +577,11 @@ const styles = StyleSheet.create({
   dayText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#334155",
+    color: colors.textDark, // Thay "#334155" bằng colors.textDark
   },
   selectedDay: {
-    backgroundColor: "#2196F3",
-    shadowColor: "#2196F3",
+    backgroundColor: colors.primaryBlue, // Thay "#2196F3" bằng colors.primaryBlue
+    shadowColor: colors.primaryBlue, // Thay "#2196F3" bằng colors.primaryBlue
     shadowOffset: {
       width: 0,
       height: 2,
@@ -586,15 +591,15 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   selectedDayText: {
-    color: "#FFFFFF",
+    color: colors.white, // Thay "#FFFFFF" bằng colors.white
     fontWeight: "700",
   },
   unavailableDay: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.white, // Thay "#F8FAFC" bằng colors.white
     opacity: 0.5,
   },
   unavailableDayText: {
-    color: "#CBD5E1",
+    color: colors.gray, // Thay "#CBD5E1" bằng colors.gray
   },
   legendContainer: {
     flexDirection: "row",
@@ -603,7 +608,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#E8EDF3",
+    borderTopColor: colors.background, // Thay "#E8EDF3" bằng colors.background
     gap: 24,
   },
   legendItem: {
@@ -617,14 +622,14 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   selectedLegendDot: {
-    backgroundColor: "#2196F3",
+    backgroundColor: colors.primaryBlue, // Thay "#2196F3" bằng colors.primaryBlue
   },
   unavailableLegendDot: {
-    backgroundColor: "#CBD5E1",
+    backgroundColor: colors.gray, // Thay "#CBD5E1" bằng colors.gray
   },
   legendText: {
     fontSize: 12,
-    color: "#64748B",
+    color: colors.textLight, // Thay "#64748B" bằng colors.textLight
     fontWeight: "500",
   },
   continueButton: {
@@ -636,27 +641,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.white, // Thay "#FFFFFF" bằng colors.white
     borderRadius: 16,
     padding: 40,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#64748B",
+    color: colors.textLight, // Thay "#64748B" bằng colors.textLight
     textAlign: "center",
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.white, // Thay "#FFFFFF" bằng colors.white
     borderRadius: 16,
     padding: 40,
   },
   errorText: {
     fontSize: 16,
-    color: "#EF4444",
+    color: colors.primaryOrange, // Thay "#EF4444" bằng colors.primaryOrange
     textAlign: "center",
     lineHeight: 24,
   },

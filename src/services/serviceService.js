@@ -75,3 +75,40 @@ function formatService(service) {
     updatedAt: service.updatedAt,
   };
 }
+
+//dịch vụ thường
+export const getCommonServices = async () => {
+  try {
+    const response = await api.get("/Services/general-services");
+    // {
+    //   "value": [
+    //     {
+    //       "serviceId": "9bf7a0fc-20c0-4156-90ec-9a64b14d6e5b",
+    //       "serviceTypeId": "de5e6897-74ca-4db7-8dc9-04b9cc9e1a89",
+    //       "price": 100000,
+    //       "name": "Khám thường",
+    //       "description": "Khách hàng được khám theo quy trình thông thường của bệnh viện với mức chi phí hợp lý"
+    //     },
+    //     {
+    //       "serviceId": "9bf7a0fc-20c0-4156-90ec-9a64b14d6e5b",
+    //       "serviceTypeId": "c3d34735-7c40-47b1-a564-50394a8d2414",
+    //       "price": 500000,
+    //       "name": "Khám VIP",
+    //       "description": "Quý khách sẽ được khám tại khu vực ưu tiên, đảm bảo không gian riêng tư và thời gian tư vấn lâu hơn"
+    //     }
+    //   ],
+    //   "error": {
+    //     "code": "",
+    //     "message": ""
+    //   },
+    //   "isSuccess": true
+    // }
+    return response.data.value
+  } catch (error) {
+    console.error("Error fetching common services:", error);
+    return {
+      isSuccess: false,
+      error: { message: "Không thể lấy danh sách dịch vụ thường" },
+    };
+  }
+};

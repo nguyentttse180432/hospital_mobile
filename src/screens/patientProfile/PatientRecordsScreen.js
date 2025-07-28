@@ -16,6 +16,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { getPatients } from "../../services/patientService";
 import ScreenContainer from "../../components/common/ScreenContainer";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import colors from "../../constant/colors"; // Import file colors.js mới
 
 const PatientRecordsScreen = () => {
   const navigation = useNavigation();
@@ -24,7 +25,7 @@ const PatientRecordsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Camera states
+  // Trạng thái camera
   const [facing, setFacing] = useState("back");
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -38,11 +39,11 @@ const PatientRecordsScreen = () => {
       if (response.isSuccess) {
         setPatients(response.value || []);
       } else {
-        console.error("Error loading patients:", response.error);
+        console.error("Lỗi tải danh sách bệnh nhân:", response.error);
         Alert.alert("Lỗi", "Không thể tải danh sách hồ sơ bệnh nhân");
       }
     } catch (error) {
-      console.error("Error loading patients:", error);
+      console.error("Lỗi tải danh sách bệnh nhân:", error);
       Alert.alert("Lỗi", "Không thể tải danh sách hồ sơ bệnh nhân");
     } finally {
       setLoading(false);
@@ -50,7 +51,7 @@ const PatientRecordsScreen = () => {
     }
   };
 
-  // Load patients when the screen gains focus
+  // Tải danh sách bệnh nhân khi màn hình được focus
   useFocusEffect(
     React.useCallback(() => {
       loadPatients();
@@ -74,26 +75,26 @@ const PatientRecordsScreen = () => {
     navigation.goBack();
   };
 
-  // Camera and barcode handling functions
+  // Hàm xử lý camera và quét mã vạch
   const handleBarcodeScanned = ({ type, data }) => {
     if (!scanned) {
-      console.log("Barcode scanned:", type, data);
+      console.log("Mã vạch đã quét:", type, data);
 
-      // Parse Vietnamese CCCD QR code format
+      // Phân tích định dạng mã QR CCCD Việt Nam
       const parseVietnameseCCCD = (qrData) => {
         try {
-          // Format: ID|CIC|Name|DOB|Gender|Address|IssueDate
-          // Example: 042173007269|250980646|Nguyễn Thị Thanh|16111973|Nữ|Xóm 1, Thôn Liên Trung, Tân Hà, Lâm Hà, Lâm Đồng|27122021
+          // Định dạng: ID|CIC|Name|DOB|Gender|Address|IssueDate
+          // Ví dụ: 042173007269|250980646|Nguyễn Thị Thanh|16111973|Nữ|Xóm 1, Thôn Liên Trung, Tân Hà, Lâm Hà, Lâm Đồng|27122021
           const parts = qrData.split("|");
 
           if (parts.length >= 6) {
-            const idCard = parts[0]; // CCCD number
-            const name = parts[2]; // Full name
-            const dobRaw = parts[3]; // Date of birth (DDMMYYYY)
-            const gender = parts[4]; // Gender
-            const address = parts[5]; // Full address
+            const idCard = parts[0]; // Số CCCD
+            const name = parts[2]; // Họ tên
+            const dobRaw = parts[3]; // Ngày sinh (DDMMYYYY)
+            const gender = parts[4]; // Giới tính
+            const address = parts[5]; // Địa chỉ
 
-            // Parse date of birth from DDMMYYYY to DD/MM/YYYY
+            // Chuyển ngày sinh từ DDMMYYYY sang DD/MM/YYYY
             let dateOfBirth = "";
             if (dobRaw && dobRaw.length === 8) {
               const day = dobRaw.substring(0, 2);
@@ -111,55 +112,55 @@ const PatientRecordsScreen = () => {
             };
           }
         } catch (error) {
-          console.error("Error parsing CCCD QR code:", error);
+          console.error("Lỗi phân tích mã QR CCCD:", error);
         }
         return null;
       };
 
-      // Check if the scanned data looks like a Vietnamese ID card number or insurance number
+      // Kiểm tra nếu dữ liệu quét là số CCCD hoặc mã bảo hiểm
       if (data && data.length >= 9 && data.length <= 15 && /^\d+$/.test(data)) {
         setScanned(true);
         setShowCamera(false);
 
-        // Navigate to create profile with scanned data
+        // Điều hướng sang màn hình tạo hồ sơ với dữ liệu quét
         navigation.navigate("CreateProfileScreen", {
           isPrimary: false,
           scannedIdCard: data,
         });
 
-        // Reset scanned state after a delay
+        // Đặt lại trạng thái quét sau một khoảng thời gian
         setTimeout(() => setScanned(false), 3000);
       } else {
-        // Try to parse Vietnamese CCCD QR code format first
+        // Thử phân tích định dạng mã QR CCCD Việt Nam trước
         const cccdData = parseVietnameseCCCD(data);
 
         if (cccdData) {
           setScanned(true);
           setShowCamera(false);
 
-          // Navigate to create profile with parsed CCCD data
+          // Điều hướng sang màn hình tạo hồ sơ với dữ liệu CCCD đã phân tích
           navigation.navigate("CreateProfileScreen", {
             isPrimary: false,
             scannedData: cccdData,
           });
 
-          // Reset scanned state after a delay
+          // Đặt lại trạng thái quét sau một khoảng thời gian
           setTimeout(() => setScanned(false), 3000);
         } else {
-          // Fallback: Try to find ID number pattern in the data
+          // Dự phòng: Tìm mẫu số CCCD trong dữ liệu
           const idMatches = data.match(/\b\d{9,15}\b/);
           if (idMatches && idMatches.length > 0) {
             setScanned(true);
             const extractedId = idMatches[0];
             setShowCamera(false);
 
-            // Navigate to create profile with scanned data
+            // Điều hướng sang màn hình tạo hồ sơ với dữ liệu quét
             navigation.navigate("CreateProfileScreen", {
               isPrimary: false,
               scannedIdCard: extractedId,
             });
 
-            // Reset scanned state after a delay
+            // Đặt lại trạng thái quét sau một khoảng thời gian
             setTimeout(() => setScanned(false), 3000);
           } else {
             Alert.alert(
@@ -199,17 +200,17 @@ const PatientRecordsScreen = () => {
   const customHeader = (
     <View style={styles.customHeader}>
       <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-        <Icon name="chevron-back" size={24} color="#FFFFFF" />
+        <Icon name="chevron-back" size={24} color={colors.white} />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>Hồ sơ người khám</Text>
       <TouchableOpacity style={styles.createButton} onPress={handleAddProfile}>
-        <Icon name="person-add" size={24} color="#FFFFFF" />
+        <Icon name="person-add" size={24} color={colors.white} />
         <Text style={styles.createButtonText}>Tạo mới</Text>
       </TouchableOpacity>
     </View>
   );
 
-  // Show permission request UI if needed
+  // Hiển thị UI yêu cầu quyền nếu cần
   if (showCamera && !permission) {
     return (
       <View style={styles.permissionContainer}>
@@ -250,7 +251,7 @@ const PatientRecordsScreen = () => {
                 <Icon
                   name="information-circle-outline"
                   size={24}
-                  color="#4299e1"
+                  color={colors.primaryBlue}
                 />
                 <Text style={styles.infoMessage}>
                   Bạn chưa có hồ sơ. Vui lòng tạo mới hồ sơ để được đặt khám.
@@ -277,7 +278,11 @@ const PatientRecordsScreen = () => {
                   style={styles.scanButton}
                   onPress={handleScanId}
                 >
-                  <Icon name="scan-outline" size={20} color="#4299e1" />
+                  <Icon
+                    name="scan-outline"
+                    size={20}
+                    color={colors.primaryBlue}
+                  />
                   <Text style={styles.scanButtonText}>QUÉT MÃ CCCD</Text>
                 </TouchableOpacity>
               </View>
@@ -298,7 +303,7 @@ const PatientRecordsScreen = () => {
                         <Icon
                           name="call"
                           size={20}
-                          color="#4299e1"
+                          color={colors.primaryBlue}
                           style={styles.patientIcon}
                         />
                         <Text style={styles.patientDetail}>
@@ -310,7 +315,7 @@ const PatientRecordsScreen = () => {
                         <Icon
                           name="calendar"
                           size={20}
-                          color="#4299e1"
+                          color={colors.primaryBlue}
                           style={styles.patientIcon}
                         />
                         <Text style={styles.patientDetail}>
@@ -322,7 +327,7 @@ const PatientRecordsScreen = () => {
                         <Icon
                           name="location"
                           size={20}
-                          color="#4299e1"
+                          color={colors.primaryBlue}
                           style={styles.patientIcon}
                         />
                         <Text style={styles.patientDetail}>
@@ -358,55 +363,59 @@ const PatientRecordsScreen = () => {
             </View>
           )}
         </ScrollView>
-      </View>
 
-      {/* Camera Modal for Barcode Scanning */}
-      {showCamera && permission?.granted && (
-        <View style={styles.cameraContainer}>
-          <View style={styles.cameraHeader}>
-            <Text style={styles.cameraTitle}>Quét mã BHYT/CCCD</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={closeCamera}>
-              <Icon name="close" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          <CameraView
-            style={styles.camera}
-            facing={facing}
-            barcodeScannerSettings={{
-              barcodeTypes: ["qr"],
-            }}
-            onBarcodeScanned={handleBarcodeScanned}
-            // enableTorch={torchEnabled?}
-            autofocus="on"
-          >
-            <View style={styles.overlay}>
-              <View style={styles.scanArea}>
-                <Text style={styles.scanInstruction}>
-                  {/* Đặt mã QR, barcode CCCD/CMND vào khung quét */}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.cameraButtonContainer}>
+        {/* Modal camera để quét mã vạch */}
+        {showCamera && permission?.granted && (
+          <View style={styles.cameraContainer}>
+            <View style={styles.cameraHeader}>
+              <Text style={styles.cameraTitle}>Quét mã BHYT/CCCD</Text>
               <TouchableOpacity
-                style={styles.flipButton}
-                onPress={toggleCameraFacing}
-              >
-                <Icon name="camera-reverse-outline" size={24} color="#fff" />
-                <Text style={styles.flipButtonText}>Lật camera</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.flipButton, { marginLeft: 10 }]}
+                style={styles.closeButton}
                 onPress={closeCamera}
               >
-                <Icon name="close-outline" size={24} color="#fff" />
-                <Text style={styles.flipButtonText}>Đóng</Text>
+                <Icon name="close" size={24} color={colors.white} />
               </TouchableOpacity>
             </View>
-          </CameraView>
-        </View>
-      )}
+
+            <CameraView
+              style={styles.camera}
+              facing={facing}
+              barcodeScannerSettings={{
+                barcodeTypes: ["qr"],
+              }}
+              onBarcodeScanned={handleBarcodeScanned}
+              autofocus="on"
+            >
+              <View style={styles.overlay}>
+                <View style={styles.scanArea}>
+                  <Text style={styles.scanInstruction}></Text>
+                </View>
+              </View>
+
+              <View style={styles.cameraButtonContainer}>
+                <TouchableOpacity
+                  style={styles.flipButton}
+                  onPress={toggleCameraFacing}
+                >
+                  <Icon
+                    name="camera-reverse-outline"
+                    size={24}
+                    color={colors.white}
+                  />
+                  <Text style={styles.flipButtonText}>Lật camera</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.flipButton, { marginLeft: 10 }]}
+                  onPress={closeCamera}
+                >
+                  <Icon name="close-outline" size={24} color={colors.white} />
+                  <Text style={styles.flipButtonText}>Đóng</Text>
+                </TouchableOpacity>
+              </View>
+            </CameraView>
+          </View>
+        )}
+      </View>
     </ScreenContainer>
   );
 };
@@ -419,7 +428,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     paddingVertical: 15,
     paddingTop: 45,
     paddingHorizontal: 10,
@@ -428,7 +437,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   headerTitle: {
-    color: "white",
+    color: colors.white,
     fontSize: 20,
     fontWeight: "bold",
   },
@@ -437,7 +446,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   createButtonText: {
-    color: "white",
+    color: colors.white,
     marginLeft: 5,
     fontSize: 14,
   },
@@ -452,7 +461,7 @@ const styles = StyleSheet.create({
   },
   loadingMessage: {
     fontSize: 16,
-    color: "#757575",
+    color: colors.textLoading,
   },
   emptyStateContainer: {
     flex: 1,
@@ -461,13 +470,13 @@ const styles = StyleSheet.create({
   infoContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#e6f2ff",
+    backgroundColor: colors.infoBlue,
     padding: 16,
     borderRadius: 8,
     marginBottom: 20,
   },
   infoMessage: {
-    color: "#4299e1",
+    color: colors.primaryBlue,
     fontSize: 14,
     marginLeft: 8,
     flex: 1,
@@ -483,15 +492,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
     textAlign: "center",
+    color: colors.textDarker,
   },
   createDescription: {
     fontSize: 16,
-    color: "#555",
+    color: colors.textDescription,
     textAlign: "center",
     marginBottom: 30,
   },
   mainActionButton: {
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     padding: 16,
     borderRadius: 8,
     width: "100%",
@@ -499,7 +509,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   mainActionText: {
-    color: "white",
+    color: colors.white,
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -509,12 +519,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 16,
     borderWidth: 1,
-    borderColor: "#4299e1",
+    borderColor: colors.primaryBlue,
     borderRadius: 8,
     width: "100%",
   },
   scanButtonText: {
-    color: "#4299e1",
+    color: colors.primaryBlue,
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 10,
@@ -523,10 +533,10 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   patientCard: {
-    backgroundColor: "white",
+    backgroundColor: colors.white,
     borderRadius: 10,
     marginBottom: 16,
-    shadowColor: "#000",
+    shadowColor: colors.textDark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -534,7 +544,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   cardHeader: {
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     padding: 12,
     paddingVertical: 14,
   },
@@ -544,7 +554,7 @@ const styles = StyleSheet.create({
   patientName: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "white",
+    color: colors.white,
   },
   patientInfoRow: {
     flexDirection: "row",
@@ -558,7 +568,7 @@ const styles = StyleSheet.create({
   },
   patientDetail: {
     fontSize: 15,
-    color: "#333",
+    color: colors.textDark,
     flex: 1,
   },
   buttonContainer: {
@@ -567,7 +577,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   detailButton: {
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 5,
@@ -578,16 +588,16 @@ const styles = StyleSheet.create({
   },
   detailButtonText: {
     fontSize: 16,
-    color: "white",
+    color: colors.white,
     fontWeight: "bold",
   },
   healthInfoButton: {
-    backgroundColor: "white",
+    backgroundColor: colors.white,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: "#4299e1",
+    borderColor: colors.primaryBlue,
     flex: 1,
     marginLeft: 8,
     justifyContent: "center",
@@ -595,22 +605,22 @@ const styles = StyleSheet.create({
   },
   healthInfoButtonText: {
     fontSize: 16,
-    color: "#4299e1",
+    color: colors.primaryBlue,
     fontWeight: "bold",
   },
-  // Camera styles
+  // Kiểu dáng camera
   permissionContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
+    backgroundColor: colors.lightGray,
     padding: 20,
   },
   permissionMessage: {
     textAlign: "center",
     paddingBottom: 20,
     fontSize: 16,
-    color: "#333",
+    color: colors.textDark,
   },
   cameraContainer: {
     position: "absolute",
@@ -618,7 +628,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#000",
+    backgroundColor: colors.cameraBlack,
     zIndex: 1000,
   },
   cameraHeader: {
@@ -628,17 +638,17 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "ios" ? 50 : 30,
     paddingHorizontal: 20,
     paddingBottom: 10,
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: colors.cameraOverlay,
   },
   cameraTitle: {
-    color: "#fff",
+    color: colors.white,
     fontSize: 18,
     fontWeight: "bold",
   },
   closeButton: {
     padding: 8,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.2)", // Giữ nguyên vì không có màu tương ứng
   },
   camera: {
     flex: 1,
@@ -652,21 +662,15 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderWidth: 2,
-    borderColor: "#4CAF50",
+    borderColor: colors.primaryGreen,
     borderRadius: 12,
-    backgroundColor: "rgba(76, 175, 80, 0.1)",
+    backgroundColor: colors.scanAreaOverlay,
     justifyContent: "center",
     alignItems: "center",
   },
-  // scanInstruction: {
-  //   color: "#fff",
-  //   fontSize: 16,
-  //   textAlign: "center",
-  //   backgroundColor: "rgba(0,0,0,0.7)",
-  //   padding: 10,
-  //   borderRadius: 8,
-  //   margin: 20,
-  // },
+  scanInstruction: {
+    display: "none",
+  },
   cameraButtonContainer: {
     position: "absolute",
     bottom: 50,
@@ -679,13 +683,13 @@ const styles = StyleSheet.create({
   flipButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: colors.cameraOverlay,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 25,
   },
   flipButtonText: {
-    color: "#fff",
+    color: colors.white,
     fontSize: 16,
     marginLeft: 8,
   },

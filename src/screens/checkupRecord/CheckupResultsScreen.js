@@ -21,6 +21,7 @@ import {
 } from "../../services/checkupRecordService";
 import * as FileUtils from "../../utils/fileUtils";
 import Icon from "react-native-vector-icons/Ionicons";
+import colors from "../../constant/colors"; // Import colors from your constants
 
 const CheckupResultsScreen = () => {
   const navigation = useNavigation();
@@ -151,7 +152,7 @@ const CheckupResultsScreen = () => {
             <Icon
               name={serviceIcon}
               size={24}
-              color={hasResults ? "#4299e1" : "#9E9E9E"}
+              color={hasResults ? colors.primaryBlue : colors.textSecondary}
             />
           </View>
 
@@ -171,7 +172,7 @@ const CheckupResultsScreen = () => {
               <Text
                 style={[
                   styles.categoryText,
-                  { color: hasResults ? "#4299e1" : "#9E9E9E" },
+                  { color: hasResults ? colors.primaryBlue : colors.textSecondary },
                 ]}
               >
                 {category}
@@ -193,7 +194,7 @@ const CheckupResultsScreen = () => {
           <View style={styles.serviceActions}>
             {hasResults ? (
               <>
-                <Icon name="chevron-forward" size={20} color="#4299e1" />
+                <Icon name="chevron-forward" size={20} color={colors.primaryBlue} />
                 <Text style={styles.viewResultText}>Xem</Text>
               </>
             ) : (
@@ -210,11 +211,10 @@ const CheckupResultsScreen = () => {
       <ScreenContainer
         title="Kết quả khám bệnh"
         onBack={() => navigation.goBack()}
-        headerBackgroundColor="#4299e1"
         hasBottomTabs={true}
       >
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4299e1" />
+          <ActivityIndicator size="large" color={colors.primaryBlue} />
           <Text style={styles.loadingText}>Đang tải kết quả...</Text>
         </View>
       </ScreenContainer>
@@ -227,7 +227,6 @@ const CheckupResultsScreen = () => {
       style={{ padding: 0 }}
       title="Kết quả khám bệnh"
       onBack={() => navigation.goBack()}
-      headerBackgroundColor="#4299e1"
       hasBottomTabs={true}
     >
       <View style={styles.container}>
@@ -278,7 +277,7 @@ const CheckupResultsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -294,7 +293,7 @@ const styles = StyleSheet.create({
     margin: 12,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: "#4299e1",
+    borderLeftColor: colors.primaryBlue,
   },
   patientInfo: {
     flexDirection: "row",
@@ -312,7 +311,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   prescriptionButton: {
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     paddingVertical: 8,
     paddingHorizontal: 18,
     borderRadius: 30,
@@ -403,12 +402,12 @@ const styles = StyleSheet.create({
   },
   viewResultText: {
     fontSize: 12,
-    color: "#4299e1",
+    color: colors.primaryBlue,
     marginTop: 2,
   },
   noResultText: {
     fontSize: 12,
-    color: "#9E9E9E",
+    color: colors.textSecondary,
   },
   emptyContainer: {
     flex: 1,

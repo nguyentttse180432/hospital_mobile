@@ -17,7 +17,10 @@ import CheckupResultsScreen from "../screens/checkupRecord/CheckupResultsScreen"
 import CheckupResultDetailScreen from "../screens/checkupRecord/CheckupResultDetailScreen";
 import ImageViewerScreen from "../screens/checkupRecord/ImageViewerScreen";
 import PrescriptionScreen from "../screens/checkupRecord/PrescriptionScreen";
-import AppointmentScreen from "../screens/appointment/AppointmentBookingScreen";
+import PackageBookingScreen from "../screens/booking/package/PackageBookingScreen";
+import ServiceBookingTypeScreen from "../screens/booking/service/ServiceBookingTypeScreen ";
+import DoctorBookingScreen from "../screens/booking/service/DoctorBookingScreen";
+import GeneralServiceBookingTypeScreen from "../screens/booking/service/GeneralServiceBookingTypeScreen";
 
 const Stack = createStackNavigator();
 
@@ -106,8 +109,23 @@ const AppNavigator = () => {
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="AppointmentScreen"
-          component={AppointmentScreen}
+          name="BookAppointmentScreen"
+          component={PackageBookingScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ServiceBookingTypeScreen"
+          component={ServiceBookingTypeScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BookByDoctor"
+          component={DoctorBookingScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GeneralServiceBookingTypeScreen"
+          component={GeneralServiceBookingTypeScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

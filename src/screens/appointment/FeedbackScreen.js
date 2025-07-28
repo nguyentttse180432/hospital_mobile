@@ -16,6 +16,7 @@ import {
 } from "../../services/appointmentService";
 import Button from "../../components/common/Button";
 import ScreenContainer from "../../components/common/ScreenContainer";
+import colors from "../../constant/colors"; // Import colors from your constants
 
 const FeedbackScreen = ({ route, navigation }) => {
   const { appointmentCode, patientName } = route.params;
@@ -111,7 +112,7 @@ const FeedbackScreen = ({ route, navigation }) => {
     return (
       <ScreenContainer title="Đánh giá" hasBottomTabs={true}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4299e1" />
+          <ActivityIndicator size="large" color={colors.primaryBlue} />
           <Text style={styles.loadingText}>Đang tải...</Text>
         </View>
       </ScreenContainer>
@@ -122,7 +123,6 @@ const FeedbackScreen = ({ route, navigation }) => {
     return (
       <ScreenContainer
         title="Đánh giá"
-        headerBackgroundColor="#4299e1"
         leftComponent={
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Icon name="arrow-back" size={24} color="#fff" />
@@ -210,7 +210,6 @@ const FeedbackScreen = ({ route, navigation }) => {
   return (
     <ScreenContainer
       title="Đánh giá"
-      headerBackgroundColor="#4299e1"
       leftComponent={
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#fff" />
@@ -296,17 +295,17 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: "#4299e1",
+    borderLeftColor: colors.primaryBlue,
   },
   patientName: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#2d3748",
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   appointmentCode: {
     fontSize: 14,
-    color: "#718096",
+    color: colors.textSecondary,
   },
   feedbackSection: {
     backgroundColor: "#fff",
@@ -317,7 +316,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#2d3748",
+    color: colors.textPrimary,
     marginBottom: 16,
   },
   ratingContainer: {
@@ -332,20 +331,20 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     fontWeight: "600",
-    color: "#4a5568",
+    color: colors.textSecondary,
   },
   commentInput: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
     borderRadius: 8,
     padding: 12,
     height: 100,
     textAlignVertical: "top",
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: colors.border,
     fontSize: 16,
   },
   submitButton: {
-    backgroundColor: "#4299e1",
+    backgroundColor: colors.primaryBlue,
     marginVertical: 24,
     borderRadius: 8,
     paddingVertical: 14,

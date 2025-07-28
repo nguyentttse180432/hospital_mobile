@@ -2,7 +2,7 @@ import api from "./api";
 
 export const createAppointment = async (appointmentData) => {
   console.log("Creating appointment with data:", appointmentData.services);
-  
+
   try {
     const response = await api.post("/Appointments", appointmentData);
     return response.data;
@@ -132,38 +132,544 @@ export const getAppointmentFeedback = async (code) => {
   }
 };
 
-// Helper function to format today's date in different common formats
-// This can help test which format the backend is expecting
-export const getDateInMultipleFormats = () => {
-  const today = new Date();
-  return {
-    isoDate: today.toISOString(), // Full ISO: 2025-07-04T14:30:00.000Z
-    shortIsoDate: today.toISOString().split("T")[0], // YYYY-MM-DD: 2025-07-04
-    localDate: today.toLocaleDateString(), // Local format: 7/4/2025 (US) or 04/07/2025 (EU)
-    formattedDate: `${today.getFullYear()}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`, // Manual YYYY-MM-DD
-    alternateFormat: `${String(today.getDate()).padStart(2, "0")}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}-${today.getFullYear()}`, // DD-MM-YYYY
-    noHyphenFormat: `${today.getFullYear()}${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`, // YYYYMMDD
-    timezoneInfo: {
-      offset: today.getTimezoneOffset(),
-      offsetHours: Math.abs(today.getTimezoneOffset()) / 60,
-      offsetSign: today.getTimezoneOffset() <= 0 ? "+" : "-",
-    },
-  };
-};
-
-// Lấy thời gian hệ thống từ server
-export const getSystemTime = async () => {
+//lấy danh sách khoa
+export const getDepartments = async () => {
   try {
-    const response = await api.get("/WorkingDates/datetime-server");
+    const response = await api.get("/Departments");
+    // {
+    //   "value": {
+    //     "totalCount": 5,
+    //     "items": [
+    //       {
+    //         "id": "ac0edeac-81ce-472c-a3b6-070e2b57e5c2",
+    //         "name": "Khoa Sản"
+    //       },
+    //       {
+    //         "id": "ceb375e6-9be6-4cb7-b897-4feecfce9f6a",
+    //         "name": "Khoa Tổng quát"
+    //       },
+    //       {
+    //         "id": "f901e4de-8a63-4703-a4f3-87f2de0ea5de",
+    //         "name": "Khoa Nhi"
+    //       },
+    //       {
+    //         "id": "746ffe9a-b5c5-4b96-a0ae-a83fa3a94a73",
+    //         "name": "Khoa Ngoại"
+    //       },
+    //       {
+    //         "id": "36739aca-0657-44e7-9323-c26f59a65fe0",
+    //         "name": "Khoa Nội"
+    //       }
+    //     ],
+    //     "pageIndex": 1,
+    //     "pageSize": 10,
+    //     "hasPreviousPage": false,
+    //     "hasNextPage": false
+    //   },
+    //   "error": {
+    //     "code": "",
+    //     "message": ""
+    //   },
+    //   "isSuccess": true
+    // }
     return response.data;
   } catch (error) {
-    console.error(`Error fetching system time:`, error);
+    console.error("Error fetching departments:", error);
+    throw error;
+  }
+};
+
+// Lấy danh sách bác sĩ theo khoa
+export const getDoctorsByDepartment = async (departmentId) => {
+  try {
+    const response = await api.get(`/Departments/${departmentId}/doctors`);
+    //{
+    //   "value": [
+    //     {
+    //       "doctorId": "a620ea7a-85e3-4179-90eb-1e64f5f45448",
+    //       "fullName": "Hồ Đức Tùng"
+    //     },
+    //     {
+    //       "doctorId": "01b8dc87-760f-45cf-8a93-3247d26bc0a8",
+    //       "fullName": "Đỗ Lại Sơn"
+    //     }
+    //   ],
+    //   "error": {
+    //     "code": "",
+    //     "message": ""
+    //   },
+    //   "isSuccess": true
+    // }
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching doctors by department:", error);
+    throw error;
+  }
+};
+
+//lấy lịch khám của bác sĩ
+export const getDoctorSchedule = async (doctorId) => {
+  try {
+    const response = await api.get(`/MedicalStaffs/${doctorId}/schedules`, {
+    });
+    console.log("Fetched Doctor Schedule:", response.data);
+    
+    //    {
+    //   "value": [
+    //     {
+    //       "date": "2025-07-29",
+    //       "timeSlots": [
+    //         {
+    //           "time": "00:00:00",
+    //           "isAvailable": false
+    //         },
+    //         {
+    //           "time": "00:15:00",
+    //           "isAvailable": false
+    //         },
+    //         {
+    //           "time": "00:30:00",
+    //           "isAvailable": false
+    //         },
+    //         {
+    //           "time": "00:45:00",
+    //           "isAvailable": false
+    //         },
+    //         {
+    //           "time": "01:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "01:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "01:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "01:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:45:00",
+    //           "isAvailable": true
+    //         }
+    //       ]
+    //     },
+    //     {
+    //       "date": "2025-07-30",
+    //       "timeSlots": [
+    //         {
+    //           "time": "00:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "00:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "00:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "00:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "01:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "01:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "01:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "01:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:45:00",
+    //           "isAvailable": true
+    //         }
+    //       ]
+    //     },
+    //     {
+    //       "date": "2025-07-31",
+    //       "timeSlots": [
+    //         {
+    //           "time": "00:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "00:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "00:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "00:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "01:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "01:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "01:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "01:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "02:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "03:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "06:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "07:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "08:45:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:00:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:15:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:30:00",
+    //           "isAvailable": true
+    //         },
+    //         {
+    //           "time": "09:45:00",
+    //           "isAvailable": true
+    //         }
+    //       ]
+    //     }
+    //   ],
+    //   "error": {
+    //     "code": "",
+    //     "message": ""
+    //   },
+    //   "isSuccess": true
+    // }
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching doctor schedule:", error);
+    throw error;
+  }
+};
+
+//đặt lịch khám
+export const bookAppointment = async (appointmentData) => {
+  try {
+    const response = await api.post(`/Appointments/doctor`, appointmentData);
+    //     {
+    //   "patientId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    //   "bookType": "App",
+    //   "bookingDate": "2025-07-27T13:00:40.861Z",
+    //   "currentMedication": "string",
+    //   "medicalHistory": "string",
+    //   "allergyDetails": "string",
+    //   "symptom": "string",
+    //   "smokingStatus": "No",
+    //   "patientInfomation": {
+    //     "firstName": "string",
+    //     "lastName": "string",
+    //     "dateOfBirth": "2025-07-27T13:00:40.861Z",
+    //     "gender": "Male",
+    //     "phoneNumber": "string",
+    //     "email": "string",
+    //     "address": {
+    //       "street": "string",
+    //       "ward": "string",
+    //       "district": "string",
+    //       "province": "string",
+    //       "street_2": "string",
+    //       "ward_2": "string",
+    //       "district_2": "string",
+    //       "province_2": "string"
+    //     },
+    //     "identityNumber": "string",
+    //     "healthInsuranceCode": "string"
+    //   },
+    //   "doctorId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    //   "serviceTypeId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    //   "serviceId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    // }
+    console.log("Appointment booked successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error booking appointment by doctor:", error);
     throw error;
   }
 };

@@ -26,6 +26,7 @@ import {
   EmptyResultState,
   LoadingState,
 } from "../../components/checkupResult";
+import colors from "../../constant/colors";
 
 const CheckupResultDetailScreen = () => {
   const navigation = useNavigation();
@@ -139,7 +140,6 @@ const CheckupResultDetailScreen = () => {
             onBack={() => navigation.goBack()}
           />
         }
-        headerBackgroundColor="#4299e1"
       >
         <LoadingState />
       </ScreenContainer>
@@ -155,7 +155,6 @@ const CheckupResultDetailScreen = () => {
             onBack={() => navigation.goBack()}
           />
         }
-        headerBackgroundColor="#4299e1"
       >
         <View style={styles.emptyContainer}>
           <EmptyResultState />
@@ -183,7 +182,6 @@ const CheckupResultDetailScreen = () => {
           onBack={() => navigation.goBack()}
         />
       }
-      headerBackgroundColor="#4299e1"
       hasBottomTabs={true}
     >
       <ScrollView
