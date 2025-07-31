@@ -125,7 +125,7 @@ const AppointmentReview = ({
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Loại khám</Text>
               <Text style={styles.infoValue}>
-                {serviceType === "VIP" ? "VIP" : "Thường"}
+                {serviceType === "Khám VIP" ? "VIP" : "Thường"}
               </Text>
             </View>
             <View style={styles.infoRow}>

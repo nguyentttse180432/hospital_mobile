@@ -29,7 +29,8 @@ export const getFileUrl = (filePath) => {
   if (!filePath) return "";
 
   // Use hardcoded base URL to avoid dependency issues
-  const baseUrl = "https://hair-salon-fpt.io.vn";
+  //const baseUrl = "https://hair-salon-fpt.io.vn";
+  const baseUrl = "https://dev.hsms.io.vn";
 
   // Ensure filePath starts with '/'
   const cleanFilePath = filePath.startsWith("/") ? filePath : `/${filePath}`;
