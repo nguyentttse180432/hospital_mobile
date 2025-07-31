@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Import environment variables
 const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL;
+  process.env.EXPO_PUBLIC_API_BASE_URL_PROD;
 const AUTH_REFRESH_TOKEN_ENDPOINT =
   process.env.EXPO_PUBLIC_AUTH_REFRESH_TOKEN_ENDPOINT || "/Auth/refresh-token";
 const API_TIMEOUT = parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT) || 10000;
